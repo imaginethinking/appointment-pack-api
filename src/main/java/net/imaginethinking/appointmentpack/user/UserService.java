@@ -1,6 +1,8 @@
 package net.imaginethinking.appointmentpack.user;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.profile.Profile;
+import net.imaginethinking.appointmentpack.profile.ProfileService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final ProfileService profileService;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -28,10 +31,8 @@ public class UserService {
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(request.role());
-        user.setFirstName(request.firstName());
-        user.setLastName(request.lastName());
-        user.setDateOfBirth(request.dateOfBirth());
-        user.setGender(request.gender());
+
+        profileService.createProfile(request, user);
 
         userRepository.save(user);
 

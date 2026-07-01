@@ -24,8 +24,6 @@ public record CreateUserRequest(
 
     @NotNull
     @Past
-    LocalDate dateOfBirth,
-
-    String gender
+    LocalDate dateOfBirth
 ) {
 }

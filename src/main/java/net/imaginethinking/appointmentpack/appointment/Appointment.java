@@ -31,7 +31,7 @@ public class Appointment extends BaseEntity {
     @JoinColumn(
             name = "facility_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_appointments_facility")
+            foreignKey = @ForeignKey(name = "fk_facility")
     )
     private Facility facility;
 
