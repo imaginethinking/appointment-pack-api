@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.facility.Facility;
+import net.imaginethinking.appointmentpack.user.User;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -24,8 +26,21 @@ public class Appointment extends BaseEntity {
     @Column(nullable = false)
     private String description;
 
-    @Column(nullable = false)
-    private String location;
+//  Lazy fetching so it does not fetch facility details until they are needed
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "facility_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_appointments_facility")
+    )
+    private Facility facility;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false
+    )
+    private User user;
 
     @Column(nullable = false)
     private LocalDate date;
