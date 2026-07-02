@@ -28,9 +28,11 @@ public class ProfileService {
     }
 
     @Transactional(readOnly = true)
-    public Profile getProfileById(UUID id) {
-        return profileRepository.findById(id)
+    public ProfileResponse getProfileById(UUID id) {
+        Profile profile = profileRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+
+        return ProfileResponse.from(profile);
     }
 
 }
