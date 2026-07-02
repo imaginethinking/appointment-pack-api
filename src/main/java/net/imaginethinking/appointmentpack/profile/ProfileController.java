@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.net.URI;
 import java.util.UUID;
 
 @RestController
@@ -22,8 +21,7 @@ public class ProfileController {
         Profile profile = profileService.getProfileById(id);
 
         return ResponseEntity
-                .created(URI.create("/api/v1/profiles/" + id))
-                .body(profile);
+                .ok(profile);
     }
 
 }
