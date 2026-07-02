@@ -13,16 +13,16 @@ import net.imaginethinking.appointmentpack.common.BaseEntity;
 @Table(name = "addresses")
 public class Address extends BaseEntity {
 
-    @Column(nullable = false)
+    @Column(name = "address_line_1", nullable = false)
     private String addressLine1;
 
-    @Column
+    @Column(name = "address_line_2")
     private String addressLine2;
 
-    @Column
+    @Column(name = "address_line_3")
     private String addressLine3;
 
-    @Column
+    @Column(name = "address_line_4")
     private String addressLine4;
 
     @Column(nullable = false)
