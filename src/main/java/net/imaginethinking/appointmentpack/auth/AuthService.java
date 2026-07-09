@@ -2,6 +2,7 @@ package net.imaginethinking.appointmentpack.auth;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.profile.Profile;
+import net.imaginethinking.appointmentpack.security.MfaTotpService;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
 import net.imaginethinking.appointmentpack.user.UserRole;
@@ -18,6 +19,8 @@ import java.util.Objects;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final MfaTotpService mfaTotpService;
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
@@ -53,6 +56,21 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         return null;
+    }
+
+    public MfaSetupResponse setupMfa(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String secret = mfaTotpService.generateSecret();
+        String qrCodeUri = mfaTotpService.generateQrCodeUri(email, secret);
+
+        user.setMfaSecret(secret);
+        user.setMfaEnabled(false);
+
+        userRepository.save(user);
+
+        return new MfaSetupResponse(secret, qrCodeUri);
     }
 
 }
