@@ -1,10 +1,7 @@
 package net.imaginethinking.appointmentpack.user;
 
 import lombok.RequiredArgsConstructor;
-import net.imaginethinking.appointmentpack.profile.Profile;
-import net.imaginethinking.appointmentpack.profile.ProfileService;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,28 +13,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final ProfileService profileService;
-    private final PasswordEncoder passwordEncoder;
-
-    @Transactional
-    public UserResponse createUser(CreateUserRequest request) {
-        String email = request.email().trim().toLowerCase();
-
-        if (userRepository.existsByEmail(email)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email address already exists");
-        }
-
-        User user = new User();
-        user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setRole(request.role());
-
-        profileService.createProfile(request, user);
-
-        userRepository.save(user);
-
-        return UserResponse.from(user);
-    }
 
     @Transactional(readOnly = true)
     public List<UserResponse> getUsers() {
