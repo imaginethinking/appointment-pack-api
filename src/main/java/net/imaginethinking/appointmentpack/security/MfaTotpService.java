@@ -17,7 +17,7 @@ public class MfaTotpService {
         return key.getKey();
     }
 
-    public String generateQrCodeUri(String email, String secret) {
+    public String generateProvisioningUri(String email, String secret) {
         GoogleAuthenticatorKey key = new GoogleAuthenticatorKey.Builder(secret).build();
 
         return GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(

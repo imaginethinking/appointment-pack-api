@@ -27,12 +27,26 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                        // Allow spring error handling
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        .requestMatchers("/api/v1/auth/register").permitAll()
-                        .requestMatchers("/api/v1/auth/login").permitAll()
-                        .requestMatchers("/api/v1/test").permitAll()
+                        // Public auth endpoints
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/login/mfa"
+                        ).permitAll()
+
+                        // MFA endpoints require a JWT authentication
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/mfa/setup",
+                                "/api/v1/auth/mfa/confirm"
+                        ).authenticated()
+
+                        // All other endpoints require a JWT authentication
                         .anyRequest().authenticated()
                 )
 
