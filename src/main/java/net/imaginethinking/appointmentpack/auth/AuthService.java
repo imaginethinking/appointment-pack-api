@@ -2,6 +2,7 @@ package net.imaginethinking.appointmentpack.auth;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.profile.Profile;
+import net.imaginethinking.appointmentpack.security.JwtService;
 import net.imaginethinking.appointmentpack.security.MfaTotpService;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
@@ -19,7 +20,7 @@ import java.util.Objects;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final JwtService jwtService;
     private final MfaTotpService mfaTotpService;
 
     @Transactional
@@ -54,8 +55,34 @@ public class AuthService {
         );
     }
 
+
     public AuthResponse login(LoginRequest request) {
-        return null;
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid email or password"));
+
+        boolean passwordMatches = passwordEncoder.matches(request.password(), user.getPasswordHash());
+
+        if (!passwordMatches) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
+
+        if (user.isMfaEnabled()) {
+            return new AuthResponse(
+                    true,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        String accessToken = jwtService.generateAccessToken(user);
+
+        return new AuthResponse(
+                false,
+                null,
+                accessToken,
+                "Bearer"
+        );
     }
 
     public MfaSetupResponse setupMfa(String email) {
