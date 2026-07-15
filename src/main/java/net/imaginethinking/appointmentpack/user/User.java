@@ -6,8 +6,6 @@ import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
 import net.imaginethinking.appointmentpack.profile.Profile;
 
-import java.time.LocalDate;
-
 @Getter
 @Setter
 @Entity
@@ -28,10 +26,6 @@ public class User extends BaseEntity {
 
     @Column(name = "mfaSecret", nullable = true)
     private String mfaSecret;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private UserRole role;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = false)
     private Profile profile;

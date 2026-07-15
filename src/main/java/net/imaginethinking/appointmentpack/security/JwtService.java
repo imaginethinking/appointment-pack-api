@@ -27,7 +27,6 @@ public class JwtService {
                 .expiresAt(now.plus(1, ChronoUnit.HOURS))
                 .subject(user.getEmail())
                 .claim("userId", user.getId().toString())
-                .claim("role", user.getRole().name())
                 .claim("purpose", "ACCESS")
                 .build();
 

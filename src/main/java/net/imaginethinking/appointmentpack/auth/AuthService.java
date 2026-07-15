@@ -6,7 +6,6 @@ import net.imaginethinking.appointmentpack.security.JwtService;
 import net.imaginethinking.appointmentpack.security.MfaTotpService;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
-import net.imaginethinking.appointmentpack.user.UserRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,6 @@ public class AuthService {
         User user = new User();
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setRole(UserRole.PATIENT);
 
         Profile profile = new Profile();
         profile.setUser(user);
