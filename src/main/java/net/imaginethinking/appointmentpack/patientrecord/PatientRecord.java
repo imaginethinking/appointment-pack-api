@@ -5,7 +5,12 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.patientrecord.bloodtype.BloodType;
+import net.imaginethinking.appointmentpack.patientrecord.measurement.HeightUnit;
+import net.imaginethinking.appointmentpack.patientrecord.measurement.WeightUnit;
 import net.imaginethinking.appointmentpack.profile.Profile;
+
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -16,6 +21,7 @@ public class PatientRecord extends BaseEntity {
     @JoinColumn(
             name = "profile_id",
             nullable = false,
+            unique = true,
             foreignKey = @ForeignKey(name = "fk_patient_record_profile")
     )
     private Profile profile;
@@ -32,4 +38,21 @@ public class PatientRecord extends BaseEntity {
     @Column(name = "hc_number", length = 10)
     private String hcNumber;
 
+    @Column(name = "height", precision = 6, scale = 2)
+    private BigDecimal height;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "height_unit")
+    private HeightUnit heightUnit;
+
+    @Column(name = "weight", precision = 6, scale = 2)
+    private BigDecimal weight;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "weight_unit")
+    private WeightUnit weightUnit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "blood_type")
+    private BloodType bloodType;
 }
