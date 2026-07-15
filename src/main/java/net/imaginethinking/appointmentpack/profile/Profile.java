@@ -44,7 +44,7 @@ public class Profile extends BaseEntity {
     private String nhsNumber;
 
     // Scotland regional number
-    @Column(name = "chi_cnumber", nullable = true, length = 10)
+    @Column(name = "chi_number", nullable = true, length = 10)
     private String chiNumber;
 
     // Northern Ireland regional number
