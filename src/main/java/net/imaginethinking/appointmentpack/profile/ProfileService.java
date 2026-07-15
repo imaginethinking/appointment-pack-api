@@ -14,11 +14,10 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
 
     @Transactional(readOnly = true)
-    public ProfileResponse getProfileById(UUID id) {
-        Profile profile = profileRepository.findById(id)
+    public ProfileResponse getCurrentProfile(UUID userId) {
+        Profile profile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 
         return ProfileResponse.from(profile);
     }
-
 }
