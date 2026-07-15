@@ -12,10 +12,7 @@ public record ProfileResponse(
         String lastName,
         LocalDate dateOfBirth,
         String gender,
-        Address address,
-        String nhsNumber,
-        String chiNumber,
-        String hcNumber
+        Address address
 ) {
 
     public static ProfileResponse from(Profile profile) {
@@ -26,10 +23,7 @@ public record ProfileResponse(
                 profile.getLastName(),
                 profile.getDateOfBirth(),
                 profile.getGender(),
-                profile.getAddress(),
-                profile.getNhsNumber(),
-                profile.getChiNumber(),
-                profile.getHcNumber()
+                profile.getAddress()
         );
     }
 }
