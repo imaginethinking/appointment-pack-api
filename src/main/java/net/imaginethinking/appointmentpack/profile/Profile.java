@@ -16,7 +16,12 @@ import java.time.LocalDate;
 public class Profile extends BaseEntity {
 
     @OneToOne()
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            unique = true,
+            foreignKey = @ForeignKey(name = "fk_profile_user")
+    )
     private User user;
 
     @Column(name = "first_name", nullable = false)
@@ -35,19 +40,7 @@ public class Profile extends BaseEntity {
     @JoinColumn(
             name = "address_id",
             nullable = true,
-            foreignKey = @ForeignKey(name = "fk_address")
+            foreignKey = @ForeignKey(name = "fk_profile_address")
     )
     private Address address;
-
-    // England and Wales regional number
-    @Column(name = "nhs_number", nullable = true, length = 10)
-    private String nhsNumber;
-
-    // Scotland regional number
-    @Column(name = "chi_number", nullable = true, length = 10)
-    private String chiNumber;
-
-    // Northern Ireland regional number
-    @Column(name = "hc_number", nullable = true, length = 10)
-    private String hcNumber;
 }
