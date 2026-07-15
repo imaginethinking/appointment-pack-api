@@ -25,8 +25,7 @@ public class JwtService {
                 .issuer("appointment-pack-api")
                 .issuedAt(now)
                 .expiresAt(now.plus(1, ChronoUnit.HOURS))
-                .subject(user.getEmail())
-                .claim("userId", user.getId().toString())
+                .subject(user.getId().toString())
                 .claim("purpose", "ACCESS")
                 .build();
 

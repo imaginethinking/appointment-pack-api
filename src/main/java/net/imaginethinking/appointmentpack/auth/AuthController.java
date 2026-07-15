@@ -2,6 +2,7 @@ package net.imaginethinking.appointmentpack.auth;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.security.AuthenticatedUserIdResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -12,12 +13,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+    private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@RequestBody @Valid RegisterRequest request) {
@@ -44,14 +48,16 @@ public class AuthController {
 
     @PostMapping("/mfa/setup")
     public ResponseEntity<MfaSetupResponse> setupMfa(@AuthenticationPrincipal Jwt jwt) {
-        MfaSetupResponse response = authService.setupMfa(jwt.getSubject());
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+        MfaSetupResponse response = authService.setupMfa(userId);
 
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/mfa/confirm")
     public ResponseEntity<Void> confirmMfa(@AuthenticationPrincipal Jwt jwt, @RequestBody @Valid MfaConfirmRequest request) {
-        authService.confirmMfa(jwt.getSubject(), request);
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+        authService.confirmMfa(userId, request);
 
         return ResponseEntity.noContent().build();
     }

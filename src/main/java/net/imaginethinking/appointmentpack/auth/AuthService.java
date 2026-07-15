@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -101,8 +102,8 @@ public class AuthService {
 
 
     @Transactional
-    public MfaSetupResponse setupMfa(String email) {
-        User user = userRepository.findByEmail(email)
+    public MfaSetupResponse setupMfa(UUID userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (user.isMfaEnabled()) {
@@ -124,8 +125,8 @@ public class AuthService {
     }
 
     @Transactional
-    public void confirmMfa(String email, MfaConfirmRequest request) {
-        User user = userRepository.findByEmail(email)
+    public void confirmMfa(UUID userId, MfaConfirmRequest request) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (user.isMfaEnabled()) {
