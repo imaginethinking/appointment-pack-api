@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.patientaccess;
+package net.imaginethinking.appointmentpack.patientcareraccess;
 
 import jakarta.validation.constraints.NotNull;
 

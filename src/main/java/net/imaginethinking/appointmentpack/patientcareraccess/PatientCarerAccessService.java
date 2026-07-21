@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.patientaccess;
+package net.imaginethinking.appointmentpack.patientcareraccess;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;

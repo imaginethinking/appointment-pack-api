@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.patientaccess;
+package net.imaginethinking.appointmentpack.patientcareraccess;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;

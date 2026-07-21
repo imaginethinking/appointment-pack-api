@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.patientaccess;
+package net.imaginethinking.appointmentpack.patientcareraccess;
 
 import net.imaginethinking.appointmentpack.profile.Profile;
 
