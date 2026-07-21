@@ -1,6 +1,7 @@
 package net.imaginethinking.appointmentpack.patientrecord;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.measurement.HeightUnit;
 import net.imaginethinking.appointmentpack.patientrecord.measurement.WeightUnit;
 import net.imaginethinking.appointmentpack.profile.Profile;
@@ -26,6 +27,7 @@ public class PatientRecordService {
 
     private final PatientRecordRepository patientRecordRepository;
     private final ProfileRepository profileRepository;
+    private final PatientAccessControlService patientAccessControlService;
 
     @Transactional
     public PatientRecordResponse createCurrentPatientRecord(UUID userId, CreatePatientRecordRequest request) {
@@ -62,6 +64,37 @@ public class PatientRecordService {
         return toResponse(savedPatientRecord);
     }
 
+    @Transactional
+    public PatientRecordResponse updatePatientRecord(UUID authenticatedUserId, UUID patientRecordId, UpdatePatientRecordRequest request) {
+        PatientRecord patientRecord = patientRecordRepository
+                .findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Patient record not found"
+                ));
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                patientRecord,
+                PatientRecordPermission.EDIT
+        );
+
+        validateMeasurement("Height", request.height(), request.heightUnit());
+        validateMeasurement("Weight", request.weight(), request.weightUnit());
+
+
+        patientRecord.setNhsNumber(normalise(request.nhsNumber()));
+        patientRecord.setChiNumber(normalise(request.chiNumber()));
+        patientRecord.setHcNumber(normalise(request.hcNumber()));
+        patientRecord.setHeight(request.height());
+        patientRecord.setHeightUnit(request.heightUnit());
+        patientRecord.setWeight(request.weight());
+        patientRecord.setWeightUnit(request.weightUnit());
+        patientRecord.setBloodType(request.bloodType());
+
+        return toResponse(patientRecord);
+    }
+
     @Transactional(readOnly = true)
     public PatientRecordResponse getCurrentPatientRecord(UUID userId) {
         PatientRecord patientRecord = patientRecordRepository
@@ -70,6 +103,23 @@ public class PatientRecordService {
                         HttpStatus.NOT_FOUND,
                         "Patient record not found"
                 ));
+
+        return toResponse(patientRecord);
+    }
+
+    @Transactional(readOnly = true)
+    public PatientRecordResponse getPatientRecord(UUID authenticatedUserId, UUID patientRecordId) {
+        PatientRecord patientRecord = patientRecordRepository
+                .findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Patient record not found"
+                ));
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                patientRecord,
+                PatientRecordPermission.VIEW);
 
         return toResponse(patientRecord);
     }

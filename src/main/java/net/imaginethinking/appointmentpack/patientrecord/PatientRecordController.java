@@ -39,5 +39,21 @@ public class PatientRecordController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{patientRecordId}")
+    public ResponseEntity<PatientRecordResponse> getPatientRecord(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID patientRecordId) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
+        PatientRecordResponse response = patientRecordService.getPatientRecord(userId, patientRecordId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{patientRecordId}")
+    public ResponseEntity<PatientRecordResponse> updatePatientRecord(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID patientRecordId, @RequestBody @Valid UpdatePatientRecordRequest request) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        PatientRecordResponse response = patientRecordService.updatePatientRecord(userId, patientRecordId, request);
+
+        return ResponseEntity.ok(response);
+    }
 }
