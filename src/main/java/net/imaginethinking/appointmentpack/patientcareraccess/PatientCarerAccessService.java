@@ -3,6 +3,7 @@ package net.imaginethinking.appointmentpack.patientcareraccess;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.permission.PermissionValidator;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -10,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.Permission;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -20,9 +23,12 @@ public class PatientCarerAccessService {
     private final PatientCarerAccessRepository patientCarerAccessRepository;
     private final PatientRecordRepository patientRecordRepository;
     private final UserRepository userRepository;
+    private final PermissionValidator permissionValidator;
 
     @Transactional
     public PatientCarerAccessResponse inviteCarer(UUID patientUserId, CreateCarerInvitationRequest request) {
+        Set<String> permissions = permissionValidator.validate(request.permissions());
+
         PatientRecord patientRecord = getOwnedPatientRecord(patientUserId);
 
         if (patientUserId.equals(request.carerUserId())) {
@@ -43,8 +49,8 @@ public class PatientCarerAccessService {
                         patientRecord.getId(),
                         carer.getId()
                 )
-                .map(this::prepareExistingInvitation)
-                .orElseGet(() -> createInvitation(patientRecord, carer));
+                .map((a) -> prepareExistingInvitation(a, permissions))
+                .orElseGet(() -> createInvitation(patientRecord, carer, permissions));
 
         PatientCarerAccess savedAccess = patientCarerAccessRepository.save(access);
 
@@ -121,20 +127,21 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
-    private PatientCarerAccess createInvitation(PatientRecord patientRecord, User carer) {
+    private PatientCarerAccess createInvitation(PatientRecord patientRecord, User carer, Set<String> permissions) {
         Instant now = Instant.now();
 
         PatientCarerAccess access = new PatientCarerAccess();
         access.setPatientRecord(patientRecord);
         access.setCarer(carer);
         access.setStatus(PatientCarerAccessStatus.PENDING);
+        access.setPermissions(permissions);
         access.setInvitedAt(now);
         access.setStatusChangedAt(now);
 
         return access;
     }
 
-    private PatientCarerAccess prepareExistingInvitation(PatientCarerAccess access) {
+    private PatientCarerAccess prepareExistingInvitation(PatientCarerAccess access, Set<String> permissions) {
         if (access.getStatus() == PatientCarerAccessStatus.PENDING) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -152,6 +159,7 @@ public class PatientCarerAccessService {
         Instant now = Instant.now();
 
         access.setStatus(PatientCarerAccessStatus.PENDING);
+        access.setPermissions(permissions);
         access.setInvitedAt(now);
         access.setStatusChangedAt(now);
 
@@ -210,5 +218,26 @@ public class PatientCarerAccessService {
     private void changeStatus(PatientCarerAccess access, PatientCarerAccessStatus status) {
         access.setStatus(status);
         access.setStatusChangedAt(Instant.now());
+    }
+
+    @Transactional
+    public PatientCarerAccessResponse updatePermissions(UUID patientUserId, UUID accessId, UpdatePatientCarerPermissionsRequest request) {
+        PatientCarerAccess access = getAccess(accessId);
+
+        requirePatientOwner(access, patientUserId);
+
+        if (access.getStatus() != PatientCarerAccessStatus.PENDING && access.getStatus() != PatientCarerAccessStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Permissions can only be updated for pending or active relationships"
+            );
+        }
+
+        Set<String> permissions = permissionValidator.validate(request.permissions());
+
+        access.setPermissions(permissions);
+        access.setStatusChangedAt(Instant.now());
+
+        return PatientCarerAccessResponse.from(access);
     }
 }

@@ -3,6 +3,7 @@ package net.imaginethinking.appointmentpack.patientcareraccess;
 import net.imaginethinking.appointmentpack.profile.Profile;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 public record PatientCarerAccessResponse(
@@ -11,6 +12,7 @@ public record PatientCarerAccessResponse(
         String patientName,
         UUID carerUserId,
         String carerName,
+        Set<String> permissions,
         PatientCarerAccessStatus status,
         Instant invitedAt,
         Instant statusChangedAt
@@ -26,6 +28,7 @@ public record PatientCarerAccessResponse(
                 fullName(patientProfile),
                 access.getCarer().getId(),
                 fullName(carerProfile),
+                Set.copyOf(access.getPermissions()),
                 access.getStatus(),
                 access.getInvitedAt(),
                 access.getStatusChangedAt()

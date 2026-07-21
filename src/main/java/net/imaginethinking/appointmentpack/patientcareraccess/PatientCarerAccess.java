@@ -8,6 +8,8 @@ import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.user.User;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -58,4 +60,25 @@ public class PatientCarerAccess extends BaseEntity {
 
     @Column(name = "status_changed_at", nullable = false)
     private Instant statusChangedAt;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "patient_carer_access_permissions",
+            joinColumns = @JoinColumn(
+                    name = "patient_carer_access_id",
+                    nullable = false
+            ),
+            foreignKey = @ForeignKey(
+                    name = "fk_patient_carer_access_permissions_access"
+            ),
+            uniqueConstraints = @UniqueConstraint(
+                    name = "uk_patient_carer_access_permission",
+                    columnNames = {
+                            "patient_carer_access_id",
+                            "permission"
+                    }
+            )
+    )
+    @Column(name = "permission", nullable = false, length = 100)
+    private Set<String> permissions = new HashSet<>();
 }
