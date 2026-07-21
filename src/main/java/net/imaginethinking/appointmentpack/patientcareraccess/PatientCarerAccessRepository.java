@@ -28,4 +28,9 @@ public interface PatientCarerAccessRepository extends JpaRepository<PatientCarer
             "carer.profile"
     })
     List<PatientCarerAccess> findAllByCarer_IdOrderByInvitedAtDesc(UUID carerUserId);
+
+
+    @EntityGraph(attributePaths = "permissions")
+    Optional<PatientCarerAccess> findByPatientRecordIdAndCarerIdAndStatus(UUID patientRecordId, UUID carerId, PatientCarerAccessStatus status
+    );
 }
