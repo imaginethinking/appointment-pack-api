@@ -20,4 +20,32 @@ public class ProfileService {
 
         return ProfileResponse.from(profile);
     }
+
+    @Transactional
+    public ProfileResponse updateCurrentProfile(UUID userId, UpdateProfileRequest request) {
+        Profile profile = findByUserId(userId);
+
+        profile.setFirstName(request.firstName().trim());
+        profile.setLastName(request.lastName().trim());
+        profile.setDateOfBirth(request.dateOfBirth());
+        profile.setGender(normaliseOptionalValue(request.gender()));
+
+        return ProfileResponse.from(profile);
+    }
+
+    private Profile findByUserId(UUID userId) {
+        return profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Profile not found"
+                ));
+    }
+
+    private String normaliseOptionalValue(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
 }
