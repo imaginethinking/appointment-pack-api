@@ -75,6 +75,15 @@ public class PatientCarerAccessController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{accessId}/cancel")
+    public ResponseEntity<PatientCarerAccessResponse> cancelInvitation(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID accessId) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        PatientCarerAccessResponse response = patientCarerAccessService.cancelInvitation(userId, accessId);
+
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{accessId}/permissions")
     public ResponseEntity<PatientCarerAccessResponse> updatePermissions(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID accessId, @RequestBody @Valid UpdatePatientCarerPermissionsRequest request) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
