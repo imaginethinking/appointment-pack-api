@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.Permission;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,22 +28,24 @@ public class PatientCarerAccessService {
 
     @Transactional
     public PatientCarerAccessResponse inviteCarer(UUID patientUserId, CreateCarerInvitationRequest request) {
-        Set<String> permissions = permissionValidator.validate(request.permissions());
-
         PatientRecord patientRecord = getOwnedPatientRecord(patientUserId);
 
-        if (patientUserId.equals(request.carerUserId())) {
+        String normalisedEmail = request.carerEmail().trim().toLowerCase(Locale.ROOT);
+
+        User carer = userRepository.findByEmailIgnoreCase(normalisedEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No registered account was found for this email address"
+                ));
+
+        if (carer.getId().equals(patientUserId)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "You cannot invite yourself as a carer"
             );
         }
 
-        User carer = userRepository.findById(request.carerUserId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Carer account not found"
-                ));
+        Set<String> permissions = permissionValidator.validate(request.permissions());
 
         PatientCarerAccess access = patientCarerAccessRepository
                 .findByPatientRecord_IdAndCarer_Id(

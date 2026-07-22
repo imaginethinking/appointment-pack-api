@@ -1,16 +1,17 @@
 package net.imaginethinking.appointmentpack.patientcareraccess;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
-import java.util.UUID;
 
 public record CreateCarerInvitationRequest(
         @NotNull (
-                message = "Carer user ID must be provided"
+                message = "Carer email address must be provided"
         )
-        UUID carerUserId,
+        @Email
+        String carerEmail,
 
         @NotNull(
                 message = "Permissions must not be null"
