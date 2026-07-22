@@ -8,7 +8,7 @@ import java.util.UUID;
 public record CarerAccessSummaryResponse(
         UUID userId,
         UUID profileId,
-        String firstname,
+        String firstName,
         String lastName,
         String email
 ) {
