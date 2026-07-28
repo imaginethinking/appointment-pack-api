@@ -31,7 +31,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Allow spring error handling
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/error").permitAll()
+                        // Swagger/OpenAPI
+                        .requestMatchers(
+                                "/error",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
 
                         // Public auth endpoints
                         .requestMatchers(
