@@ -52,8 +52,8 @@ public class PermissionValidator {
                 );
             }
         }
-
-        return Set.copyOf(permissions);
+        
+        return new HashSet<>(permissions);
     }
 
 }
