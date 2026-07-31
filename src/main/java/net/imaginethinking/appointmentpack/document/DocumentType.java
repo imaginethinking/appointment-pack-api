@@ -1,6 +1,6 @@
 package net.imaginethinking.appointmentpack.document;
 
 public enum DocumentType {
-    APPOINTMENT,
-    REPORT
+    APPOINTMENT_LETTER,
+    CONSULTATION_OUTCOME_LETTER,
 }
