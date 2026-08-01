@@ -46,7 +46,7 @@ public class Document extends BaseEntity {
     @Column(name = "original_file_name", nullable = false)
     private String originalFileName;
 
-    @Column(name = "stored_file_name", unique = true, length = 100)
+    @Column(name = "stored_file_name", unique = true, length = 100, nullable = false)
     private String storedFileName;
 
     @Column(name = "content_type", nullable = false, length = 100)
@@ -55,6 +55,10 @@ public class Document extends BaseEntity {
     @Column(name = "file_size", nullable = false)
     private long fileSize;
 
-    @Column(name = "storage_path", unique = true, length = 500)
+    @Column(name = "storage_path", unique = true, length = 500, nullable = false)
     private String storagePath;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", nullable = false, length = 50)
+    private DocumentType documentType;
 }

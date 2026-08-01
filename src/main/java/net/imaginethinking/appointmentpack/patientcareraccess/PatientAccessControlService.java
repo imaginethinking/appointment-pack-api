@@ -2,7 +2,7 @@ package net.imaginethinking.appointmentpack.patientcareraccess;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordPermission;
+import net.imaginethinking.appointmentpack.permission.Permission;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +16,7 @@ public class PatientAccessControlService {
     private final PatientCarerAccessRepository patientCarerAccessRepository;
 
     @Transactional(readOnly = true)
-    public void requirePermission(UUID authenticatedUserId, PatientRecord patientRecord, PatientRecordPermission requiredPermission) {
+    public void requirePermission(UUID authenticatedUserId, PatientRecord patientRecord, Permission requiredPermission) {
         if (isOwner(authenticatedUserId, patientRecord)) {
             return;
         }
