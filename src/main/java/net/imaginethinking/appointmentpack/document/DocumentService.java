@@ -42,12 +42,7 @@ public class DocumentService {
             );
         }
 
-        PatientRecord patientRecord = patientRecordRepository
-                .findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
+        PatientRecord patientRecord = findPatientRecord(patientRecordId);
 
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
@@ -61,7 +56,6 @@ public class DocumentService {
                         HttpStatus.UNAUTHORIZED,
                         "Authenticated user not found"
                 ));
-
 
         String contentType = documentFileValidator.validateAndGetContentType(file);
 
@@ -93,7 +87,117 @@ public class DocumentService {
             deleteStoredFileAfterFailure(storagePath, exception);
             throw exception;
         }
+    }
 
+    @Transactional(readOnly = true)
+    public List<DocumentResponse> getDocuments(
+            UUID authenticatedUserId,
+            UUID patientRecordId
+    ) {
+        PatientRecord patientRecord = findPatientRecord(patientRecordId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                patientRecord,
+                DocumentPermission.VIEW
+        );
+
+        return documentRepository
+                .findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
+                        patientRecordId,
+                        DocumentStatus.ARCHIVED
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentResponse getDocument(
+            UUID authenticatedUserId,
+            UUID documentId
+    ) {
+        Document document = findAvailableDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.VIEW
+        );
+
+        return toResponse(document);
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentDownload download(
+            UUID authenticatedUserId,
+            UUID documentId
+    ) {
+        Document document = findAvailableDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.VIEW
+        );
+
+        return new DocumentDownload(
+                documentStorageService.load(document.getStoragePath()),
+                document.getOriginalFileName(),
+                document.getContentType(),
+                document.getFileSize()
+        );
+    }
+
+    @Transactional
+    public DocumentResponse archive(
+            UUID authenticatedUserId,
+            UUID documentId
+    ) {
+        Document document = findDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.EDIT
+        );
+
+        if (document.getStatus() != DocumentStatus.ARCHIVED) {
+            document.setStatus(DocumentStatus.ARCHIVED);
+        }
+
+        return toResponse(document);
+    }
+
+    private PatientRecord findPatientRecord(UUID patientRecordId) {
+        return patientRecordRepository
+                .findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Patient record not found"
+                ));
+    }
+
+    private Document findDocument(UUID documentId) {
+        return documentRepository
+                .findById(documentId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Document not found"
+                ));
+    }
+
+    private Document findAvailableDocument(UUID documentId) {
+        Document document = findDocument(documentId);
+
+        if (document.getStatus() == DocumentStatus.ARCHIVED) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Document not found"
+            );
+        }
+
+        return document;
     }
 
     private DocumentResponse toResponse(Document document) {
@@ -140,86 +244,5 @@ public class DocumentService {
         } catch (RuntimeException cleanupException) {
             originalException.addSuppressed(cleanupException);
         }
-    }
-
-    @Transactional(readOnly = true)
-    public List<DocumentResponse> getDocuments(
-            UUID authenticatedUserId,
-            UUID patientRecordId
-    ) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                patientRecord,
-                DocumentPermission.VIEW
-        );
-
-        return documentRepository
-                .findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
-                        patientRecordId,
-                        DocumentStatus.ARCHIVED
-                )
-                .stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public DocumentResponse getDocument(
-            UUID authenticatedUserId,
-            UUID documentId
-    ) {
-        Document document = findDocument(documentId);
-
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                DocumentPermission.VIEW
-        );
-
-        return toResponse(document);
-    }
-
-    @Transactional(readOnly = true)
-    public DocumentDownload download(
-            UUID authenticatedUserId,
-            UUID documentId
-    ) {
-        Document document = findDocument(documentId);
-
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                DocumentPermission.VIEW
-        );
-
-        return new DocumentDownload(
-                documentStorageService.load(document.getStoragePath()),
-                document.getOriginalFileName(),
-                document.getContentType(),
-                document.getFileSize()
-        );
-    }
-
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository
-                .findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
-    }
-
-    private Document findDocument(UUID documentId) {
-        return documentRepository
-                .findById(documentId)
-                .filter(document ->
-                        document.getStatus() != DocumentStatus.ARCHIVED
-                )
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Document not found"
-                ));
     }
 }

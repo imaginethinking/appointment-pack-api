@@ -55,9 +55,9 @@ public class DocumentController {
     ) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
-        return ResponseEntity.ok(
-                documentService.getDocuments(userId, patientRecordId)
-        );
+        List<DocumentResponse> response = documentService.getDocuments(userId, patientRecordId);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/documents/{documentId}")
@@ -67,9 +67,9 @@ public class DocumentController {
     ) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
-        return ResponseEntity.ok(
-                documentService.getDocument(userId, documentId)
-        );
+        DocumentResponse response = documentService.getDocument(userId, documentId);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/documents/{documentId}/file")
@@ -97,5 +97,17 @@ public class DocumentController {
                         disposition.toString()
                 )
                 .body(download.resource());
+    }
+
+    @PatchMapping("/documents/{documentId}/archive")
+    public ResponseEntity<DocumentResponse> archiveDocument(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId
+    ) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentResponse response = documentService.archive(userId, documentId);
+
+        return ResponseEntity.ok(response);
     }
 }
