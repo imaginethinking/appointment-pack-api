@@ -2,6 +2,9 @@ package net.imaginethinking.appointmentpack.document;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.security.AuthenticatedUserIdResolver;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,21 +13,26 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/patient-records/{patientRecordId}/documents")
+@RequestMapping("/api/v1")
 public class DocumentController {
     private final DocumentService documentService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(
+            path = "/patient-records/{patientRecordId}/documents",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<DocumentResponse> uploadDocument(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID patientRecordId,
-            @RequestParam("documentType") DocumentType documentType,
-            @RequestParam("file") MultipartFile file
+            @RequestParam DocumentType documentType,
+            @RequestParam MultipartFile file
     ) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
@@ -38,5 +46,56 @@ public class DocumentController {
         return ResponseEntity
                 .created(URI.create("/api/v1/documents/" + response.id()))
                 .body(response);
+    }
+
+    @GetMapping("/patient-records/{patientRecordId}/documents")
+    public ResponseEntity<List<DocumentResponse>> getDocuments(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID patientRecordId
+    ) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        return ResponseEntity.ok(
+                documentService.getDocuments(userId, patientRecordId)
+        );
+    }
+
+    @GetMapping("/documents/{documentId}")
+    public ResponseEntity<DocumentResponse> getDocument(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId
+    ) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        return ResponseEntity.ok(
+                documentService.getDocument(userId, documentId)
+        );
+    }
+
+    @GetMapping("/documents/{documentId}/file")
+    public ResponseEntity<Resource> downloadDocument(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId
+    ) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentDownload download = documentService.download(userId, documentId);
+
+        ContentDisposition disposition = ContentDisposition
+                .attachment()
+                .filename(
+                        download.fileName(),
+                        StandardCharsets.UTF_8
+                )
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(download.contentType()))
+                .contentLength(download.fileSize())
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        disposition.toString()
+                )
+                .body(download.resource());
     }
 }

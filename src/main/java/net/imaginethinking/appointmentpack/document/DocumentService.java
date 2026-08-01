@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -139,5 +140,86 @@ public class DocumentService {
         } catch (RuntimeException cleanupException) {
             originalException.addSuppressed(cleanupException);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentResponse> getDocuments(
+            UUID authenticatedUserId,
+            UUID patientRecordId
+    ) {
+        PatientRecord patientRecord = findPatientRecord(patientRecordId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                patientRecord,
+                DocumentPermission.VIEW
+        );
+
+        return documentRepository
+                .findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
+                        patientRecordId,
+                        DocumentStatus.ARCHIVED
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentResponse getDocument(
+            UUID authenticatedUserId,
+            UUID documentId
+    ) {
+        Document document = findDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.VIEW
+        );
+
+        return toResponse(document);
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentDownload download(
+            UUID authenticatedUserId,
+            UUID documentId
+    ) {
+        Document document = findDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.VIEW
+        );
+
+        return new DocumentDownload(
+                documentStorageService.load(document.getStoragePath()),
+                document.getOriginalFileName(),
+                document.getContentType(),
+                document.getFileSize()
+        );
+    }
+
+    private PatientRecord findPatientRecord(UUID patientRecordId) {
+        return patientRecordRepository
+                .findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Patient record not found"
+                ));
+    }
+
+    private Document findDocument(UUID documentId) {
+        return documentRepository
+                .findById(documentId)
+                .filter(document ->
+                        document.getStatus() != DocumentStatus.ARCHIVED
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Document not found"
+                ));
     }
 }
