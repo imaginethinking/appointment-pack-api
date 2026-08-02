@@ -1,6 +1,8 @@
 package net.imaginethinking.appointmentpack.document;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResultResponse;
+import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingService;
 import net.imaginethinking.appointmentpack.security.AuthenticatedUserIdResolver;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -22,6 +24,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1")
 public class DocumentController {
     private final DocumentService documentService;
+    private final DocumentProcessingService documentProcessingService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
     @PostMapping(
@@ -97,6 +100,19 @@ public class DocumentController {
                         disposition.toString()
                 )
                 .body(download.resource());
+    }
+
+    @PostMapping("/documents/{documentId}/process")
+    public ResponseEntity<DocumentProcessingResultResponse>
+    processDocument(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId
+    ) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentProcessingResultResponse response = documentProcessingService.process(userId, documentId);
+
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/documents/{documentId}/archive")

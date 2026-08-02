@@ -61,4 +61,7 @@ public class Document extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "document_type", nullable = false, length = 50)
     private DocumentType documentType;
+
+    @Column(name = "processing_faliure_reason", length = 500)
+    private String processingFailureReason;
 }

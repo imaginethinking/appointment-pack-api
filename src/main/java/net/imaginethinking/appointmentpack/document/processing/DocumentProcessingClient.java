@@ -7,12 +7,14 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 
 @Component
@@ -29,12 +31,15 @@ public class DocumentProcessingClient {
             @Value("${appointment-pack.document-processing.api-key}")
             String apiKey
     ) {
+        //TODO Make this https later so it has tls?
+        HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
         this.restClient = restClientBuilder
+                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
                 .baseUrl(baseUrl)
-                .defaultHeader(
-                        "X-Internal-Api-Key",
-                        apiKey
-                )
+                .defaultHeader("X-Internal-Api-Key", apiKey)
                 .build();
     }
 
