@@ -36,20 +36,34 @@ public class DocumentProcessingResult extends BaseEntity {
 
     @Column(
             name = "extracted_text",
-            nullable = false
+            nullable = false,
+            columnDefinition = "TEXT"
     )
     private String extractedText;
 
     @Column(
+            name = "machine_deidentified_text",
+            columnDefinition = "TEXT"
+    )
+    private String machineDeidentifiedText;
+
+    @Column(
             name = "generated_summary",
-            nullable = false
+            nullable = false,
+            columnDefinition = "TEXT"
     )
     private String generatedSummary;
 
-    @Column(name = "reviewed_summary")
+    @Column(
+            name = "reviewed_summary",
+            columnDefinition = "TEXT"
+    )
     private String reviewedSummary;
 
-    @Column(name = "processing_warning")
+    @Column(
+            name = "processing_warning",
+            columnDefinition = "TEXT"
+    )
     private String processingWarning;
 
     @Column(

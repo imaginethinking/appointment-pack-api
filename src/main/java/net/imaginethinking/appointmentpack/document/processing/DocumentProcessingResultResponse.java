@@ -8,6 +8,7 @@ public record DocumentProcessingResultResponse(
         UUID documentId,
         DocumentStatus status,
         String extractedText,
+        String machineDeidentifiedText,
         String generatedSummary,
         String reviewedSummary,
         String processingWarning,

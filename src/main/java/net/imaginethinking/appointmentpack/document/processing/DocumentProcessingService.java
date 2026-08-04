@@ -25,11 +25,10 @@ public class DocumentProcessingService {
     private final DocumentProcessingResultRepository processingResultRepository;
     private final DocumentStorageService documentStorageService;
     private final DocumentProcessingClient documentProcessingClient;
+    private final RedactionContextFactory redactionContextFactory;
     private final PatientAccessControlService patientAccessControlService;
 
-    @Transactional(
-            noRollbackFor = DocumentProcessingException.class
-    )
+    @Transactional(noRollbackFor = DocumentProcessingException.class)
     public DocumentProcessingResultResponse extract(
             UUID authenticatedUserId,
             UUID documentId
@@ -39,7 +38,7 @@ public class DocumentProcessingService {
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
                 document.getPatientRecord(),
-                DocumentPermission.UPLOAD
+                DocumentPermission.EDIT
         );
 
         validateExtractionStatus(document);
@@ -49,10 +48,13 @@ public class DocumentProcessingService {
 
         Resource resource = documentStorageService.load(document.getStoragePath());
 
+        RedactionContext redactionContext = redactionContextFactory.create(document);
+
         try {
             DocumentExtractionResponse extractionResponse = documentProcessingClient.extract(
                     document,
-                    resource
+                    resource,
+                    redactionContext
             );
 
             DocumentProcessingResult result = saveExtractionResult(
@@ -84,6 +86,7 @@ public class DocumentProcessingService {
 
         result.setDocument(document);
         result.setExtractedText(valueOrEmpty(response.extractedText()));
+        result.setMachineDeidentifiedText(response.deidentifiedText());
         result.setGeneratedSummary(valueOrEmpty(response.generatedSummary()));
         result.setReviewedSummary(null);
         result.setProcessingWarning(response.processingWarning());
@@ -140,6 +143,7 @@ public class DocumentProcessingService {
                 document.getId(),
                 document.getStatus(),
                 result.getExtractedText(),
+                result.getMachineDeidentifiedText(),
                 result.getGeneratedSummary(),
                 result.getReviewedSummary(),
                 result.getProcessingWarning(),
