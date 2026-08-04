@@ -1,6 +1,12 @@
 package net.imaginethinking.appointmentpack.document.processing;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
@@ -16,6 +22,7 @@ import java.util.List;
 @Entity
 @Table(name = "document_processing_results")
 public class DocumentProcessingResult extends BaseEntity {
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "document_id",
@@ -29,40 +36,21 @@ public class DocumentProcessingResult extends BaseEntity {
 
     @Column(
             name = "extracted_text",
-            nullable = false,
-            columnDefinition = "TEXT"
+            nullable = false
     )
     private String extractedText;
 
     @Column(
             name = "generated_summary",
-            nullable = false,
-            columnDefinition = "TEXT"
+            nullable = false
     )
     private String generatedSummary;
 
-    @Column(
-            name = "reviewed_summary",
-            columnDefinition = "TEXT"
-    )
+    @Column(name = "reviewed_summary")
     private String reviewedSummary;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(
-            name = "key_points",
-            nullable = false,
-            columnDefinition = "jsonb"
-    )
-    private List<DocumentProcessingKeyPoint> keyPoints =
-            new ArrayList<>();
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(
-            name = "warnings",
-            nullable = false,
-            columnDefinition = "jsonb"
-    )
-    private List<String> warnings = new ArrayList<>();
+    @Column(name = "processing_warning")
+    private String processingWarning;
 
     @Column(
             name = "processor_version",

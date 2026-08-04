@@ -2,7 +2,6 @@ package net.imaginethinking.appointmentpack.document.processing;
 
 import net.imaginethinking.appointmentpack.document.DocumentStatus;
 
-import java.util.List;
 import java.util.UUID;
 
 public record DocumentProcessingResultResponse(
@@ -11,8 +10,7 @@ public record DocumentProcessingResultResponse(
         String extractedText,
         String generatedSummary,
         String reviewedSummary,
-        List<DocumentProcessingKeyPoint> keyPoints,
-        List<String> warnings,
+        String processingWarning,
         String processorVersion,
         ModelMetadata model
 ) {

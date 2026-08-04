@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,12 +89,7 @@ public class DocumentProcessingService {
         result.setExtractedText(valueOrEmpty(response.extractedText()));
         result.setGeneratedSummary(valueOrEmpty(response.summary()));
         result.setReviewedSummary(null);
-        result.setKeyPoints(mapKeyPoints(response.keyPoints()));
-        result.setWarnings(
-                response.warnings() == null
-                        ? new ArrayList<>()
-                        : new ArrayList<>(response.warnings())
-        );
+        result.setProcessingWarning(response.processingWarning());
         result.setProcessorVersion(response.processorVersion());
 
         if (response.model() == null) {
@@ -109,28 +103,6 @@ public class DocumentProcessingService {
         }
 
         return processingResultRepository.save(result);
-    }
-
-    private List<DocumentProcessingKeyPoint> mapKeyPoints(
-            List<DocumentProcessingResponse.KeyPoint> keyPoints
-    ) {
-        if (keyPoints == null) {
-            return new ArrayList<>();
-        }
-
-        return keyPoints.stream()
-                .map(keyPoint ->
-                        new DocumentProcessingKeyPoint(
-                                DocumentProcessingKeyPoint.KeyPointType.valueOf(keyPoint.type().name()),
-                                keyPoint.text(),
-                                keyPoint.sourcePage()
-                        )
-                )
-                .collect(
-                        java.util.stream.Collectors.toCollection(
-                                ArrayList::new
-                        )
-                );
     }
 
     private void validateProcessingStatus(Document document) {
@@ -169,8 +141,7 @@ public class DocumentProcessingService {
         DocumentProcessingResultResponse.ModelMetadata model =
                 result.getModelName() == null
                         ? null
-                        : new DocumentProcessingResultResponse
-                        .ModelMetadata(
+                        : new DocumentProcessingResultResponse.ModelMetadata(
                         result.getModelName(),
                         result.getModelRevision()
                 );
@@ -181,8 +152,7 @@ public class DocumentProcessingService {
                 result.getExtractedText(),
                 result.getGeneratedSummary(),
                 result.getReviewedSummary(),
-                List.copyOf(result.getKeyPoints()),
-                List.copyOf(result.getWarnings()),
+                result.getProcessingWarning(),
                 result.getProcessorVersion(),
                 model
         );
