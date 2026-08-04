@@ -62,6 +62,6 @@ public class Document extends BaseEntity {
     @Column(name = "document_type", nullable = false, length = 50)
     private DocumentType documentType;
 
-    @Column(name = "processing_faliure_reason", length = 500)
+    @Column(name = "processing_failure_reason", length = 500)
     private String processingFailureReason;
 }
