@@ -16,11 +16,13 @@ import org.springframework.web.client.RestClientException;
 
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 @Component
 public class DocumentProcessingClient {
 
-    private static final String PROCESSING_ENDPOINT = "/internal/v1/documents/process";
+    private static final String EXTRACTION_ENDPOINT =
+            "/internal/v1/documents/extract";
 
     private final RestClient restClient;
 
@@ -29,44 +31,59 @@ public class DocumentProcessingClient {
             @Value("${appointment-pack.document-processing.base-url}")
             String baseUrl,
             @Value("${appointment-pack.document-processing.api-key}")
-            String apiKey
+            String apiKey,
+            @Value("${appointment-pack.document-processing.connect-timeout-seconds:5}")
+            long connectTimeoutSeconds,
+            @Value("${appointment-pack.document-processing.response-timeout-seconds:120}")
+            long responseTimeoutSeconds
     ) {
-        //TODO Make this https later so it has tls?
+        validateTimeout("Connection timeout", connectTimeoutSeconds);
+        validateTimeout("Response timeout", responseTimeoutSeconds);
+
         HttpClient httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(connectTimeoutSeconds))
                 .build();
 
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+
+        requestFactory.setReadTimeout(Duration.ofSeconds(responseTimeoutSeconds));
+
         this.restClient = restClientBuilder
-                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
+                .requestFactory(requestFactory)
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Internal-Api-Key", apiKey)
                 .build();
     }
 
-    public DocumentProcessingResponse process(
+    public DocumentExtractionResponse extract(
             Document document,
             Resource documentResource
     ) {
-        MultiValueMap<String, Object> requestParts = createRequestParts(document, documentResource);
+        MultiValueMap<String, Object> requestParts =
+                createExtractionRequestParts(
+                        document,
+                        documentResource
+                );
 
         try {
-            DocumentProcessingResponse response = restClient
+            DocumentExtractionResponse response = restClient
                     .post()
-                    .uri(PROCESSING_ENDPOINT)
+                    .uri(EXTRACTION_ENDPOINT)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(requestParts)
                     .retrieve()
-                    .body(DocumentProcessingResponse.class);
+                    .body(DocumentExtractionResponse.class);
 
             validateResponse(document, response);
 
             return response;
         } catch (RestClientException exception) {
-            throw new DocumentProcessingException("Document processing service request failed", exception);
+            throw new DocumentProcessingException("Document extraction service request failed", exception);
         }
     }
 
-    private MultiValueMap<String, Object> createRequestParts(
+    private MultiValueMap<String, Object> createExtractionRequestParts(
             Document document,
             Resource documentResource
     ) {
@@ -84,7 +101,10 @@ public class DocumentProcessingClient {
 
         requestParts.add(
                 "file",
-                createFilePart(document, documentResource)
+                createFilePart(
+                        document,
+                        documentResource
+                )
         );
 
         return requestParts;
@@ -96,9 +116,7 @@ public class DocumentProcessingClient {
     ) {
         HttpHeaders headers = new HttpHeaders();
 
-        headers.setContentType(
-                MediaType.parseMediaType(document.getContentType())
-        );
+        headers.setContentType(MediaType.parseMediaType(document.getContentType()));
 
         headers.setContentDisposition(
                 ContentDisposition
@@ -111,25 +129,29 @@ public class DocumentProcessingClient {
                         .build()
         );
 
-        return new HttpEntity<>(
-                documentResource,
-                headers
-        );
+        return new HttpEntity<>(documentResource, headers);
     }
 
     private void validateResponse(
             Document document,
-            DocumentProcessingResponse response
+            DocumentExtractionResponse response
     ) {
         if (response == null) {
-            throw new DocumentProcessingException(
-                    "Document processing service returned an empty response"
-            );
+            throw new DocumentProcessingException("Document extraction service returned an empty response");
         }
 
         if (!document.getId().equals(response.documentId())) {
-            throw new DocumentProcessingException(
-                    "Document processing response contains an unexpected document ID"
+            throw new DocumentProcessingException("Document extraction response contains an unexpected document ID");
+        }
+    }
+
+    private void validateTimeout(
+            String name,
+            long timeoutSeconds
+    ) {
+        if (timeoutSeconds <= 0) {
+            throw new IllegalArgumentException(
+                    name + " must be greater than zero"
             );
         }
     }

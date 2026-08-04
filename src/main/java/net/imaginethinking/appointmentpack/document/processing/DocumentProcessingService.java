@@ -13,14 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class DocumentProcessingService {
 
-    private static final String PROCESSING_FAILURE_MESSAGE = "The document could not be processed";
+    private static final String EXTRACTION_FAILURE_MESSAGE = "Document text could not be extracted";
 
     private final DocumentRepository documentRepository;
     private final DocumentProcessingResultRepository processingResultRepository;
@@ -31,7 +30,7 @@ public class DocumentProcessingService {
     @Transactional(
             noRollbackFor = DocumentProcessingException.class
     )
-    public DocumentProcessingResultResponse process(
+    public DocumentProcessingResultResponse extract(
             UUID authenticatedUserId,
             UUID documentId
     ) {
@@ -43,7 +42,7 @@ public class DocumentProcessingService {
                 DocumentPermission.UPLOAD
         );
 
-        validateProcessingStatus(document);
+        validateExtractionStatus(document);
 
         document.setStatus(DocumentStatus.PROCESSING);
         document.setProcessingFailureReason(null);
@@ -51,78 +50,68 @@ public class DocumentProcessingService {
         Resource resource = documentStorageService.load(document.getStoragePath());
 
         try {
-            DocumentProcessingResponse processingResponse =
-                    documentProcessingClient.process(
-                            document,
-                            resource
-                    );
+            DocumentExtractionResponse extractionResponse = documentProcessingClient.extract(
+                    document,
+                    resource
+            );
 
-            DocumentProcessingResult result =
-                    saveProcessingResult(
-                            document,
-                            processingResponse
-                    );
+            DocumentProcessingResult result = saveExtractionResult(
+                    document,
+                    extractionResponse
+            );
 
             document.setStatus(DocumentStatus.READY_FOR_REVIEW);
 
             return toResponse(document, result);
         } catch (DocumentProcessingException exception) {
             document.setStatus(DocumentStatus.FAILED);
-            document.setProcessingFailureReason(
-                    PROCESSING_FAILURE_MESSAGE
-            );
+            document.setProcessingFailureReason(EXTRACTION_FAILURE_MESSAGE);
 
             throw exception;
         }
     }
 
-    private DocumentProcessingResult saveProcessingResult(
+    private DocumentProcessingResult saveExtractionResult(
             Document document,
-            DocumentProcessingResponse response
+            DocumentExtractionResponse response
     ) {
         DocumentProcessingResult result =
                 processingResultRepository
                         .findByDocumentId(document.getId())
-                        .orElseGet(DocumentProcessingResult::new);
+                        .orElseGet(
+                                DocumentProcessingResult::new
+                        );
 
         result.setDocument(document);
         result.setExtractedText(valueOrEmpty(response.extractedText()));
-        result.setGeneratedSummary(valueOrEmpty(response.summary()));
+        result.setGeneratedSummary(valueOrEmpty(response.generatedSummary()));
         result.setReviewedSummary(null);
         result.setProcessingWarning(response.processingWarning());
         result.setProcessorVersion(response.processorVersion());
-
-        if (response.model() == null) {
-            result.setModelName(null);
-            result.setModelRevision(null);
-        } else {
-            result.setModelName(response.model().name());
-            result.setModelRevision(
-                    response.model().revision()
-            );
-        }
+        result.setModelName(null);
+        result.setModelRevision(null);
 
         return processingResultRepository.save(result);
     }
 
-    private void validateProcessingStatus(Document document) {
-        boolean processable = document.getStatus() == DocumentStatus.UPLOADED || document.getStatus() == DocumentStatus.FAILED;
+    private void validateExtractionStatus(
+            Document document
+    ) {
+        boolean extractable = document.getStatus() == DocumentStatus.UPLOADED || document.getStatus() == DocumentStatus.FAILED;
 
-        if (!processable) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Document cannot be processed in its current status"
-            );
+        if (!extractable) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Document cannot be extracted in its current status");
         }
     }
 
-    private Document findAvailableDocument(UUID documentId) {
+    private Document findAvailableDocument(
+            UUID documentId
+    ) {
         Document document = documentRepository
                 .findById(documentId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Document not found"
-                ));
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found")
+                );
 
         if (document.getStatus() == DocumentStatus.ARCHIVED) {
             throw new ResponseStatusException(
@@ -141,7 +130,8 @@ public class DocumentProcessingService {
         DocumentProcessingResultResponse.ModelMetadata model =
                 result.getModelName() == null
                         ? null
-                        : new DocumentProcessingResultResponse.ModelMetadata(
+                        : new DocumentProcessingResultResponse
+                        .ModelMetadata(
                         result.getModelName(),
                         result.getModelRevision()
                 );

@@ -102,7 +102,7 @@ public class DocumentController {
                 .body(download.resource());
     }
 
-    @PostMapping("/documents/{documentId}/process")
+    @PostMapping("/documents/{documentId}/extract")
     public ResponseEntity<DocumentProcessingResultResponse>
     processDocument(
             @AuthenticationPrincipal Jwt jwt,
@@ -110,7 +110,7 @@ public class DocumentController {
     ) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
-        DocumentProcessingResultResponse response = documentProcessingService.process(userId, documentId);
+        DocumentProcessingResultResponse response = documentProcessingService.extract(userId, documentId);
 
         return ResponseEntity.ok(response);
     }
