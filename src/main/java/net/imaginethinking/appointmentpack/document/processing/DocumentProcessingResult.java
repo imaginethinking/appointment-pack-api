@@ -49,7 +49,6 @@ public class DocumentProcessingResult extends BaseEntity {
 
     @Column(
             name = "generated_summary",
-            nullable = false,
             columnDefinition = "TEXT"
     )
     private String generatedSummary;

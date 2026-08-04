@@ -62,15 +62,13 @@ public class DocumentProcessingClient {
     }
 
     public DocumentExtractionResponse extract(
-            Document document,
-            Resource documentResource,
-            RedactionContext redactionContext
+            DocumentExtractionContext context,
+            Resource documentResource
     ) {
         try {
             MultiValueMap<String, Object> requestParts = createExtractionRequestParts(
-                            document,
-                            documentResource,
-                            redactionContext
+                            context,
+                            documentResource
                     );
 
             DocumentExtractionResponse response = restClient
@@ -81,7 +79,7 @@ public class DocumentProcessingClient {
                     .retrieve()
                     .body(DocumentExtractionResponse.class);
 
-            validateResponse(document, response);
+            validateResponse(context, response);
 
             return response;
         } catch (JsonProcessingException exception) {
@@ -92,31 +90,30 @@ public class DocumentProcessingClient {
     }
 
     private MultiValueMap<String, Object> createExtractionRequestParts(
-            Document document,
-            Resource documentResource,
-            RedactionContext redactionContext
+            DocumentExtractionContext context,
+            Resource documentResource
     ) throws JsonProcessingException {
         MultiValueMap<String, Object> requestParts = new LinkedMultiValueMap<>();
 
         requestParts.add(
                 "documentId",
-                document.getId().toString()
+                context.documentId().toString()
         );
 
         requestParts.add(
                 "documentType",
-                document.getDocumentType().name()
+                context.documentType().name()
         );
 
         requestParts.add(
                 "redactionContext",
-                createRedactionContextPart(redactionContext)
+                createRedactionContextPart(context.redactionContext())
         );
 
         requestParts.add(
                 "file",
                 createFilePart(
-                        document,
+                        context,
                         documentResource
                 )
         );
@@ -149,19 +146,19 @@ public class DocumentProcessingClient {
     }
 
     private HttpEntity<Resource> createFilePart(
-            Document document,
+            DocumentExtractionContext context,
             Resource documentResource
     ) {
         HttpHeaders headers = new HttpHeaders();
 
-        headers.setContentType(MediaType.parseMediaType(document.getContentType()));
+        headers.setContentType(MediaType.parseMediaType(context.contentType()));
 
         headers.setContentDisposition(
                 ContentDisposition
                         .formData()
                         .name("file")
                         .filename(
-                                document.getOriginalFileName(),
+                                context.originalFileName(),
                                 StandardCharsets.UTF_8
                         )
                         .build()
@@ -171,14 +168,14 @@ public class DocumentProcessingClient {
     }
 
     private void validateResponse(
-            Document document,
+            DocumentExtractionContext context,
             DocumentExtractionResponse response
     ) {
         if (response == null) {
             throw new DocumentProcessingException("Document extraction service returned an empty response");
         }
 
-        if (!document.getId().equals(response.documentId())) {
+        if (!context.documentId().equals(response.documentId())) {
             throw new DocumentProcessingException("Document extraction response contains an unexpected document ID");
         }
     }
