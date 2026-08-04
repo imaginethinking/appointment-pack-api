@@ -1,7 +1,6 @@
 package net.imaginethinking.appointmentpack.document.processing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import net.imaginethinking.appointmentpack.document.Document;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -12,6 +11,7 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.ObjectMapper;
@@ -31,15 +31,10 @@ public class DocumentProcessingClient {
     public DocumentProcessingClient(
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
-            @Value("${appointment-pack.document-processing.base-url}")
-            String baseUrl,
-            @Value("${appointment-pack.document-processing.api-key}")
-            String apiKey,
-            @Value("${appointment-pack.document-processing.connect-timeout-seconds:5}")
-            long connectTimeoutSeconds,
-            @Value("${appointment-pack.document-processing.response-timeout-seconds:120}")
-            long responseTimeoutSeconds
-    ) {
+            @Value("${appointment-pack.document-processing.base-url}") String baseUrl,
+            @Value("${appointment-pack.document-processing.api-key}") String apiKey,
+            @Value("${appointment-pack.document-processing.connect-timeout-seconds:5}") long connectTimeoutSeconds,
+            @Value("${appointment-pack.document-processing.response-timeout-seconds:120}") long responseTimeoutSeconds) {
         validateTimeout("Connection timeout", connectTimeoutSeconds);
         validateTimeout("Response timeout", responseTimeoutSeconds);
 
@@ -52,8 +47,7 @@ public class DocumentProcessingClient {
 
         requestFactory.setReadTimeout(Duration.ofSeconds(responseTimeoutSeconds));
 
-        this.restClient = restClientBuilder
-                .requestFactory(requestFactory)
+        this.restClient = restClientBuilder.requestFactory(requestFactory)
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Internal-Api-Key", apiKey)
                 .build();
@@ -61,18 +55,11 @@ public class DocumentProcessingClient {
         this.objectMapper = objectMapper;
     }
 
-    public DocumentExtractionResponse extract(
-            DocumentExtractionContext context,
-            Resource documentResource
-    ) {
+    public DocumentExtractionResponse extract(DocumentExtractionContext context, Resource documentResource) {
         try {
-            MultiValueMap<String, Object> requestParts = createExtractionRequestParts(
-                            context,
-                            documentResource
-                    );
+            MultiValueMap<String, Object> requestParts = createExtractionRequestParts(context, documentResource);
 
-            DocumentExtractionResponse response = restClient
-                    .post()
+            DocumentExtractionResponse response = restClient.post()
                     .uri(EXTRACTION_ENDPOINT)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(requestParts)
@@ -84,6 +71,8 @@ public class DocumentProcessingClient {
             return response;
         } catch (JsonProcessingException exception) {
             throw new DocumentProcessingException("Failed to create document extraction request", exception);
+        } catch (ResourceAccessException exception) {
+            throw new DocumentProcessingUnavailableException(exception);
         } catch (RestClientException exception) {
             throw new DocumentProcessingException("Document extraction service request failed", exception);
         }
@@ -91,86 +80,47 @@ public class DocumentProcessingClient {
 
     private MultiValueMap<String, Object> createExtractionRequestParts(
             DocumentExtractionContext context,
-            Resource documentResource
-    ) throws JsonProcessingException {
+            Resource documentResource) throws JsonProcessingException {
         MultiValueMap<String, Object> requestParts = new LinkedMultiValueMap<>();
 
-        requestParts.add(
-                "documentId",
-                context.documentId().toString()
-        );
+        requestParts.add("documentId", context.documentId().toString());
 
-        requestParts.add(
-                "documentType",
-                context.documentType().name()
-        );
+        requestParts.add("documentType", context.documentType().name());
 
-        requestParts.add(
-                "redactionContext",
-                createRedactionContextPart(context.redactionContext())
-        );
+        requestParts.add("redactionContext", createRedactionContextPart(context.redactionContext()));
 
-        requestParts.add(
-                "file",
-                createFilePart(
-                        context,
-                        documentResource
-                )
-        );
+        requestParts.add("file", createFilePart(context, documentResource));
 
         return requestParts;
     }
 
     private HttpEntity<String> createRedactionContextPart(
-            RedactionContext redactionContext
-    ) throws JsonProcessingException {
+            RedactionContext redactionContext) throws JsonProcessingException {
         HttpHeaders headers = new HttpHeaders();
 
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        headers.setContentDisposition(
-                ContentDisposition
-                        .formData()
-                        .name("redactionContext")
-                        .build()
-        );
+        headers.setContentDisposition(ContentDisposition.formData().name("redactionContext").build());
 
-        String json = objectMapper.writeValueAsString(
-                redactionContext
-        );
+        String json = objectMapper.writeValueAsString(redactionContext);
 
-        return new HttpEntity<>(
-                json,
-                headers
-        );
+        return new HttpEntity<>(json, headers);
     }
 
-    private HttpEntity<Resource> createFilePart(
-            DocumentExtractionContext context,
-            Resource documentResource
-    ) {
+    private HttpEntity<Resource> createFilePart(DocumentExtractionContext context, Resource documentResource) {
         HttpHeaders headers = new HttpHeaders();
 
         headers.setContentType(MediaType.parseMediaType(context.contentType()));
 
-        headers.setContentDisposition(
-                ContentDisposition
-                        .formData()
-                        .name("file")
-                        .filename(
-                                context.originalFileName(),
-                                StandardCharsets.UTF_8
-                        )
-                        .build()
-        );
+        headers.setContentDisposition(ContentDisposition.formData()
+                .name("file")
+                .filename(context.originalFileName(), StandardCharsets.UTF_8)
+                .build());
 
         return new HttpEntity<>(documentResource, headers);
     }
 
-    private void validateResponse(
-            DocumentExtractionContext context,
-            DocumentExtractionResponse response
-    ) {
+    private void validateResponse(DocumentExtractionContext context, DocumentExtractionResponse response) {
         if (response == null) {
             throw new DocumentProcessingException("Document extraction service returned an empty response");
         }
@@ -180,14 +130,9 @@ public class DocumentProcessingClient {
         }
     }
 
-    private void validateTimeout(
-            String name,
-            long timeoutSeconds
-    ) {
+    private void validateTimeout(String name, long timeoutSeconds) {
         if (timeoutSeconds <= 0) {
-            throw new IllegalArgumentException(
-                    name + " must be greater than zero"
-            );
+            throw new IllegalArgumentException(name + " must be greater than zero");
         }
     }
 }
