@@ -27,35 +27,23 @@ public class DocumentController {
     private final DocumentProcessingService documentProcessingService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
-    @PostMapping(
-            path = "/patient-records/{patientRecordId}/documents",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
+    @PostMapping(path = "/patient-records/{patientRecordId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentResponse> uploadDocument(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID patientRecordId,
             @RequestParam DocumentType documentType,
-            @RequestParam MultipartFile file
-    ) {
+            @RequestParam MultipartFile file) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
-        DocumentResponse response = documentService.upload(
-                userId,
-                patientRecordId,
-                documentType,
-                file
-        );
+        DocumentResponse response = documentService.upload(userId, patientRecordId, documentType, file);
 
-        return ResponseEntity
-                .created(URI.create("/api/v1/documents/" + response.id()))
-                .body(response);
+        return ResponseEntity.created(URI.create("/api/v1/documents/" + response.id())).body(response);
     }
 
     @GetMapping("/patient-records/{patientRecordId}/documents")
     public ResponseEntity<List<DocumentResponse>> getDocuments(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID patientRecordId
-    ) {
+            @PathVariable UUID patientRecordId) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
         List<DocumentResponse> response = documentService.getDocuments(userId, patientRecordId);
@@ -66,8 +54,7 @@ public class DocumentController {
     @GetMapping("/documents/{documentId}")
     public ResponseEntity<DocumentResponse> getDocument(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID documentId
-    ) {
+            @PathVariable UUID documentId) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
         DocumentResponse response = documentService.getDocument(userId, documentId);
@@ -76,38 +63,26 @@ public class DocumentController {
     }
 
     @GetMapping("/documents/{documentId}/file")
-    public ResponseEntity<Resource> downloadDocument(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID documentId
-    ) {
+    public ResponseEntity<Resource> downloadDocument(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID documentId) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
         DocumentDownload download = documentService.download(userId, documentId);
 
-        ContentDisposition disposition = ContentDisposition
-                .attachment()
-                .filename(
-                        download.fileName(),
-                        StandardCharsets.UTF_8
-                )
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(download.fileName(), StandardCharsets.UTF_8)
                 .build();
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(download.contentType()))
                 .contentLength(download.fileSize())
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        disposition.toString()
-                )
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(download.resource());
     }
 
     @PostMapping("/documents/{documentId}/extract")
-    public ResponseEntity<DocumentProcessingResultResponse>
-    processDocument(
+    public ResponseEntity<DocumentProcessingResultResponse> extractDocument(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID documentId
-    ) {
+            @PathVariable UUID documentId) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
         DocumentProcessingResultResponse response = documentProcessingService.extract(userId, documentId);
@@ -118,8 +93,7 @@ public class DocumentController {
     @PatchMapping("/documents/{documentId}/archive")
     public ResponseEntity<DocumentResponse> archiveDocument(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID documentId
-    ) {
+            @PathVariable UUID documentId) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
         DocumentResponse response = documentService.archive(userId, documentId);
