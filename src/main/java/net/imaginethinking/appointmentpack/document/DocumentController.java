@@ -1,8 +1,10 @@
 package net.imaginethinking.appointmentpack.document;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResultResponse;
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingService;
+import net.imaginethinking.appointmentpack.document.processing.DocumentSummarisationRequest;
 import net.imaginethinking.appointmentpack.security.AuthenticatedUserIdResolver;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -27,7 +29,10 @@ public class DocumentController {
     private final DocumentProcessingService documentProcessingService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
-    @PostMapping(path = "/patient-records/{patientRecordId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(
+            path = "/patient-records/{patientRecordId}/documents",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<DocumentResponse> uploadDocument(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID patientRecordId,
@@ -58,6 +63,32 @@ public class DocumentController {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
         DocumentResponse response = documentService.getDocument(userId, documentId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/documents/{documentId}/processing")
+    public ResponseEntity<DocumentProcessingResultResponse> getDocumentProcessing(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentProcessingResultResponse response = documentProcessingService.getProcessing(userId, documentId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/documents/{documentId}/summarise")
+    public ResponseEntity<DocumentProcessingResultResponse> summariseDocument(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId,
+            @Valid @RequestBody DocumentSummarisationRequest request) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentProcessingResultResponse response = documentProcessingService.summarise(
+                userId,
+                documentId,
+                request.approvedDeidentifiedText());
 
         return ResponseEntity.ok(response);
     }

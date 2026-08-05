@@ -1,21 +1,13 @@
 package net.imaginethinking.appointmentpack.document.processing;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
 import net.imaginethinking.appointmentpack.document.Document;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import net.imaginethinking.appointmentpack.user.User;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -23,7 +15,10 @@ import java.util.List;
 @Table(name = "document_processing_results")
 public class DocumentProcessingResult extends BaseEntity {
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
     @JoinColumn(
             name = "document_id",
             nullable = false,
@@ -48,6 +43,12 @@ public class DocumentProcessingResult extends BaseEntity {
     private String machineDeidentifiedText;
 
     @Column(
+            name = "approved_deidentified_text",
+            columnDefinition = "TEXT"
+    )
+    private String approvedDeidentifiedText;
+
+    @Column(
             name = "generated_summary",
             columnDefinition = "TEXT"
     )
@@ -58,6 +59,13 @@ public class DocumentProcessingResult extends BaseEntity {
             columnDefinition = "TEXT"
     )
     private String reviewedSummary;
+
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "summary_source",
+            length = 30
+    )
+    private SummarySource summarySource;
 
     @Column(
             name = "processing_warning",
@@ -79,8 +87,20 @@ public class DocumentProcessingResult extends BaseEntity {
     private String modelName;
 
     @Column(
-            name = "model_revision",
-            length = 255
+            name = "prompt_version",
+            length = 100
     )
-    private String modelRevision;
+    private String promptVersion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "deidentification_reviewed_by_user_id",
+            foreignKey = @ForeignKey(
+                    name = "fk_processing_result_deidentification_reviewer"
+            )
+    )
+    private User deidentificationReviewedBy;
+
+    @Column(name = "deidentification_reviewed_at")
+    private Instant deidentificationReviewedAt;
 }

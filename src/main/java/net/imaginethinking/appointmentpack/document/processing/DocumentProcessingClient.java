@@ -11,6 +11,7 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -24,6 +25,7 @@ import java.time.Duration;
 public class DocumentProcessingClient {
 
     private static final String EXTRACTION_ENDPOINT = "/internal/v1/documents/extract";
+    private static final String SUMMARISATION_ENDPOINT = "/internal/v1/documents/summarise";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -78,6 +80,29 @@ public class DocumentProcessingClient {
         }
     }
 
+    public DocumentSummaryResponse summarise(DocumentSummarisationContext context) {
+        DocumentSummaryClientRequest request = new DocumentSummaryClientRequest(
+                context.documentId(),
+                context.approvedDeidentifiedText());
+
+        try {
+            DocumentSummaryResponse response = restClient.post()
+                    .uri(SUMMARISATION_ENDPOINT)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(DocumentSummaryResponse.class);
+
+            validateSummaryResponse(context, response);
+
+            return response;
+        } catch (ResourceAccessException | HttpServerErrorException.ServiceUnavailable exception) {
+            throw new DocumentProcessingUnavailableException(exception);
+        } catch (RestClientException exception) {
+            throw new DocumentProcessingException("Document summarisation service request failed", exception);
+        }
+    }
+
     private MultiValueMap<String, Object> createExtractionRequestParts(
             DocumentExtractionContext context,
             Resource documentResource) throws JsonProcessingException {
@@ -127,6 +152,16 @@ public class DocumentProcessingClient {
 
         if (!context.documentId().equals(response.documentId())) {
             throw new DocumentProcessingException("Document extraction response contains an unexpected document ID");
+        }
+    }
+
+    private void validateSummaryResponse(DocumentSummarisationContext context, DocumentSummaryResponse response) {
+        if (response == null) {
+            throw new DocumentProcessingException("Document summarisation service returned an empty response");
+        }
+
+        if (!context.documentId().equals(response.documentId())) {
+            throw new DocumentProcessingException("Document summarisation response contains an unexpected document ID");
         }
     }
 
