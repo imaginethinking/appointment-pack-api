@@ -103,4 +103,16 @@ public class DocumentProcessingResult extends BaseEntity {
 
     @Column(name = "deidentification_reviewed_at")
     private Instant deidentificationReviewedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "summary_reviewed_by_user_id",
+            foreignKey = @ForeignKey(
+                    name = "fk_processing_result_summary_reviewer"
+            )
+    )
+    private User summaryReviewedBy;
+
+    @Column(name = "summary_reviewed_at")
+    private Instant summaryReviewedAt;
 }

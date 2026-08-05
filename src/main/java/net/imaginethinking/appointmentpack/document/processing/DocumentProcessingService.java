@@ -61,6 +61,17 @@ public class DocumentProcessingService {
         }
     }
 
+    public DocumentProcessingResultResponse acceptSummary(
+            UUID authenticatedUserId,
+            UUID documentId,
+            DocumentSummaryAcceptanceRequest request) {
+        return documentProcessingStateService.acceptSummary(authenticatedUserId, documentId, request);
+    }
+
+    public DocumentProcessingResultResponse rejectSummary(UUID authenticatedUserId, UUID documentId) {
+        return documentProcessingStateService.rejectSummary(authenticatedUserId, documentId);
+    }
+
     private void recordExtractionFailure(UUID documentId, RuntimeException originalException) {
         try {
             documentProcessingStateService.failExtraction(documentId, EXTRACTION_FAILURE_MESSAGE);

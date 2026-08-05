@@ -3,6 +3,10 @@ package net.imaginethinking.appointmentpack.document.processing;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.document.*;
+import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
+import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
+import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermission;
+import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistorySourceType;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.HttpStatus;
@@ -18,9 +22,15 @@ import java.util.UUID;
 public class DocumentProcessingStateService {
 
     private final DocumentRepository documentRepository;
+
     private final DocumentProcessingResultRepository processingResultRepository;
+
+    private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
+
     private final RedactionContextFactory redactionContextFactory;
+
     private final PatientAccessControlService patientAccessControlService;
+
     private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
@@ -146,6 +156,8 @@ public class DocumentProcessingStateService {
         result.setProcessorVersion(response.processorVersion());
         result.setModelName(response.modelName());
         result.setPromptVersion(response.promptVersion());
+        result.setSummaryReviewedBy(null);
+        result.setSummaryReviewedAt(null);
 
         document.setStatus(DocumentStatus.READY_FOR_SUMMARY_REVIEW);
         document.setProcessingFailureReason(null);
@@ -162,6 +174,97 @@ public class DocumentProcessingStateService {
 
                     document.setProcessingFailureReason(failureReason);
                 });
+    }
+
+    @Transactional
+    public DocumentProcessingResultResponse acceptSummary(
+            UUID authenticatedUserId,
+            UUID documentId,
+            DocumentSummaryAcceptanceRequest request) {
+        Document document = findAvailableDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.EDIT);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                MedicalHistoryPermission.EDIT);
+
+        validateSummaryCanBeAccepted(document);
+
+        if (medicalHistoryEntryRepository.existsBySourceDocumentId(documentId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A medical-history entry already exists for this document");
+        }
+
+        DocumentProcessingResult result = findProcessingResult(documentId);
+
+        if (document.getStatus() == DocumentStatus.READY_FOR_SUMMARY_REVIEW) {
+            validateGeneratedSummary(result);
+        } else {
+            applyManualSummary(result);
+        }
+
+        String reviewedSummary = request.reviewedSummary().strip();
+
+        User reviewingUser = entityManager.getReference(User.class, authenticatedUserId);
+
+        Instant reviewedAt = Instant.now();
+
+        result.setReviewedSummary(reviewedSummary);
+        result.setSummaryReviewedBy(reviewingUser);
+        result.setSummaryReviewedAt(reviewedAt);
+
+        MedicalHistoryEntry historyEntry = new MedicalHistoryEntry();
+
+        historyEntry.setPatientRecord(document.getPatientRecord());
+
+        historyEntry.setTitle(request.historyTitle().strip());
+
+        historyEntry.setSummary(reviewedSummary);
+        historyEntry.setEntryDate(request.historyDate());
+        historyEntry.setSourceType(MedicalHistorySourceType.DOCUMENT_SUMMARY);
+        historyEntry.setSourceDocument(document);
+        historyEntry.setCreatedBy(reviewingUser);
+        historyEntry.setArchived(false);
+
+        medicalHistoryEntryRepository.save(historyEntry);
+
+        document.setStatus(DocumentStatus.ACCEPTED);
+        document.setProcessingFailureReason(null);
+
+        return toResponse(document, result);
+    }
+
+    @Transactional
+    public DocumentProcessingResultResponse rejectSummary(UUID authenticatedUserId, UUID documentId) {
+        Document document = findAvailableDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.EDIT);
+
+        if (document.getStatus() != DocumentStatus.READY_FOR_SUMMARY_REVIEW) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Document summary cannot be rejected in its current status");
+        }
+
+        DocumentProcessingResult result = findProcessingResult(documentId);
+
+        result.setReviewedSummary(null);
+        result.setSummaryReviewedBy(entityManager.getReference(User.class, authenticatedUserId));
+        result.setSummaryReviewedAt(Instant.now());
+
+        document.setStatus(DocumentStatus.REJECTED);
+        document.setProcessingFailureReason(null);
+
+        return toResponse(document, result);
     }
 
     private void approveDeidentifiedText(
@@ -188,6 +291,31 @@ public class DocumentProcessingStateService {
         }
     }
 
+    private void validateSummaryCanBeAccepted(
+            Document document) {
+        boolean acceptable = document.getStatus() == DocumentStatus.READY_FOR_SUMMARY_REVIEW || document.getStatus() == DocumentStatus.SUMMARISATION_FAILED;
+
+        if (!acceptable) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Document summary cannot be accepted in its current status");
+        }
+    }
+
+    private void validateGeneratedSummary(
+            DocumentProcessingResult result) {
+        if (isBlank(result.getGeneratedSummary()) || result.getSummarySource() == null) {
+            throw new DocumentProcessingException("Document processing result contains no generated summary");
+        }
+    }
+
+    private void applyManualSummary(DocumentProcessingResult result) {
+        result.setGeneratedSummary(null);
+        result.setSummarySource(SummarySource.MANUAL);
+        result.setModelName(null);
+        result.setPromptVersion(null);
+    }
+
     private DocumentProcessingResult saveExtractionResult(Document document, DocumentExtractionResponse response) {
         DocumentProcessingResult result = processingResultRepository.findByDocumentId(document.getId())
                 .orElseGet(DocumentProcessingResult::new);
@@ -204,6 +332,8 @@ public class DocumentProcessingStateService {
         result.setPromptVersion(null);
         result.setDeidentificationReviewedBy(null);
         result.setDeidentificationReviewedAt(null);
+        result.setSummaryReviewedBy(null);
+        result.setSummaryReviewedAt(null);
 
         if (document.getDocumentType() == DocumentType.APPOINTMENT_LETTER) {
             result.setSummarySource(SummarySource.DETERMINISTIC);
@@ -214,8 +344,7 @@ public class DocumentProcessingStateService {
         return processingResultRepository.save(result);
     }
 
-    private void validateExtractionCanBegin(
-            Document document) {
+    private void validateExtractionCanBegin(Document document) {
         boolean extractable = document.getStatus() == DocumentStatus.UPLOADED || document.getStatus() == DocumentStatus.EXTRACTION_FAILED;
 
         if (!extractable) {
@@ -297,8 +426,10 @@ public class DocumentProcessingStateService {
         DocumentProcessingResultResponse.ModelMetadata model = result.getModelName() == null ? null : new DocumentProcessingResultResponse.ModelMetadata(result.getModelName(),
                 result.getPromptVersion());
 
-        UUID reviewerId = result.getDeidentificationReviewedBy() == null ? null : result.getDeidentificationReviewedBy()
+        UUID deidentificationReviewerId = result.getDeidentificationReviewedBy() == null ? null : result.getDeidentificationReviewedBy()
                 .getId();
+
+        UUID summaryReviewerId = result.getSummaryReviewedBy() == null ? null : result.getSummaryReviewedBy().getId();
 
         return new DocumentProcessingResultResponse(
                 document.getId(),
@@ -313,8 +444,10 @@ public class DocumentProcessingStateService {
                 result.getProcessingWarning(),
                 result.getProcessorVersion(),
                 model,
-                reviewerId,
-                result.getDeidentificationReviewedAt());
+                deidentificationReviewerId,
+                result.getDeidentificationReviewedAt(),
+                summaryReviewerId,
+                result.getSummaryReviewedAt());
     }
 
     private boolean isBlank(String value) {

@@ -20,7 +20,9 @@ public record DocumentProcessingResultResponse(
         String processorVersion,
         ModelMetadata model,
         UUID deidentificationReviewedByUserId,
-        Instant deidentificationReviewedAt
+        Instant deidentificationReviewedAt,
+        UUID summaryReviewedByUserId,
+        Instant summaryReviewedAt
 ) {
 
     public record ModelMetadata(

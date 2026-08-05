@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResultResponse;
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingService;
 import net.imaginethinking.appointmentpack.document.processing.DocumentSummarisationRequest;
+import net.imaginethinking.appointmentpack.document.processing.DocumentSummaryAcceptanceRequest;
 import net.imaginethinking.appointmentpack.security.AuthenticatedUserIdResolver;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -89,6 +90,29 @@ public class DocumentController {
                 userId,
                 documentId,
                 request.approvedDeidentifiedText());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/documents/{documentId}/summary/accept")
+    public ResponseEntity<DocumentProcessingResultResponse> acceptDocumentSummary(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId,
+            @Valid @RequestBody DocumentSummaryAcceptanceRequest request) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentProcessingResultResponse response = documentProcessingService.acceptSummary(userId, documentId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/documents/{documentId}/summary/reject")
+    public ResponseEntity<DocumentProcessingResultResponse> rejectDocumentSummary(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentProcessingResultResponse response = documentProcessingService.rejectSummary(userId, documentId);
 
         return ResponseEntity.ok(response);
     }
