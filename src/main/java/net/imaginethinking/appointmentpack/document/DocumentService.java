@@ -16,11 +16,21 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
+
+    private static final Set<DocumentStatus> ARCHIVABLE_STATUSES = Set.of(
+            DocumentStatus.UPLOADED,
+            DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW,
+            DocumentStatus.READY_FOR_SUMMARY_REVIEW,
+            DocumentStatus.EXTRACTION_FAILED,
+            DocumentStatus.SUMMARISATION_FAILED,
+            DocumentStatus.REJECTED);
+
     private final DocumentRepository documentRepository;
     private final PatientRecordRepository patientRecordRepository;
     private final UserRepository userRepository;
@@ -33,29 +43,19 @@ public class DocumentService {
             UUID authenticatedUserId,
             UUID patientRecordId,
             DocumentType documentType,
-            MultipartFile file
-    ) {
+            MultipartFile file) {
         if (documentType == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Document type must be provided"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document type must be provided");
         }
 
         PatientRecord patientRecord = findPatientRecord(patientRecordId);
 
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                patientRecord,
-                DocumentPermission.UPLOAD
-        );
+        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, DocumentPermission.UPLOAD);
 
-        User uploadedBy = userRepository
-                .findById(authenticatedUserId)
+        User uploadedBy = userRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED,
-                        "Authenticated user not found"
-                ));
+                        "Authenticated user not found"));
 
         String contentType = documentFileValidator.validateAndGetContentType(file);
 
@@ -71,11 +71,7 @@ public class DocumentService {
             document.setDocumentType(documentType);
             document.setStatus(DocumentStatus.UPLOADED);
             document.setOriginalFileName(originalFileName);
-            document.setStoredFileName(
-                    Path.of(storagePath)
-                            .getFileName()
-                            .toString()
-            );
+            document.setStoredFileName(Path.of(storagePath).getFileName().toString());
             document.setContentType(contentType);
             document.setFileSize(file.getSize());
             document.setStoragePath(storagePath);
@@ -90,111 +86,84 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentResponse> getDocuments(
-            UUID authenticatedUserId,
-            UUID patientRecordId
-    ) {
+    public List<DocumentResponse> getDocuments(UUID authenticatedUserId, UUID patientRecordId) {
         PatientRecord patientRecord = findPatientRecord(patientRecordId);
 
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                patientRecord,
-                DocumentPermission.VIEW
-        );
+        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, DocumentPermission.VIEW);
 
-        return documentRepository
-                .findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
-                        patientRecordId,
-                        DocumentStatus.ARCHIVED
-                )
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return documentRepository.findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
+                patientRecordId,
+                DocumentStatus.ARCHIVED).stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public DocumentResponse getDocument(
-            UUID authenticatedUserId,
-            UUID documentId
-    ) {
+    public DocumentResponse getDocument(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
                 document.getPatientRecord(),
-                DocumentPermission.VIEW
-        );
+                DocumentPermission.VIEW);
 
         return toResponse(document);
     }
 
     @Transactional(readOnly = true)
-    public DocumentDownload download(
-            UUID authenticatedUserId,
-            UUID documentId
-    ) {
+    public DocumentDownload download(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
                 document.getPatientRecord(),
-                DocumentPermission.VIEW
-        );
+                DocumentPermission.VIEW);
 
         return new DocumentDownload(
                 documentStorageService.load(document.getStoragePath()),
                 document.getOriginalFileName(),
                 document.getContentType(),
-                document.getFileSize()
-        );
+                document.getFileSize());
     }
 
     @Transactional
-    public DocumentResponse archive(
-            UUID authenticatedUserId,
-            UUID documentId
-    ) {
+    public DocumentResponse archive(UUID authenticatedUserId, UUID documentId) {
         Document document = findDocument(documentId);
 
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
                 document.getPatientRecord(),
-                DocumentPermission.EDIT
-        );
+                DocumentPermission.EDIT);
 
-        if (document.getStatus() != DocumentStatus.ARCHIVED) {
-            document.setStatus(DocumentStatus.ARCHIVED);
+        if (document.getStatus() == DocumentStatus.ARCHIVED) {
+            return toResponse(document);
         }
+
+        if (!ARCHIVABLE_STATUSES.contains(document.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Document cannot be archived in its current status"
+            );
+        }
+
+        document.setStatus(DocumentStatus.ARCHIVED);
 
         return toResponse(document);
     }
 
     private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository
-                .findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
+        return patientRecordRepository.findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private Document findDocument(UUID documentId) {
-        return documentRepository
-                .findById(documentId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Document not found"
-                ));
+        return documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
     }
 
     private Document findAvailableDocument(UUID documentId) {
         Document document = findDocument(documentId);
 
         if (document.getStatus() == DocumentStatus.ARCHIVED) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Document not found"
-            );
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found");
         }
 
         return document;
@@ -208,8 +177,8 @@ public class DocumentService {
                 document.getStatus(),
                 document.getOriginalFileName(),
                 document.getContentType(),
-                document.getFileSize()
-        );
+                document.getFileSize(),
+                document.getCreatedAt());
     }
 
     private String resolveOriginalFileName(MultipartFile file) {
@@ -226,15 +195,10 @@ public class DocumentService {
             return "document";
         }
 
-        return fileName.length() <= 255
-                ? fileName
-                : fileName.substring(0, 255);
+        return fileName.length() <= 255 ? fileName : fileName.substring(0, 255);
     }
 
-    private void deleteStoredFileAfterFailure(
-            String storagePath,
-            RuntimeException originalException
-    ) {
+    private void deleteStoredFileAfterFailure(String storagePath, RuntimeException originalException) {
         if (storagePath == null) {
             return;
         }
