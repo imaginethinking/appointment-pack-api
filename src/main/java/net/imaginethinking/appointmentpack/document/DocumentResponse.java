@@ -1,5 +1,6 @@
 package net.imaginethinking.appointmentpack.document;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record DocumentResponse(
@@ -9,6 +10,7 @@ public record DocumentResponse(
         DocumentStatus status,
         String originalFileName,
         String contentType,
-        long fileSize
+        long fileSize,
+        Instant createdAt
 ) {
 }
