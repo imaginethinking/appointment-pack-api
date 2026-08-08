@@ -1,12 +1,18 @@
 package net.imaginethinking.appointmentpack.document;
 
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordPermission;
 import net.imaginethinking.appointmentpack.permission.Permission;
 
 import java.util.Set;
 
 public enum DocumentPermission implements Permission {
 
-    VIEW("document:view"),
+    VIEW("document:view") {
+        @Override
+        public Set<String> requiredPermissions() {
+            return Set.of(PatientRecordPermission.VIEW.value());
+        }
+    },
     EDIT("document:edit") {
         @Override
         public Set<String> requiredPermissions() {

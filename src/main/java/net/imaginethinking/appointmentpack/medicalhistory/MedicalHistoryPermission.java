@@ -1,11 +1,17 @@
 package net.imaginethinking.appointmentpack.medicalhistory;
 
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordPermission;
 import net.imaginethinking.appointmentpack.permission.Permission;
 
 import java.util.Set;
 
 public enum MedicalHistoryPermission implements Permission {
-    VIEW("history:view"),
+    VIEW("history:view") {
+        @Override
+        public Set<String> requiredPermissions() {
+            return Set.of(PatientRecordPermission.VIEW.value());
+        }
+    },
 
     EDIT("history:edit") {
         @Override
