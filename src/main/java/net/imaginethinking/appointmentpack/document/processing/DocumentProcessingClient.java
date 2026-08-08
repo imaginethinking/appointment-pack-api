@@ -3,21 +3,22 @@ package net.imaginethinking.appointmentpack.document.processing;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.SocketTimeoutException;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
+import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
@@ -74,7 +75,9 @@ public class DocumentProcessingClient {
         } catch (JsonProcessingException exception) {
             throw new DocumentProcessingException("Failed to create document extraction request", exception);
         } catch (ResourceAccessException exception) {
-            throw new DocumentProcessingUnavailableException(exception);
+            throw mapResourceAccessFailure(exception);
+        } catch (RestClientResponseException exception) {
+            throw mapExtractionHttpFailure(exception);
         } catch (RestClientException exception) {
             throw new DocumentProcessingException("Document extraction service request failed", exception);
         }
@@ -96,11 +99,79 @@ public class DocumentProcessingClient {
             validateSummaryResponse(context, response);
 
             return response;
-        } catch (ResourceAccessException | HttpServerErrorException.ServiceUnavailable exception) {
-            throw new DocumentProcessingUnavailableException(exception);
+        } catch (ResourceAccessException exception) {
+            throw mapResourceAccessFailure(exception);
+        } catch (RestClientResponseException exception) {
+            throw mapSummarisationHttpFailure(exception);
         } catch (RestClientException exception) {
             throw new DocumentProcessingException("Document summarisation service request failed", exception);
         }
+    }
+
+    private RuntimeException mapExtractionHttpFailure(
+            RestClientResponseException exception) {
+        return switch (exception.getStatusCode().value()) {
+            case 413 -> new ResponseStatusException(
+                    HttpStatus.PAYLOAD_TOO_LARGE,
+                    "Document exceeds the processing size limit");
+
+            case 415 -> new ResponseStatusException(
+                    HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Document type is not supported by the processing service");
+
+            case 422 -> new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_CONTENT,
+                    "Document text could not be extracted");
+
+            case 503 -> new DocumentProcessingUnavailableException(exception);
+
+            case 504 -> new DocumentProcessingTimeoutException(exception);
+
+            default -> new DocumentProcessingException("Document extraction service returned an unexpected response");
+        };
+    }
+
+    private RuntimeException mapSummarisationHttpFailure(
+            RestClientResponseException exception) {
+        return switch (exception.getStatusCode().value()) {
+            case 413 -> new ResponseStatusException(
+                    HttpStatus.PAYLOAD_TOO_LARGE,
+                    "Approved de-identified text exceeds the processing size limit");
+
+            case 503 -> new DocumentProcessingUnavailableException(exception);
+
+            case 504 -> new DocumentProcessingTimeoutException(exception);
+
+            default ->
+                    new DocumentProcessingException("Document summarisation service returned an unexpected response");
+        };
+    }
+
+    private RuntimeException mapResourceAccessFailure(
+            ResourceAccessException exception) {
+        if (hasCause(exception, HttpConnectTimeoutException.class)) {
+            return new DocumentProcessingUnavailableException(exception);
+        }
+
+        if (hasCause(exception, HttpTimeoutException.class) || hasCause(exception, SocketTimeoutException.class)) {
+            return new DocumentProcessingTimeoutException(exception);
+        }
+
+        return new DocumentProcessingUnavailableException(exception);
+    }
+
+    private boolean hasCause(Throwable throwable, Class<? extends Throwable> causeType) {
+        Throwable current = throwable;
+
+        while (current != null) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+
+            current = current.getCause();
+        }
+
+        return false;
     }
 
     private MultiValueMap<String, Object> createExtractionRequestParts(
