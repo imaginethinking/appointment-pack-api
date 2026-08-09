@@ -1,36 +1,34 @@
 package net.imaginethinking.appointmentpack.address;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.Embeddable;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.imaginethinking.appointmentpack.common.BaseEntity;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "addresses")
-public class Address extends BaseEntity {
+@NoArgsConstructor
+@EqualsAndHashCode
+@Embeddable
+public class Address {
 
-    @Column(name = "address_line_1", nullable = false)
+    @Column(name = "address_line_1", length = 150)
     private String addressLine1;
 
-    @Column(name = "address_line_2")
+    @Column(name = "address_line_2", length = 150)
     private String addressLine2;
 
-    @Column(name = "address_line_3")
-    private String addressLine3;
+    @Column(name = "town_city", length = 100)
+    private String townCity;
 
-    @Column(name = "address_line_4")
-    private String addressLine4;
-
-    @Column(nullable = false)
-    private String city;
-
-    @Column(nullable = false)
+    @Column(name = "county", length = 100)
     private String county;
 
-    @Column(nullable = false)
+    @Column(name = "postcode", length = 20)
     private String postcode;
+
+    @Column(name = "country", length = 100)
+    private String country;
 }

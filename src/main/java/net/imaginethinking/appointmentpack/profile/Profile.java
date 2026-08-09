@@ -36,11 +36,6 @@ public class Profile extends BaseEntity {
     @Column(name = "gender")
     private String gender;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(
-            name = "address_id",
-            nullable = true,
-            foreignKey = @ForeignKey(name = "fk_profile_address")
-    )
+    @Embedded
     private Address address;
 }

@@ -1,6 +1,6 @@
 package net.imaginethinking.appointmentpack.profile;
 
-import net.imaginethinking.appointmentpack.address.Address;
+import net.imaginethinking.appointmentpack.address.AddressResponse;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -12,7 +12,7 @@ public record ProfileResponse(
         String lastName,
         LocalDate dateOfBirth,
         String gender,
-        Address address
+        AddressResponse address
 ) {
 
     public static ProfileResponse from(Profile profile) {
@@ -23,7 +23,7 @@ public record ProfileResponse(
                 profile.getLastName(),
                 profile.getDateOfBirth(),
                 profile.getGender(),
-                profile.getAddress()
+                AddressResponse.from(profile.getAddress())
         );
     }
 }
