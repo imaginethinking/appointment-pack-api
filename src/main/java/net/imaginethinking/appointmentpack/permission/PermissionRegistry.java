@@ -1,5 +1,6 @@
 package net.imaginethinking.appointmentpack.permission;
 
+import net.imaginethinking.appointmentpack.appointment.AppointmentPermission;
 import net.imaginethinking.appointmentpack.document.DocumentPermission;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermission;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordPermission;
@@ -21,6 +22,7 @@ public class PermissionRegistry {
         register(registeredPermissions, PatientRecordPermission.values());
         register(registeredPermissions, DocumentPermission.values());
         register(registeredPermissions, MedicalHistoryPermission.values());
+        register(registeredPermissions, AppointmentPermission.values());
 
         permissions= Map.copyOf(registeredPermissions);
     }
