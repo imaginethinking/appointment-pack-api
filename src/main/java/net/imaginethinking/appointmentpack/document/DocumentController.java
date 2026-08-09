@@ -2,6 +2,8 @@ package net.imaginethinking.appointmentpack.document;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.appointment.AppointmentConfirmationRequest;
+import net.imaginethinking.appointmentpack.appointment.AppointmentResponse;
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResultResponse;
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingService;
 import net.imaginethinking.appointmentpack.document.processing.DocumentSummarisationRequest;
@@ -101,7 +103,10 @@ public class DocumentController {
             @Valid @RequestBody DocumentSummaryAcceptanceRequest request) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
-        DocumentProcessingResultResponse response = documentProcessingService.acceptSummary(userId, documentId, request);
+        DocumentProcessingResultResponse response = documentProcessingService.acceptSummary(
+                userId,
+                documentId,
+                request);
 
         return ResponseEntity.ok(response);
     }
@@ -141,6 +146,29 @@ public class DocumentController {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
 
         DocumentProcessingResultResponse response = documentProcessingService.extract(userId, documentId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/documents/{documentId}/appointment/confirm")
+    public ResponseEntity<AppointmentResponse> confirmAppointment(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId,
+            @Valid @RequestBody AppointmentConfirmationRequest request) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        AppointmentResponse response = documentProcessingService.confirmAppointment(userId, documentId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/documents/{documentId}/appointment/reject")
+    public ResponseEntity<DocumentProcessingResultResponse> rejectAppointment(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID documentId) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        DocumentProcessingResultResponse response = documentProcessingService.rejectAppointment(userId, documentId);
 
         return ResponseEntity.ok(response);
     }

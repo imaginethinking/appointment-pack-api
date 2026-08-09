@@ -25,6 +25,7 @@ public class DocumentService {
 
     private static final Set<DocumentStatus> ARCHIVABLE_STATUSES = Set.of(
             DocumentStatus.UPLOADED,
+            DocumentStatus.READY_FOR_APPOINTMENT_REVIEW,
             DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW,
             DocumentStatus.READY_FOR_SUMMARY_REVIEW,
             DocumentStatus.EXTRACTION_FAILED,

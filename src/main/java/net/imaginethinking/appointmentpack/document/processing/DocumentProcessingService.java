@@ -1,6 +1,8 @@
 package net.imaginethinking.appointmentpack.document.processing;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.appointment.AppointmentConfirmationRequest;
+import net.imaginethinking.appointmentpack.appointment.AppointmentResponse;
 import net.imaginethinking.appointmentpack.document.storage.DocumentStorageService;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -12,7 +14,6 @@ import java.util.UUID;
 public class DocumentProcessingService {
 
     private static final String EXTRACTION_FAILURE_MESSAGE = "Document text could not be extracted.";
-
     private static final String SUMMARISATION_FAILURE_MESSAGE = "External summary generation is currently unavailable.";
 
     private final DocumentProcessingStateService documentProcessingStateService;
@@ -59,6 +60,17 @@ public class DocumentProcessingService {
 
             throw exception;
         }
+    }
+
+    public AppointmentResponse confirmAppointment(
+            UUID authenticatedUserId,
+            UUID documentId,
+            AppointmentConfirmationRequest request) {
+        return documentProcessingStateService.confirmAppointment(authenticatedUserId, documentId, request);
+    }
+
+    public DocumentProcessingResultResponse rejectAppointment(UUID authenticatedUserId, UUID documentId) {
+        return documentProcessingStateService.rejectAppointment(authenticatedUserId, documentId);
     }
 
     public DocumentProcessingResultResponse acceptSummary(

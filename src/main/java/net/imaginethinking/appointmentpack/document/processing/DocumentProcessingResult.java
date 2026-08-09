@@ -1,6 +1,15 @@
 package net.imaginethinking.appointmentpack.document.processing;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
@@ -8,6 +17,8 @@ import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.user.User;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -47,6 +58,87 @@ public class DocumentProcessingResult extends BaseEntity {
             columnDefinition = "TEXT"
     )
     private String approvedDeidentifiedText;
+
+    @Column(name = "appointment_date")
+    private LocalDate appointmentDate;
+
+    @Column(name = "appointment_start_time")
+    private LocalTime appointmentStartTime;
+
+    @Column(name = "appointment_end_time")
+    private LocalTime appointmentEndTime;
+
+    @Column(
+            name = "appointment_service",
+            length = 250
+    )
+    private String appointmentService;
+
+    @Column(
+            name = "appointment_type",
+            length = 250
+    )
+    private String appointmentType;
+
+    @Column(
+            name = "appointment_clinician_or_team",
+            length = 250
+    )
+    private String appointmentClinicianOrTeam;
+
+    @Column(
+            name = "appointment_location_name",
+            length = 250
+    )
+    private String appointmentLocationName;
+
+    @Column(
+            name = "appointment_address_line_1",
+            length = 150
+    )
+    private String appointmentAddressLine1;
+
+    @Column(
+            name = "appointment_address_line_2",
+            length = 150
+    )
+    private String appointmentAddressLine2;
+
+    @Column(
+            name = "appointment_town_city",
+            length = 100
+    )
+    private String appointmentTownCity;
+
+    @Column(
+            name = "appointment_county",
+            length = 100
+    )
+    private String appointmentCounty;
+
+    @Column(
+            name = "appointment_postcode",
+            length = 20
+    )
+    private String appointmentPostcode;
+
+    @Column(
+            name = "appointment_country",
+            length = 100
+    )
+    private String appointmentCountry;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "appointment_reviewed_by_user_id",
+            foreignKey = @ForeignKey(
+                    name = "fk_processing_result_appointment_reviewer"
+            )
+    )
+    private User appointmentReviewedBy;
+
+    @Column(name = "appointment_reviewed_at")
+    private Instant appointmentReviewedAt;
 
     @Column(
             name = "generated_summary",

@@ -6,7 +6,7 @@ public record DocumentExtractionResponse(
         UUID documentId,
         String extractedText,
         String deidentifiedText,
-        String generatedSummary,
+        AppointmentDetailsResponse appointmentDetails,
         String processingWarning,
         String processorVersion
 ) {

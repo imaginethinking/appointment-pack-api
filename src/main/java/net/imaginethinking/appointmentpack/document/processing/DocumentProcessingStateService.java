@@ -2,6 +2,8 @@ package net.imaginethinking.appointmentpack.document.processing;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.address.Address;
+import net.imaginethinking.appointmentpack.appointment.*;
 import net.imaginethinking.appointmentpack.document.*;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
@@ -26,6 +28,8 @@ public class DocumentProcessingStateService {
     private final DocumentProcessingResultRepository processingResultRepository;
 
     private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
+
+    private final AppointmentRepository appointmentRepository;
 
     private final RedactionContextFactory redactionContextFactory;
 
@@ -61,6 +65,7 @@ public class DocumentProcessingStateService {
         RedactionContext redactionContext = redactionContextFactory.create(document);
 
         document.setStatus(DocumentStatus.EXTRACTING);
+
         document.setProcessingFailureReason(null);
 
         return new DocumentExtractionContext(
@@ -133,6 +138,7 @@ public class DocumentProcessingStateService {
         }
 
         document.setStatus(DocumentStatus.SUMMARISING);
+
         document.setProcessingFailureReason(null);
 
         return new DocumentSummarisationContext(document.getId(), result.getApprovedDeidentifiedText());
@@ -174,6 +180,86 @@ public class DocumentProcessingStateService {
 
                     document.setProcessingFailureReason(failureReason);
                 });
+    }
+
+    @Transactional
+    public AppointmentResponse confirmAppointment(
+            UUID authenticatedUserId,
+            UUID documentId,
+            AppointmentConfirmationRequest request) {
+        Document document = findAvailableDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.EDIT);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                AppointmentPermission.EDIT);
+
+        validateAppointmentCanBeConfirmed(document);
+
+        if (appointmentRepository.existsBySourceDocument_Id(documentId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "An appointment already exists for this document");
+        }
+
+        validateAppointmentTimes(request);
+
+        DocumentProcessingResult result = findProcessingResult(documentId);
+
+        User reviewingUser = entityManager.getReference(User.class, authenticatedUserId);
+
+        result.setAppointmentReviewedBy(reviewingUser);
+        result.setAppointmentReviewedAt(Instant.now());
+
+        Appointment appointment = new Appointment();
+
+        appointment.setPatientRecord(document.getPatientRecord());
+
+        appointment.setDate(request.date());
+        appointment.setStartTime(request.startTime());
+        appointment.setEndTime(request.endTime());
+        appointment.setService(normaliseOptionalValue(request.service()));
+        appointment.setAppointmentType(normaliseOptionalValue(request.appointmentType()));
+        appointment.setClinicianOrTeam(normaliseOptionalValue(request.clinicianOrTeam()));
+        appointment.setLocationName(normaliseOptionalValue(request.locationName()));
+        appointment.setAddress(toAddress(request.address()));
+        appointment.setNotes(normaliseOptionalValue(request.notes()));
+        appointment.setSourceDocument(document);
+
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        document.setStatus(DocumentStatus.ACCEPTED);
+        document.setProcessingFailureReason(null);
+
+        return AppointmentResponse.from(savedAppointment);
+    }
+
+    @Transactional
+    public DocumentProcessingResultResponse rejectAppointment(UUID authenticatedUserId, UUID documentId) {
+        Document document = findAvailableDocument(documentId);
+
+        patientAccessControlService.requirePermission(
+                authenticatedUserId,
+                document.getPatientRecord(),
+                DocumentPermission.EDIT);
+
+        if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER || document.getStatus() != DocumentStatus.READY_FOR_APPOINTMENT_REVIEW) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Appointment details cannot be rejected in the current document state");
+        }
+
+        DocumentProcessingResult result = findProcessingResult(documentId);
+
+        result.setAppointmentReviewedBy(entityManager.getReference(User.class, authenticatedUserId));
+        result.setAppointmentReviewedAt(Instant.now());
+        document.setStatus(DocumentStatus.REJECTED);
+        document.setProcessingFailureReason(null);
+
+        return toResponse(document, result);
     }
 
     @Transactional
@@ -249,7 +335,7 @@ public class DocumentProcessingStateService {
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
 
-        if (document.getStatus() != DocumentStatus.READY_FOR_SUMMARY_REVIEW) {
+        if (document.getDocumentType() != DocumentType.CONSULTATION_OUTCOME_LETTER || document.getStatus() != DocumentStatus.READY_FOR_SUMMARY_REVIEW) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Document summary cannot be rejected in its current status");
@@ -291,8 +377,29 @@ public class DocumentProcessingStateService {
         }
     }
 
-    private void validateSummaryCanBeAccepted(
-            Document document) {
+    private void validateAppointmentCanBeConfirmed(Document document) {
+        if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER || document.getStatus() != DocumentStatus.READY_FOR_APPOINTMENT_REVIEW) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Appointment cannot be confirmed in the current document state");
+        }
+    }
+
+    private void validateAppointmentTimes(AppointmentConfirmationRequest request) {
+        if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Appointment end time must be after the start time");
+        }
+    }
+
+    private void validateSummaryCanBeAccepted(Document document) {
+        if (document.getDocumentType() != DocumentType.CONSULTATION_OUTCOME_LETTER) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Only consultation outcome summaries can be accepted into medical history");
+        }
+
         boolean acceptable = document.getStatus() == DocumentStatus.READY_FOR_SUMMARY_REVIEW || document.getStatus() == DocumentStatus.SUMMARISATION_FAILED;
 
         if (!acceptable) {
@@ -302,8 +409,7 @@ public class DocumentProcessingStateService {
         }
     }
 
-    private void validateGeneratedSummary(
-            DocumentProcessingResult result) {
+    private void validateGeneratedSummary(DocumentProcessingResult result) {
         if (isBlank(result.getGeneratedSummary()) || result.getSummarySource() == null) {
             throw new DocumentProcessingException("Document processing result contains no generated summary");
         }
@@ -322,26 +428,82 @@ public class DocumentProcessingStateService {
 
         result.setDocument(document);
         result.setExtractedText(response.extractedText());
-        result.setMachineDeidentifiedText(response.deidentifiedText());
-        result.setApprovedDeidentifiedText(null);
-        result.setGeneratedSummary(response.generatedSummary());
-        result.setReviewedSummary(null);
+
         result.setProcessingWarning(response.processingWarning());
         result.setProcessorVersion(response.processorVersion());
+
+        result.setApprovedDeidentifiedText(null);
+        result.setGeneratedSummary(null);
+        result.setReviewedSummary(null);
+        result.setSummarySource(null);
         result.setModelName(null);
         result.setPromptVersion(null);
+
+        result.setAppointmentReviewedBy(null);
+        result.setAppointmentReviewedAt(null);
+
         result.setDeidentificationReviewedBy(null);
         result.setDeidentificationReviewedAt(null);
+
         result.setSummaryReviewedBy(null);
         result.setSummaryReviewedAt(null);
 
         if (document.getDocumentType() == DocumentType.APPOINTMENT_LETTER) {
-            result.setSummarySource(SummarySource.DETERMINISTIC);
+            result.setMachineDeidentifiedText(null);
+
+            applyAppointmentDetails(result, response.appointmentDetails());
         } else {
-            result.setSummarySource(null);
+            clearAppointmentDetails(result);
+
+            result.setMachineDeidentifiedText(response.deidentifiedText());
         }
 
         return processingResultRepository.save(result);
+    }
+
+    private void applyAppointmentDetails(DocumentProcessingResult result, AppointmentDetailsResponse details) {
+        result.setAppointmentDate(details.date());
+        result.setAppointmentStartTime(details.startTime());
+        result.setAppointmentEndTime(details.endTime());
+        result.setAppointmentService(details.service());
+        result.setAppointmentType(details.appointmentType());
+        result.setAppointmentClinicianOrTeam(details.clinicianOrTeam());
+        result.setAppointmentLocationName(details.locationName());
+
+        AppointmentDetailsResponse.AddressDetails address = details.address();
+
+        if (address == null) {
+            clearAppointmentAddress(result);
+            return;
+        }
+
+        result.setAppointmentAddressLine1(address.addressLine1());
+        result.setAppointmentAddressLine2(address.addressLine2());
+        result.setAppointmentTownCity(address.townCity());
+        result.setAppointmentCounty(address.county());
+        result.setAppointmentPostcode(address.postcode());
+        result.setAppointmentCountry(address.country());
+    }
+
+    private void clearAppointmentDetails(DocumentProcessingResult result) {
+        result.setAppointmentDate(null);
+        result.setAppointmentStartTime(null);
+        result.setAppointmentEndTime(null);
+        result.setAppointmentService(null);
+        result.setAppointmentType(null);
+        result.setAppointmentClinicianOrTeam(null);
+        result.setAppointmentLocationName(null);
+
+        clearAppointmentAddress(result);
+    }
+
+    private void clearAppointmentAddress(DocumentProcessingResult result) {
+        result.setAppointmentAddressLine1(null);
+        result.setAppointmentAddressLine2(null);
+        result.setAppointmentTownCity(null);
+        result.setAppointmentCounty(null);
+        result.setAppointmentPostcode(null);
+        result.setAppointmentCountry(null);
     }
 
     private void validateExtractionCanBegin(Document document) {
@@ -371,8 +533,8 @@ public class DocumentProcessingStateService {
             throw new DocumentProcessingException("Document extraction response contains no processor version");
         }
 
-        if (document.getDocumentType() == DocumentType.APPOINTMENT_LETTER && isBlank(response.generatedSummary())) {
-            throw new DocumentProcessingException("Appointment extraction response contains no generated summary");
+        if (document.getDocumentType() == DocumentType.APPOINTMENT_LETTER && response.appointmentDetails() == null) {
+            throw new DocumentProcessingException("Appointment extraction response contains no appointment details");
         }
 
         if (document.getDocumentType() == DocumentType.CONSULTATION_OUTCOME_LETTER && isBlank(response.deidentifiedText())) {
@@ -395,23 +557,89 @@ public class DocumentProcessingStateService {
         }
     }
 
-    private DocumentStatus determineReviewStatus(
-            DocumentType documentType) {
+    private DocumentStatus determineReviewStatus(DocumentType documentType) {
         return switch (documentType) {
-            case APPOINTMENT_LETTER -> DocumentStatus.READY_FOR_SUMMARY_REVIEW;
+            case APPOINTMENT_LETTER -> DocumentStatus.READY_FOR_APPOINTMENT_REVIEW;
 
             case CONSULTATION_OUTCOME_LETTER -> DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW;
         };
     }
 
-    private DocumentProcessingResult findProcessingResult(
-            UUID documentId) {
+    private AppointmentDetailsResponse toAppointmentDetails(Document document, DocumentProcessingResult result) {
+        if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER) {
+            return null;
+        }
+
+        AppointmentDetailsResponse.AddressDetails address = toAppointmentAddress(result);
+
+        return new AppointmentDetailsResponse(
+                result.getAppointmentDate(),
+                result.getAppointmentStartTime(),
+                result.getAppointmentEndTime(),
+                result.getAppointmentService(),
+                result.getAppointmentType(),
+                result.getAppointmentClinicianOrTeam(),
+                result.getAppointmentLocationName(),
+                address);
+    }
+
+    private AppointmentDetailsResponse.AddressDetails toAppointmentAddress(
+            DocumentProcessingResult result) {
+        boolean empty = isBlank(result.getAppointmentAddressLine1()) && isBlank(result.getAppointmentAddressLine2()) && isBlank(
+                result.getAppointmentTownCity()) && isBlank(result.getAppointmentCounty()) && isBlank(result.getAppointmentPostcode()) && isBlank(
+                result.getAppointmentCountry());
+
+        if (empty) {
+            return null;
+        }
+
+        return new AppointmentDetailsResponse.AddressDetails(
+                result.getAppointmentAddressLine1(),
+                result.getAppointmentAddressLine2(),
+                result.getAppointmentTownCity(),
+                result.getAppointmentCounty(),
+                result.getAppointmentPostcode(),
+                result.getAppointmentCountry());
+    }
+
+    private Address toAddress(AppointmentConfirmationRequest.AddressInput request) {
+        if (request == null) {
+            return null;
+        }
+
+        boolean empty = isBlank(request.addressLine1()) && isBlank(request.addressLine2()) && isBlank(request.townCity()) && isBlank(
+                request.county()) && isBlank(request.postcode()) && isBlank(request.country());
+
+        if (empty) {
+            return null;
+        }
+
+        Address address = new Address();
+
+        address.setAddressLine1(normaliseOptionalValue(request.addressLine1()));
+        address.setAddressLine2(normaliseOptionalValue(request.addressLine2()));
+        address.setTownCity(normaliseOptionalValue(request.townCity()));
+        address.setCounty(normaliseOptionalValue(request.county()));
+        address.setPostcode(normaliseOptionalValue(request.postcode()));
+        address.setCountry(normaliseOptionalValue(request.country()));
+
+        return address;
+    }
+
+    private String normaliseOptionalValue(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+
+        return value.strip();
+    }
+
+    private DocumentProcessingResult findProcessingResult(UUID documentId) {
         return processingResultRepository.findByDocumentId(documentId)
                 .orElseThrow(() -> new DocumentProcessingException("Document processing result was not found"));
     }
 
-    private Document findAvailableDocument(
-            UUID documentId) {
+    private Document findAvailableDocument(UUID documentId) {
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
 
@@ -426,6 +654,9 @@ public class DocumentProcessingStateService {
         DocumentProcessingResultResponse.ModelMetadata model = result.getModelName() == null ? null : new DocumentProcessingResultResponse.ModelMetadata(result.getModelName(),
                 result.getPromptVersion());
 
+        UUID appointmentReviewerId = result.getAppointmentReviewedBy() == null ? null : result.getAppointmentReviewedBy()
+                .getId();
+
         UUID deidentificationReviewerId = result.getDeidentificationReviewedBy() == null ? null : result.getDeidentificationReviewedBy()
                 .getId();
 
@@ -438,19 +669,23 @@ public class DocumentProcessingStateService {
                 result.getExtractedText(),
                 result.getMachineDeidentifiedText(),
                 result.getApprovedDeidentifiedText(),
+                toAppointmentDetails(document, result),
                 result.getGeneratedSummary(),
                 result.getReviewedSummary(),
                 result.getSummarySource(),
                 result.getProcessingWarning(),
                 result.getProcessorVersion(),
                 model,
+                appointmentReviewerId,
+                result.getAppointmentReviewedAt(),
                 deidentificationReviewerId,
                 result.getDeidentificationReviewedAt(),
                 summaryReviewerId,
                 result.getSummaryReviewedAt());
     }
 
-    private boolean isBlank(String value) {
+    private boolean isBlank(
+            String value) {
         return value == null || value.isBlank();
     }
 }
