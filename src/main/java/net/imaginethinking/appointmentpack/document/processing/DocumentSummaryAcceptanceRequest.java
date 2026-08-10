@@ -1,8 +1,6 @@
 package net.imaginethinking.appointmentpack.document.processing;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 
@@ -15,5 +13,6 @@ public record DocumentSummaryAcceptanceRequest(
         String historyTitle,
 
         @NotNull(message = "History date is required")
+        @PastOrPresent(message = "History date must not be in the future")
         LocalDate historyDate) {
 }
