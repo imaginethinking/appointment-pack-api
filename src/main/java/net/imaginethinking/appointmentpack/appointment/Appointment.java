@@ -8,6 +8,7 @@ import net.imaginethinking.appointmentpack.common.BaseEntity;
 import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -132,4 +133,7 @@ public class Appointment extends BaseEntity {
             )
     )
     private Document sourceDocument;
+
+    @Column(name = "archived_at")
+    private Instant archivedAt;
 }

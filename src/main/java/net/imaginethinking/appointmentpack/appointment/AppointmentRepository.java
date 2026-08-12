@@ -10,5 +10,5 @@ public interface AppointmentRepository
 
     boolean existsBySourceDocument_Id(UUID sourceDocumentId);
 
-    List<Appointment> findAllByPatientRecord_IdOrderByDateAscStartTimeAsc(UUID patientRecordId);
+    List<Appointment> findAllByPatientRecord_IdAndArchivedAtIsNullOrderByDateAscStartTimeAsc(UUID patientRecordId);
 }

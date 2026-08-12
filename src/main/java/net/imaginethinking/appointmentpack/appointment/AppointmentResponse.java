@@ -18,12 +18,11 @@ public record AppointmentResponse(
         String locationName,
         AddressResponse address,
         String notes,
-        UUID sourceDocumentId
+        UUID sourceDocumentId,
+        boolean archived
 ) {
 
-    public static AppointmentResponse from(
-            Appointment appointment
-    ) {
+    public static AppointmentResponse from(Appointment appointment) {
         return new AppointmentResponse(
                 appointment.getId(),
                 appointment.getPatientRecord().getId(),
@@ -38,9 +37,8 @@ public record AppointmentResponse(
                 appointment.getNotes(),
                 appointment.getSourceDocument() == null
                         ? null
-                        : appointment
-                        .getSourceDocument()
-                        .getId()
+                        : appointment.getSourceDocument().getId(),
+                appointment.getArchivedAt() != null
         );
     }
 }
