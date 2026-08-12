@@ -3,6 +3,7 @@ package net.imaginethinking.appointmentpack.permission;
 import net.imaginethinking.appointmentpack.appointment.AppointmentPermission;
 import net.imaginethinking.appointmentpack.document.DocumentPermission;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermission;
+import net.imaginethinking.appointmentpack.medication.MedicationPermission;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordPermission;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ public class PermissionRegistry {
         register(registeredPermissions, DocumentPermission.values());
         register(registeredPermissions, MedicalHistoryPermission.values());
         register(registeredPermissions, AppointmentPermission.values());
+        register(registeredPermissions, MedicationPermission.values());
 
         permissions= Map.copyOf(registeredPermissions);
     }

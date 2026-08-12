@@ -4,32 +4,69 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
-import net.imaginethinking.appointmentpack.user.User;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
+
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "medications")
 public class Medication extends BaseEntity {
-    @Column(nullable = false)
+
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
+    @JoinColumn(
+            name = "patient_record_id",
+            nullable = false,
+            foreignKey = @ForeignKey(
+                    name = "fk_medication_patient_record"
+            )
+    )
+    private PatientRecord patientRecord;
+
+    @Column(
+            name = "name",
+            nullable = false,
+            length = 200
+    )
     private String name;
 
-    @Column
+    @Column(
+            name = "dose",
+            length = 100
+    )
     private String dose;
 
-    @Column
-    private String startDate;
+    @Column(
+            name = "form",
+            length = 100
+    )
+    private String form;
 
-    @Column
-    private String endDate;
+    @Column(
+            name = "instructions",
+            length = 500
+    )
+    private String instructions;
 
-    @Column
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(
+            name = "notes",
+            length = 2000
+    )
     private String notes;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "user_id",
+    @Column(
+            name = "archived",
             nullable = false
     )
-    private User user;
+    private boolean archived;
 }
