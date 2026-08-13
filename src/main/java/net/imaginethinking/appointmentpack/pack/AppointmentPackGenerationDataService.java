@@ -6,17 +6,16 @@ import net.imaginethinking.appointmentpack.appointment.Appointment;
 import net.imaginethinking.appointmentpack.appointment.AppointmentPermission;
 import net.imaginethinking.appointmentpack.appointment.AppointmentRepository;
 import net.imaginethinking.appointmentpack.bloodtest.*;
-import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.contact.*;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermission;
 import net.imaginethinking.appointmentpack.medication.Medication;
 import net.imaginethinking.appointmentpack.medication.MedicationPermission;
 import net.imaginethinking.appointmentpack.medication.MedicationRepository;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.patientrecord.bloodtype.BloodType;
 import net.imaginethinking.appointmentpack.profile.Profile;
 import org.springframework.http.HttpStatus;
@@ -40,33 +39,32 @@ import java.util.stream.Collectors;
 public class AppointmentPackGenerationDataService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMMM uuuu", Locale.UK);
+
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm", Locale.UK);
+
     private static final ZoneId APPLICATION_ZONE = ZoneId.of("Europe/London");
 
-    private final PatientRecordRepository patientRecordRepository;
     private final AppointmentRepository appointmentRepository;
     private final MedicationRepository medicationRepository;
     private final HealthcareContactRepository healthcareContactRepository;
     private final EmergencyContactRepository emergencyContactRepository;
     private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
     private final BloodTestRepository bloodTestRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
 
     @Transactional(readOnly = true)
     public AppointmentPackGenerationData prepare(
             UUID authenticatedUserId,
             UUID patientRecordId,
             AppointmentPackGenerationRequest request) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
                 authenticatedUserId,
-                patientRecord,
+                patientRecordId,
                 AppointmentPackPermission.CREATE);
 
         Appointment appointment = findAppointmentForPatient(patientRecordId, request.appointmentId());
 
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, AppointmentPermission.VIEW);
+        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecord, AppointmentPermission.VIEW);
 
         List<Medication> medications = loadMedications(authenticatedUserId, patientRecord, request.medicationIds());
 
@@ -123,11 +121,6 @@ public class AppointmentPackGenerationDataService {
                 selectedItems);
     }
 
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
-    }
-
     private Appointment findAppointmentForPatient(UUID patientRecordId, UUID appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
@@ -151,7 +144,10 @@ public class AppointmentPackGenerationDataService {
             return List.of();
         }
 
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, MedicationPermission.VIEW);
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecord,
+                MedicationPermission.VIEW);
 
         return resolveSelection(
                 selectedIds,
@@ -171,7 +167,10 @@ public class AppointmentPackGenerationDataService {
             return List.of();
         }
 
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, ContactPermission.VIEW);
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecord,
+                ContactPermission.VIEW);
 
         return resolveSelection(
                 selectedIds,
@@ -189,7 +188,10 @@ public class AppointmentPackGenerationDataService {
             return List.of();
         }
 
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, ContactPermission.VIEW);
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecord,
+                ContactPermission.VIEW);
 
         return resolveSelection(
                 selectedIds,
@@ -207,7 +209,7 @@ public class AppointmentPackGenerationDataService {
             return List.of();
         }
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 patientRecord,
                 MedicalHistoryPermission.VIEW);
@@ -228,7 +230,10 @@ public class AppointmentPackGenerationDataService {
             return List.of();
         }
 
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, BloodTestPermission.VIEW);
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecord,
+                BloodTestPermission.VIEW);
 
         return resolveSelection(
                 selectedIds,

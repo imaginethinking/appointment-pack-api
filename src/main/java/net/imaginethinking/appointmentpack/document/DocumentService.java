@@ -2,9 +2,8 @@ package net.imaginethinking.appointmentpack.document;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.document.storage.DocumentStorageService;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -33,9 +32,8 @@ public class DocumentService {
             DocumentStatus.REJECTED);
 
     private final DocumentRepository documentRepository;
-    private final PatientRecordRepository patientRecordRepository;
     private final UserRepository userRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
     private final DocumentFileValidator documentFileValidator;
     private final DocumentStorageService documentStorageService;
 
@@ -49,9 +47,10 @@ public class DocumentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document type must be provided");
         }
 
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, DocumentPermission.UPLOAD);
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                DocumentPermission.UPLOAD);
 
         User uploadedBy = userRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -88,9 +87,7 @@ public class DocumentService {
 
     @Transactional(readOnly = true)
     public List<DocumentResponse> getDocuments(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, DocumentPermission.VIEW);
+        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, DocumentPermission.VIEW);
 
         return documentRepository.findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
                 patientRecordId,
@@ -101,7 +98,7 @@ public class DocumentService {
     public DocumentResponse getDocument(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.VIEW);
@@ -113,7 +110,7 @@ public class DocumentService {
     public DocumentDownload download(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.VIEW);
@@ -129,7 +126,7 @@ public class DocumentService {
     public DocumentResponse archive(UUID authenticatedUserId, UUID documentId) {
         Document document = findDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
@@ -139,20 +136,12 @@ public class DocumentService {
         }
 
         if (!ARCHIVABLE_STATUSES.contains(document.getStatus())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Document cannot be archived in its current status"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Document cannot be archived in its current status");
         }
 
         document.setStatus(DocumentStatus.ARCHIVED);
 
         return toResponse(document);
-    }
-
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private Document findDocument(UUID documentId) {

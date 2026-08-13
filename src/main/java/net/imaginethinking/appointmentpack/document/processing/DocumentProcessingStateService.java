@@ -3,14 +3,14 @@ package net.imaginethinking.appointmentpack.document.processing;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.address.AddressMapper;
-import net.imaginethinking.appointmentpack.appointment.*;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.appointment.*;
 import net.imaginethinking.appointmentpack.document.*;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermission;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistorySourceType;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,14 +29,14 @@ public class DocumentProcessingStateService {
     private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
     private final AppointmentRepository appointmentRepository;
     private final RedactionContextFactory redactionContextFactory;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
     private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public DocumentProcessingResultResponse getProcessing(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.VIEW);
@@ -50,7 +50,7 @@ public class DocumentProcessingStateService {
     public DocumentExtractionContext beginExtraction(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
@@ -109,7 +109,7 @@ public class DocumentProcessingStateService {
             String approvedDeidentifiedText) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
@@ -184,12 +184,12 @@ public class DocumentProcessingStateService {
             AppointmentConfirmationRequest request) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 AppointmentPermission.EDIT);
@@ -236,7 +236,7 @@ public class DocumentProcessingStateService {
     public DocumentProcessingResultResponse rejectAppointment(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
@@ -264,12 +264,12 @@ public class DocumentProcessingStateService {
             DocumentSummaryAcceptanceRequest request) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 MedicalHistoryPermission.EDIT);
@@ -324,7 +324,7 @@ public class DocumentProcessingStateService {
     public DocumentProcessingResultResponse rejectSummary(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);

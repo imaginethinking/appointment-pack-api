@@ -2,9 +2,8 @@ package net.imaginethinking.appointmentpack.bloodtest;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,14 +21,14 @@ public class BloodTestService {
     private static final Pattern SIMPLE_NUMERIC_VALUE_PATTERN = Pattern.compile("^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)$");
 
     private final BloodTestRepository bloodTestRepository;
-    private final PatientRecordRepository patientRecordRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
 
     @Transactional
     public BloodTestResponse createBloodTest(UUID authenticatedUserId, UUID patientRecordId, BloodTestRequest request) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, BloodTestPermission.EDIT);
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                BloodTestPermission.EDIT);
 
         BloodTest bloodTest = new BloodTest();
         bloodTest.setPatientRecord(patientRecord);
@@ -43,9 +42,10 @@ public class BloodTestService {
 
     @Transactional(readOnly = true)
     public List<BloodTestResponse> getBloodTests(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, BloodTestPermission.VIEW);
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                BloodTestPermission.VIEW);
 
         return bloodTestRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByTestDateDescCreatedAtDesc(
                 patientRecordId).stream().map(BloodTestResponse::from).toList();
@@ -55,7 +55,7 @@ public class BloodTestService {
     public BloodTestResponse getBloodTest(UUID authenticatedUserId, UUID bloodTestId) {
         BloodTest bloodTest = findAvailableBloodTest(bloodTestId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 bloodTest.getPatientRecord(),
                 BloodTestPermission.VIEW);
@@ -67,7 +67,7 @@ public class BloodTestService {
     public BloodTestResponse updateBloodTest(UUID authenticatedUserId, UUID bloodTestId, BloodTestRequest request) {
         BloodTest bloodTest = findAvailableBloodTest(bloodTestId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 bloodTest.getPatientRecord(),
                 BloodTestPermission.EDIT);
@@ -81,7 +81,7 @@ public class BloodTestService {
     public BloodTestResponse archiveBloodTest(UUID authenticatedUserId, UUID bloodTestId) {
         BloodTest bloodTest = findBloodTest(bloodTestId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 bloodTest.getPatientRecord(),
                 BloodTestPermission.EDIT);
@@ -89,11 +89,6 @@ public class BloodTestService {
         bloodTest.archive();
 
         return BloodTestResponse.from(bloodTest);
-    }
-
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private BloodTest findBloodTest(UUID bloodTestId) {

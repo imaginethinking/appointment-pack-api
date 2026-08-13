@@ -4,9 +4,8 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.document.Document;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,9 +19,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MedicalHistoryService {
 
-    private final PatientRecordRepository patientRecordRepository;
     private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
     private final EntityManager entityManager;
 
     @Transactional
@@ -30,11 +28,9 @@ public class MedicalHistoryService {
             UUID authenticatedUserId,
             UUID patientRecordId,
             MedicalHistoryEntryRequest request) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
                 authenticatedUserId,
-                patientRecord,
+                patientRecordId,
                 MedicalHistoryPermission.EDIT);
 
         MedicalHistoryEntry entry = new MedicalHistoryEntry();
@@ -54,11 +50,9 @@ public class MedicalHistoryService {
 
     @Transactional(readOnly = true)
     public List<MedicalHistoryEntryResponse> getHistory(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
-                patientRecord,
+                patientRecordId,
                 MedicalHistoryPermission.VIEW);
 
         return medicalHistoryEntryRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByEntryDateDescCreatedAtDesc(
@@ -69,7 +63,7 @@ public class MedicalHistoryService {
     public MedicalHistoryEntryResponse getEntry(UUID authenticatedUserId, UUID entryId) {
         MedicalHistoryEntry entry = findAvailableEntry(entryId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 entry.getPatientRecord(),
                 MedicalHistoryPermission.VIEW);
@@ -84,7 +78,7 @@ public class MedicalHistoryService {
             MedicalHistoryEntryRequest request) {
         MedicalHistoryEntry entry = findAvailableEntry(entryId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 entry.getPatientRecord(),
                 MedicalHistoryPermission.EDIT);
@@ -100,7 +94,7 @@ public class MedicalHistoryService {
     public MedicalHistoryEntryResponse archiveEntry(UUID authenticatedUserId, UUID entryId) {
         MedicalHistoryEntry entry = findEntry(entryId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 entry.getPatientRecord(),
                 MedicalHistoryPermission.EDIT);
@@ -108,11 +102,6 @@ public class MedicalHistoryService {
         entry.archive();
 
         return toResponse(entry);
-    }
-
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private MedicalHistoryEntry findEntry(UUID entryId) {

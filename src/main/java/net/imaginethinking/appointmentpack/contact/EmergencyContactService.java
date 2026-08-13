@@ -2,9 +2,8 @@ package net.imaginethinking.appointmentpack.contact;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,17 +17,18 @@ import java.util.UUID;
 public class EmergencyContactService {
 
     private final EmergencyContactRepository emergencyContactRepository;
-    private final PatientRecordRepository patientRecordRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
 
     @Transactional
     public EmergencyContactResponse createEmergencyContact(
             UUID authenticatedUserId,
             UUID patientRecordId,
             CreateEmergencyContactRequest request) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, ContactPermission.EDIT);
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
+                        authenticatedUserId,
+                        patientRecordId,
+                        ContactPermission.EDIT
+                );
 
         EmergencyContact contact = new EmergencyContact();
 
@@ -50,9 +50,11 @@ public class EmergencyContactService {
 
     @Transactional(readOnly = true)
     public List<EmergencyContactResponse> getEmergencyContacts(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, ContactPermission.VIEW);
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                ContactPermission.VIEW
+        );
 
         return emergencyContactRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByNameAsc(patientRecordId)
                 .stream()
@@ -64,7 +66,7 @@ public class EmergencyContactService {
     public EmergencyContactResponse getEmergencyContact(UUID authenticatedUserId, UUID emergencyContactId) {
         EmergencyContact contact = findAvailableContact(emergencyContactId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 contact.getPatientRecord(),
                 ContactPermission.VIEW);
@@ -79,7 +81,7 @@ public class EmergencyContactService {
             UpdateEmergencyContactRequest request) {
         EmergencyContact contact = findAvailableContact(emergencyContactId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 contact.getPatientRecord(),
                 ContactPermission.EDIT);
@@ -100,7 +102,7 @@ public class EmergencyContactService {
     public EmergencyContactResponse archiveEmergencyContact(UUID authenticatedUserId, UUID emergencyContactId) {
         EmergencyContact contact = findContact(emergencyContactId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 contact.getPatientRecord(),
                 ContactPermission.EDIT);
@@ -108,11 +110,6 @@ public class EmergencyContactService {
         contact.archive();
 
         return EmergencyContactResponse.from(contact);
-    }
-
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private EmergencyContact findContact(UUID emergencyContactId) {

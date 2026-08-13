@@ -3,9 +3,8 @@ package net.imaginethinking.appointmentpack.appointment;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.address.AddressMapper;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,17 +18,17 @@ import java.util.UUID;
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
-    private final PatientRecordRepository patientRecordRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
 
     @Transactional
     public AppointmentResponse createAppointment(
             UUID authenticatedUserId,
             UUID patientRecordId,
             AppointmentRequest request) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, AppointmentPermission.EDIT);
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                AppointmentPermission.EDIT);
 
         validateTimes(request);
 
@@ -46,9 +45,7 @@ public class AppointmentService {
 
     @Transactional(readOnly = true)
     public List<AppointmentResponse> getAppointments(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, AppointmentPermission.VIEW);
+        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, AppointmentPermission.VIEW);
 
         return appointmentRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByDateAscStartTimeAsc(
                 patientRecordId).stream().map(AppointmentResponse::from).toList();
@@ -58,7 +55,7 @@ public class AppointmentService {
     public AppointmentResponse getAppointment(UUID authenticatedUserId, UUID appointmentId) {
         Appointment appointment = findAvailableAppointment(appointmentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 appointment.getPatientRecord(),
                 AppointmentPermission.VIEW);
@@ -73,7 +70,7 @@ public class AppointmentService {
             AppointmentRequest request) {
         Appointment appointment = findAvailableAppointment(appointmentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 appointment.getPatientRecord(),
                 AppointmentPermission.EDIT);
@@ -89,7 +86,7 @@ public class AppointmentService {
     public AppointmentResponse archiveAppointment(UUID authenticatedUserId, UUID appointmentId) {
         Appointment appointment = findAppointment(appointmentId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 appointment.getPatientRecord(),
                 AppointmentPermission.EDIT);
@@ -97,11 +94,6 @@ public class AppointmentService {
         appointment.archive();
 
         return AppointmentResponse.from(appointment);
-    }
-
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private Appointment findAppointment(UUID appointmentId) {

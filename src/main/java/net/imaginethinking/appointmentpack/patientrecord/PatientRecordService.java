@@ -2,7 +2,6 @@ package net.imaginethinking.appointmentpack.patientrecord;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.measurement.HeightUnit;
 import net.imaginethinking.appointmentpack.patientrecord.measurement.WeightUnit;
 import net.imaginethinking.appointmentpack.profile.Profile;
@@ -28,7 +27,7 @@ public class PatientRecordService {
 
     private final PatientRecordRepository patientRecordRepository;
     private final ProfileRepository profileRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
 
     @Transactional
     public PatientRecordResponse createCurrentPatientRecord(UUID userId, CreatePatientRecordRequest request) {
@@ -44,6 +43,7 @@ public class PatientRecordService {
         validateMeasurement("Weight", request.weight(), request.weightUnit());
 
         PatientRecord patientRecord = new PatientRecord();
+
         patientRecord.setProfile(profile);
         patientRecord.setNhsNumber(TextNormalizer.stripToNull(request.nhsNumber()));
         patientRecord.setChiNumber(TextNormalizer.stripToNull(request.chiNumber()));
@@ -64,14 +64,13 @@ public class PatientRecordService {
             UUID authenticatedUserId,
             UUID patientRecordId,
             UpdatePatientRecordRequest request) {
-        PatientRecord patientRecord = patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, PatientRecordPermission.EDIT);
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                PatientRecordPermission.EDIT);
 
         validateMeasurement("Height", request.height(), request.heightUnit());
         validateMeasurement("Weight", request.weight(), request.weightUnit());
-
 
         patientRecord.setNhsNumber(TextNormalizer.stripToNull(request.nhsNumber()));
         patientRecord.setChiNumber(TextNormalizer.stripToNull(request.chiNumber()));
@@ -95,10 +94,10 @@ public class PatientRecordService {
 
     @Transactional(readOnly = true)
     public PatientRecordResponse getPatientRecord(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, PatientRecordPermission.VIEW);
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                PatientRecordPermission.VIEW);
 
         return toResponse(patientRecord);
     }
@@ -162,5 +161,4 @@ public class PatientRecordService {
                     measurementName + " value and unit must be provided together");
         }
     }
-
 }

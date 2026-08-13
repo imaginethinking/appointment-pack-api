@@ -2,9 +2,8 @@ package net.imaginethinking.appointmentpack.medication;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
-import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,23 +18,24 @@ import java.util.UUID;
 public class MedicationService {
 
     private final MedicationRepository medicationRepository;
-    private final PatientRecordRepository patientRecordRepository;
-    private final PatientAccessControlService patientAccessControlService;
+    private final PatientRecordAccessService patientRecordAccessService;
 
     @Transactional
     public MedicationResponse createMedication(
             UUID authenticatedUserId,
             UUID patientRecordId,
             CreateMedicationRequest request) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, MedicationPermission.EDIT);
+        PatientRecord patientRecord = patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                MedicationPermission.EDIT);
 
         validateDates(request.startDate(), request.endDate());
 
         Medication medication = new Medication();
 
         medication.setPatientRecord(patientRecord);
+
         applyValues(
                 medication,
                 request.name(),
@@ -53,9 +53,7 @@ public class MedicationService {
 
     @Transactional(readOnly = true)
     public List<MedicationResponse> getMedications(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = findPatientRecord(patientRecordId);
-
-        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, MedicationPermission.VIEW);
+        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, MedicationPermission.VIEW);
 
         return medicationRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByStartDateDescCreatedAtDesc(
                 patientRecordId).stream().map(MedicationResponse::from).toList();
@@ -65,7 +63,7 @@ public class MedicationService {
     public MedicationResponse getMedication(UUID authenticatedUserId, UUID medicationId) {
         Medication medication = findAvailableMedication(medicationId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 medication.getPatientRecord(),
                 MedicationPermission.VIEW);
@@ -80,7 +78,7 @@ public class MedicationService {
             UpdateMedicationRequest request) {
         Medication medication = findAvailableMedication(medicationId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 medication.getPatientRecord(),
                 MedicationPermission.EDIT);
@@ -104,7 +102,7 @@ public class MedicationService {
     public MedicationResponse archiveMedication(UUID authenticatedUserId, UUID medicationId) {
         Medication medication = findMedication(medicationId);
 
-        patientAccessControlService.requirePermission(
+        patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 medication.getPatientRecord(),
                 MedicationPermission.EDIT);
@@ -112,11 +110,6 @@ public class MedicationService {
         medication.archive();
 
         return MedicationResponse.from(medication);
-    }
-
-    private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository.findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private Medication findMedication(UUID medicationId) {
@@ -159,5 +152,4 @@ public class MedicationService {
         medication.setEndDate(endDate);
         medication.setNotes(TextNormalizer.stripToNull(notes));
     }
-
 }
