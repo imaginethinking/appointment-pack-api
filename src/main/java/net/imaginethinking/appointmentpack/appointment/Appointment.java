@@ -4,11 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.address.Address;
-import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -22,7 +21,7 @@ import java.time.LocalTime;
                 columnNames = "source_document_id"
         )}
 )
-public class Appointment extends BaseEntity {
+public class Appointment extends ArchivableEntity {
 
     @ManyToOne(
             fetch = FetchType.LAZY,
@@ -133,7 +132,4 @@ public class Appointment extends BaseEntity {
             )
     )
     private Document sourceDocument;
-
-    @Column(name = "archived_at")
-    private Instant archivedAt;
 }

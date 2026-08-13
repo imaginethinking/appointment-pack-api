@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,9 +50,7 @@ public class AppointmentService {
         patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, AppointmentPermission.VIEW);
 
         return appointmentRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByDateAscStartTimeAsc(
-                patientRecordId).stream()
-                .map(AppointmentResponse::from)
-                .toList();
+                patientRecordId).stream().map(AppointmentResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
@@ -96,9 +93,7 @@ public class AppointmentService {
                 appointment.getPatientRecord(),
                 AppointmentPermission.EDIT);
 
-        if (appointment.getArchivedAt() == null) {
-            appointment.setArchivedAt(Instant.now());
-        }
+        appointment.archive();
 
         return AppointmentResponse.from(appointment);
     }
@@ -116,7 +111,7 @@ public class AppointmentService {
     private Appointment findAvailableAppointment(UUID appointmentId) {
         Appointment appointment = findAppointment(appointmentId);
 
-        if (appointment.getArchivedAt() != null) {
+        if (appointment.isArchived()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found");
         }
 
@@ -144,7 +139,8 @@ public class AppointmentService {
         appointment.setNotes(normaliseOptionalValue(request.notes()));
     }
 
-    private Address toAddress(AppointmentRequest.AddressInput request) {
+    private Address toAddress(
+            AppointmentRequest.AddressInput request) {
         if (request == null) {
             return null;
         }

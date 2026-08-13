@@ -2,6 +2,7 @@ package net.imaginethinking.appointmentpack.appointment;
 
 import net.imaginethinking.appointmentpack.address.AddressResponse;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -19,7 +20,7 @@ public record AppointmentResponse(
         AddressResponse address,
         String notes,
         UUID sourceDocumentId,
-        boolean archived
+        Instant archivedAt
 ) {
 
     public static AppointmentResponse from(Appointment appointment) {
@@ -38,7 +39,7 @@ public record AppointmentResponse(
                 appointment.getSourceDocument() == null
                         ? null
                         : appointment.getSourceDocument().getId(),
-                appointment.getArchivedAt() != null
+                appointment.getArchivedAt()
         );
     }
 }
