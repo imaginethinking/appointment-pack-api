@@ -53,7 +53,7 @@ public class EmergencyContactService {
 
         patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, ContactPermission.VIEW);
 
-        return emergencyContactRepository.findAllByPatientRecord_IdAndArchivedFalseOrderByNameAsc(patientRecordId)
+        return emergencyContactRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByNameAsc(patientRecordId)
                 .stream()
                 .map(EmergencyContactResponse::from)
                 .toList();
@@ -104,7 +104,7 @@ public class EmergencyContactService {
                 contact.getPatientRecord(),
                 ContactPermission.EDIT);
 
-        contact.setArchived(true);
+        contact.archive();
 
         return EmergencyContactResponse.from(contact);
     }

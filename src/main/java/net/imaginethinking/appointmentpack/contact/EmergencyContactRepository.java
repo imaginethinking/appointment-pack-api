@@ -7,5 +7,5 @@ import java.util.UUID;
 
 public interface EmergencyContactRepository extends JpaRepository<EmergencyContact, UUID> {
 
-    List<EmergencyContact> findAllByPatientRecord_IdAndArchivedFalseOrderByNameAsc(UUID patientRecordId);
+    List<EmergencyContact> findAllByPatientRecord_IdAndArchivedAtIsNullOrderByNameAsc(UUID patientRecordId);
 }

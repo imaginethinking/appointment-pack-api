@@ -14,8 +14,8 @@ public record HealthcareContactResponse(
         String phoneNumber,
         String email,
         AddressResponse address,
-        boolean archived,
         String notes,
+        Instant archivedAt,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -30,8 +30,8 @@ public record HealthcareContactResponse(
                 contact.getPhoneNumber(),
                 contact.getEmail(),
                 AddressResponse.from(contact.getAddress()),
-                contact.isArchived(),
                 contact.getNotes(),
+                contact.getArchivedAt(),
                 contact.getCreatedAt(),
                 contact.getUpdatedAt()
         );

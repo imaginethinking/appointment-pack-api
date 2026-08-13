@@ -3,14 +3,14 @@ package net.imaginethinking.appointmentpack.contact;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "emergency_contacts")
-public class EmergencyContact extends BaseEntity {
+public class EmergencyContact extends ArchivableEntity {
 
     @ManyToOne(
             fetch = FetchType.LAZY,
@@ -63,10 +63,4 @@ public class EmergencyContact extends BaseEntity {
             length = 2000
     )
     private String notes;
-
-    @Column(
-            name = "archived",
-            nullable = false
-    )
-    private boolean archived;
 }

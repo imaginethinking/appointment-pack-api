@@ -56,7 +56,7 @@ public class HealthcareContactService {
 
         patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, ContactPermission.VIEW);
 
-        return healthcareContactRepository.findAllByPatientRecord_IdAndArchivedFalseOrderByNameAsc(patientRecordId)
+        return healthcareContactRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByNameAsc(patientRecordId)
                 .stream()
                 .map(HealthcareContactResponse::from)
                 .toList();
@@ -108,7 +108,7 @@ public class HealthcareContactService {
                 contact.getPatientRecord(),
                 ContactPermission.EDIT);
 
-        contact.setArchived(true);
+        contact.archive();
 
         return HealthcareContactResponse.from(contact);
     }

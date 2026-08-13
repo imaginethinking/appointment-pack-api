@@ -12,7 +12,7 @@ public record EmergencyContactResponse(
         String alternativePhoneNumber,
         String email,
         String notes,
-        boolean archived,
+        Instant archivedAt,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -27,7 +27,7 @@ public record EmergencyContactResponse(
                 contact.getAlternativePhoneNumber(),
                 contact.getEmail(),
                 contact.getNotes(),
-                contact.isArchived(),
+                contact.getArchivedAt(),
                 contact.getCreatedAt(),
                 contact.getUpdatedAt()
         );
