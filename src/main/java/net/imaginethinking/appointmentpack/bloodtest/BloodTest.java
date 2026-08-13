@@ -1,0 +1,87 @@
+package net.imaginethinking.appointmentpack.bloodtest;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+@Entity
+@Table(
+        name = "blood_tests",
+        indexes = {
+                @Index(
+                        name = "idx_blood_test_patient_date",
+                        columnList = "patient_record_id, test_date"
+                )
+        }
+)
+public class BloodTest extends BaseEntity {
+
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
+    @JoinColumn(
+            name = "patient_record_id",
+            nullable = false,
+            foreignKey = @ForeignKey(
+                    name = "fk_blood_test_patient_record"
+            )
+    )
+    private PatientRecord patientRecord;
+
+    @Column(
+            name = "title",
+            length = 200
+    )
+    private String title;
+
+    @Column(
+            name = "test_date",
+            nullable = false
+    )
+    private LocalDate testDate;
+
+    @Column(
+            name = "provider",
+            length = 200
+    )
+    private String provider;
+
+    @Column(
+            name = "notes",
+            length = 2000
+    )
+    private String notes;
+
+    @Column(
+            name = "archived",
+            nullable = false
+    )
+    private boolean archived;
+
+    @OneToMany(
+            mappedBy = "bloodTest",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("displayOrder ASC")
+    private List<BloodTestResult> results = new ArrayList<>();
+}
