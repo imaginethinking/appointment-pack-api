@@ -22,6 +22,39 @@ public class AppointmentPackService {
     private final PatientRecordRepository patientRecordRepository;
     private final PatientAccessControlService patientAccessControlService;
     private final AppointmentPackStorageService appointmentPackStorageService;
+    private final AppointmentPackGenerationDataService generationDataService;
+    private final AppointmentPackPdfRenderer pdfRenderer;
+    private final AppointmentPackPersistenceService persistenceService;
+
+    public AppointmentPackResponse generateAppointmentPack(
+            UUID authenticatedUserId,
+            UUID patientRecordId,
+            AppointmentPackGenerationRequest request) {
+        AppointmentPackGenerationData generationData = generationDataService.prepare(
+                authenticatedUserId,
+                patientRecordId,
+                request);
+
+        byte[] pdfBytes = pdfRenderer.render(generationData.renderModel());
+
+        if (pdfBytes.length == 0) {
+            throw new IllegalStateException("Generated appointment pack PDF was empty");
+        }
+
+        String storagePath = appointmentPackStorageService.store(pdfBytes);
+
+        try {
+            return persistenceService.persist(authenticatedUserId, generationData, storagePath, pdfBytes.length);
+        } catch (RuntimeException exception) {
+            try {
+                appointmentPackStorageService.delete(storagePath);
+            } catch (RuntimeException cleanupException) {
+                exception.addSuppressed(cleanupException);
+            }
+
+            throw exception;
+        }
+    }
 
     @Transactional(readOnly = true)
     public List<AppointmentPackResponse> getAppointmentPacks(UUID authenticatedUserId, UUID patientRecordId) {

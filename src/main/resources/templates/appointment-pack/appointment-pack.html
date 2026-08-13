@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${model.title}">
+        Appointment Pack
+    </title>
+
+    <style type="text/css"
+           th:utext="${stylesheet}">
+    </style>
+</head>
+
+<body>
+
+<header class="document-header">
+    <table class="header-layout">
+        <tr>
+            <td class="brand-column">
+                <div class="brand-name">
+                    The Appointment Pack
+                </div>
+
+                <div class="brand-subtitle">
+                    Appointment information summary
+                </div>
+            </td>
+
+            <td class="generated-column">
+                Generated
+                <br/>
+                <strong th:text="${model.generatedDate}">
+                    13 August 2026
+                </strong>
+            </td>
+        </tr>
+    </table>
+
+    <h1 th:text="${model.title}">
+        Appointment Pack
+    </h1>
+
+    <p class="prepared-for">
+        Prepared for
+        <strong th:text="${model.patient.fullName}">
+            Patient Name
+        </strong>
+    </p>
+</header>
+
+
+<section class="section">
+    <h2 class="section-title">
+        Patient information
+    </h2>
+
+    <div class="card">
+        <table class="details-table">
+            <tr>
+                <th>Name</th>
+                <td th:text="${model.patient.fullName}">
+                    Patient
+                </td>
+            </tr>
+
+            <tr>
+                <th>Date of birth</th>
+                <td th:text="${model.patient.dateOfBirth}">
+                    1 January 2000
+                </td>
+            </tr>
+
+            <tr th:if="${model.patient.nhsNumber != null}">
+                <th>NHS number</th>
+                <td th:text="${model.patient.nhsNumber}">
+                    0000000000
+                </td>
+            </tr>
+
+            <tr th:if="${model.patient.chiNumber != null}">
+                <th>CHI number</th>
+                <td th:text="${model.patient.chiNumber}">
+                    0000000000
+                </td>
+            </tr>
+
+            <tr th:if="${model.patient.hcNumber != null}">
+                <th>H&amp;C number</th>
+                <td th:text="${model.patient.hcNumber}">
+                    0000000000
+                </td>
+            </tr>
+
+            <tr th:if="${model.patient.bloodType != null}">
+                <th>Blood type</th>
+                <td th:text="${model.patient.bloodType}">
+                    O+
+                </td>
+            </tr>
+
+            <tr th:if="${!model.patient.addressLines.isEmpty()}">
+                <th>Home address</th>
+
+                <td>
+                    <div th:each="line : ${model.patient.addressLines}"
+                         th:text="${line}">
+                        Address line
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</section>
+
+
+<section class="section">
+    <table class="section-heading-layout">
+        <tr>
+            <td>
+                <h2 class="section-title no-margin">
+                    Appointment
+                </h2>
+            </td>
+
+            <td class="section-date-column">
+                <span class="date-pill"
+                      th:text="${model.appointment.date}">
+                    20 August 2026
+                </span>
+            </td>
+        </tr>
+    </table>
+
+    <div class="card appointment-card">
+        <h3 th:if="${model.appointment.service != null}"
+            th:text="${model.appointment.service}">
+            Neurology
+        </h3>
+
+        <table class="details-table">
+            <tr>
+                <th>Start time</th>
+                <td th:text="${model.appointment.startTime}">
+                    09:30
+                </td>
+            </tr>
+
+            <tr th:if="${model.appointment.endTime != null}">
+                <th>End time</th>
+                <td th:text="${model.appointment.endTime}">
+                    10:00
+                </td>
+            </tr>
+
+            <tr th:if="${model.appointment.appointmentType != null}">
+                <th>Type</th>
+                <td th:text="${model.appointment.appointmentType}">
+                    Outpatient appointment
+                </td>
+            </tr>
+
+            <tr th:if="${model.appointment.clinicianOrTeam != null}">
+                <th>Clinician / team</th>
+                <td th:text="${model.appointment.clinicianOrTeam}">
+                    Neurology Team
+                </td>
+            </tr>
+
+            <tr th:if="${model.appointment.locationName != null}">
+                <th>Location</th>
+                <td th:text="${model.appointment.locationName}">
+                    Outpatients
+                </td>
+            </tr>
+
+            <tr th:if="${!model.appointment.addressLines.isEmpty()}">
+                <th>Address</th>
+
+                <td>
+                    <div th:each="line : ${model.appointment.addressLines}"
+                         th:text="${line}">
+                        Address
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="sub-note"
+             th:if="${model.appointment.notes != null}">
+            <strong>Appointment notes</strong>
+
+            <p class="preformatted"
+               th:text="${model.appointment.notes}">
+                Appointment notes.
+            </p>
+        </div>
+    </div>
+</section>
+
+
+<section class="section"
+         th:if="${model.notes != null}">
+    <h2 class="section-title">
+        Notes
+    </h2>
+
+    <div class="card note-card">
+        <p class="preformatted"
+           th:text="${model.notes}">
+            Patient or carer note.
+        </p>
+    </div>
+</section>
+
+
+<section class="section"
+         th:if="${!model.medications.isEmpty()}">
+    <h2 class="section-title">
+        Medications
+    </h2>
+
+    <div class="card item-card"
+         th:each="medication : ${model.medications}">
+
+        <h3 th:text="${medication.name}">
+            Medication
+        </h3>
+
+        <table class="details-table">
+            <tr th:if="${medication.dose != null}">
+                <th>Dose</th>
+                <td th:text="${medication.dose}">
+                    10 mg
+                </td>
+            </tr>
+
+            <tr th:if="${medication.form != null}">
+                <th>Form</th>
+                <td th:text="${medication.form}">
+                    Tablet
+                </td>
+            </tr>
+
+            <tr th:if="${medication.instructions != null}">
+                <th>Instructions</th>
+                <td th:text="${medication.instructions}">
+                    Once daily
+                </td>
+            </tr>
+
+            <tr th:if="${medication.startDate != null}">
+                <th>Started</th>
+                <td th:text="${medication.startDate}">
+                    1 January 2026
+                </td>
+            </tr>
+
+            <tr th:if="${medication.endDate != null}">
+                <th>Ended</th>
+                <td th:text="${medication.endDate}">
+                    1 August 2026
+                </td>
+            </tr>
+        </table>
+
+        <p class="preformatted item-notes"
+           th:if="${medication.notes != null}"
+           th:text="${medication.notes}">
+            Notes
+        </p>
+    </div>
+</section>
+
+
+<section class="section"
+         th:if="${!model.healthcareContacts.isEmpty()}">
+    <h2 class="section-title">
+        Healthcare contacts
+    </h2>
+
+    <div class="card item-card"
+         th:each="contact : ${model.healthcareContacts}">
+
+        <h3 th:text="${contact.name}">
+            Healthcare contact
+        </h3>
+
+        <p class="muted"
+           th:if="${contact.role != null}"
+           th:text="${contact.role}">
+            Consultant
+        </p>
+
+        <table class="details-table">
+            <tr th:if="${contact.organisation != null}">
+                <th>Organisation</th>
+                <td th:text="${contact.organisation}">
+                    Hospital
+                </td>
+            </tr>
+
+            <tr th:if="${contact.phoneNumber != null}">
+                <th>Telephone</th>
+                <td th:text="${contact.phoneNumber}">
+                    Telephone
+                </td>
+            </tr>
+
+            <tr th:if="${contact.email != null}">
+                <th>Email</th>
+                <td th:text="${contact.email}">
+                    Email
+                </td>
+            </tr>
+
+            <tr th:if="${!contact.addressLines.isEmpty()}">
+                <th>Address</th>
+
+                <td>
+                    <div th:each="line : ${contact.addressLines}"
+                         th:text="${line}">
+                        Address
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <p class="preformatted item-notes"
+           th:if="${contact.notes != null}"
+           th:text="${contact.notes}">
+            Notes
+        </p>
+    </div>
+</section>
+
+
+<section class="section"
+         th:if="${!model.emergencyContacts.isEmpty()}">
+    <h2 class="section-title">
+        Emergency contacts
+    </h2>
+
+    <div class="card item-card"
+         th:each="contact : ${model.emergencyContacts}">
+
+        <h3 th:text="${contact.name}">
+            Emergency contact
+        </h3>
+
+        <p class="muted"
+           th:text="${contact.relationship}">
+            Relationship
+        </p>
+
+        <table class="details-table">
+            <tr>
+                <th>Telephone</th>
+                <td th:text="${contact.phoneNumber}">
+                    Telephone
+                </td>
+            </tr>
+
+            <tr th:if="${contact.alternativePhoneNumber != null}">
+                <th>Alternative</th>
+                <td th:text="${contact.alternativePhoneNumber}">
+                    Alternative telephone
+                </td>
+            </tr>
+
+            <tr th:if="${contact.email != null}">
+                <th>Email</th>
+                <td th:text="${contact.email}">
+                    Email
+                </td>
+            </tr>
+        </table>
+
+        <p class="preformatted item-notes"
+           th:if="${contact.notes != null}"
+           th:text="${contact.notes}">
+            Notes
+        </p>
+    </div>
+</section>
+
+
+<section class="section"
+         th:if="${!model.medicalHistory.isEmpty()}">
+    <h2 class="section-title">
+        Medical history
+    </h2>
+
+    <div class="history-card"
+         th:each="entry : ${model.medicalHistory}">
+
+        <table class="history-heading">
+            <tr>
+                <td>
+                    <h3 th:text="${entry.title}">
+                        Medical history entry
+                    </h3>
+                </td>
+
+                <td class="history-date">
+                    <span class="date-pill"
+                          th:text="${entry.entryDate}">
+                        5 August 2026
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <p class="preformatted history-summary"
+           th:text="${entry.summary}">
+            Medical history summary.
+        </p>
+    </div>
+</section>
+
+
+<section class="section"
+         th:if="${!model.bloodTests.isEmpty()}">
+    <h2 class="section-title">
+        Blood results
+    </h2>
+
+    <div class="blood-test"
+         th:each="bloodTest : ${model.bloodTests}">
+
+        <table class="history-heading">
+            <tr>
+                <td>
+                    <h3 th:text="${bloodTest.title}">
+                        Blood test
+                    </h3>
+
+                    <p class="muted"
+                       th:if="${bloodTest.provider != null}"
+                       th:text="${bloodTest.provider}">
+                        Provider
+                    </p>
+                </td>
+
+                <td class="history-date">
+                    <span class="date-pill"
+                          th:text="${bloodTest.testDate}">
+                        12 August 2026
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <table class="results-table">
+            <thead>
+            <tr>
+                <th>Test</th>
+                <th>Result</th>
+                <th>Unit</th>
+                <th>Reference</th>
+                <th>Flag</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="result : ${bloodTest.results}">
+                <td th:text="${result.analyteName}">
+                    Haemoglobin
+                </td>
+
+                <td class="result-value"
+                    th:text="${result.resultValue}">
+                    143
+                </td>
+
+                <td th:text="${result.unit}">
+                    g/L
+                </td>
+
+                <td th:text="${result.referenceRange}">
+                    130–180
+                </td>
+
+                <td th:text="${result.flag}">
+                    Normal
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <p class="preformatted item-notes"
+           th:if="${bloodTest.notes != null}"
+           th:text="${bloodTest.notes}">
+            Notes
+        </p>
+    </div>
+</section>
+
+
+<div class="document-end">
+    This pack contains information selected for the appointment shown above.
+    It is a point-in-time copy and may not reflect later changes to the patient record.
+</div>
+
+</body>
+</html>

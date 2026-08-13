@@ -1,0 +1,280 @@
+@page {
+    size: A4;
+    margin: 16mm 16mm 18mm 16mm;
+
+    @bottom-left {
+        content: "The Appointment Pack";
+        color: #786f79;
+        font-size: 8pt;
+    }
+
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        color: #786f79;
+        font-size: 8pt;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    color: #3a303b;
+    background: #ffffff;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.45;
+}
+
+.document-header {
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid #3a303b;
+}
+
+.header-layout,
+.section-heading-layout,
+.history-heading {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.brand-column {
+    width: 70%;
+    vertical-align: top;
+}
+
+.generated-column {
+    width: 30%;
+    vertical-align: top;
+    text-align: right;
+    color: #786f79;
+    font-size: 9pt;
+}
+
+.brand-name {
+    margin-bottom: 2px;
+    color: #3a303b;
+    font-size: 15pt;
+    font-weight: bold;
+}
+
+.brand-subtitle {
+    color: #786f79;
+    font-size: 8.5pt;
+}
+
+h1 {
+    margin: 18px 0 4px 0;
+    color: #3a303b;
+    font-size: 24pt;
+    line-height: 1.15;
+}
+
+.prepared-for {
+    margin: 0;
+    color: #786f79;
+}
+
+.section {
+    margin-top: 20px;
+}
+
+.section-title {
+    margin: 0 0 9px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #d9d4da;
+    color: #3a303b;
+    font-size: 15pt;
+    font-weight: bold;
+}
+
+.section-title.no-margin {
+    margin-bottom: 0;
+}
+
+.section-date-column {
+    width: 38%;
+    text-align: right;
+    vertical-align: middle;
+    padding-bottom: 5px;
+}
+
+.card,
+.history-card,
+.blood-test {
+    margin-bottom: 10px;
+    padding: 13px 14px;
+    border: 1px solid #d9d4da;
+    border-radius: 6px;
+    background: #fff8f2;
+}
+
+.appointment-card {
+    border-left: 4px solid #f9cddb;
+}
+
+.note-card {
+    border-left: 4px solid #6ad7ae;
+}
+
+.item-card {
+    page-break-inside: avoid;
+}
+
+.history-card {
+    border-left: 4px solid #f9cddb;
+}
+
+.blood-test {
+    page-break-inside: auto;
+}
+
+h3 {
+    margin: 0 0 6px 0;
+    color: #3a303b;
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+.muted {
+    margin: -2px 0 8px 0;
+    color: #786f79;
+    font-size: 9pt;
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.details-table th,
+.details-table td {
+    padding: 3px 0;
+    vertical-align: top;
+}
+
+.details-table th {
+    width: 31%;
+    padding-right: 12px;
+    color: #786f79;
+    font-size: 8.5pt;
+    font-weight: bold;
+    text-align: left;
+}
+
+.details-table td {
+    color: #3a303b;
+}
+
+.date-pill {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 10px;
+    background: #6ad7ae;
+    color: #3a303b;
+    font-size: 8.5pt;
+    font-weight: bold;
+}
+
+.sub-note {
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px solid #d9d4da;
+}
+
+.preformatted {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.item-notes {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid #e3dee3;
+    color: #5f5660;
+}
+
+.history-heading td {
+    vertical-align: top;
+}
+
+.history-date {
+    width: 32%;
+    text-align: right;
+}
+
+.history-summary {
+    margin-top: 9px;
+}
+
+.results-table {
+    width: 100%;
+    margin-top: 9px;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 8.5pt;
+}
+
+.results-table thead {
+    background: #3a303b;
+    color: #fff8f2;
+}
+
+.results-table th {
+    padding: 6px 5px;
+    border: 1px solid #3a303b;
+    font-weight: bold;
+    text-align: left;
+}
+
+.results-table td {
+    padding: 6px 5px;
+    border: 1px solid #d9d4da;
+    vertical-align: top;
+    word-wrap: break-word;
+}
+
+.results-table tr {
+    page-break-inside: avoid;
+}
+
+.results-table th:nth-child(1),
+.results-table td:nth-child(1) {
+    width: 27%;
+}
+
+.results-table th:nth-child(2),
+.results-table td:nth-child(2) {
+    width: 16%;
+}
+
+.results-table th:nth-child(3),
+.results-table td:nth-child(3) {
+    width: 15%;
+}
+
+.results-table th:nth-child(4),
+.results-table td:nth-child(4) {
+    width: 25%;
+}
+
+.results-table th:nth-child(5),
+.results-table td:nth-child(5) {
+    width: 17%;
+}
+
+.result-value {
+    font-weight: bold;
+}
+
+.document-end {
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #d9d4da;
+    color: #786f79;
+    font-size: 8pt;
+    line-height: 1.4;
+}

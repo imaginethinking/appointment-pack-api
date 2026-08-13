@@ -1,0 +1,61 @@
+package net.imaginethinking.appointmentpack.pack;
+
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.appointment.Appointment;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
+import net.imaginethinking.appointmentpack.user.User;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.file.Path;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class AppointmentPackPersistenceService {
+
+    private final AppointmentPackRepository appointmentPackRepository;
+    private final EntityManager entityManager;
+
+    @Transactional
+    public AppointmentPackResponse persist(
+            UUID authenticatedUserId,
+            AppointmentPackGenerationData generationData,
+            String storagePath,
+            long fileSize) {
+        AppointmentPack appointmentPack = new AppointmentPack();
+
+        appointmentPack.setPatientRecord(entityManager.getReference(
+                PatientRecord.class,
+                generationData.patientRecordId()));
+
+        appointmentPack.setAppointment(entityManager.getReference(Appointment.class, generationData.appointmentId()));
+        appointmentPack.setTitle(generationData.title());
+        appointmentPack.setNotes(generationData.notes());
+        appointmentPack.setGeneratedBy(entityManager.getReference(User.class, authenticatedUserId));
+        appointmentPack.setGeneratedAt(generationData.generatedAt());
+        appointmentPack.setFileName(generationData.fileName());
+        appointmentPack.setStoredFileName(Path.of(storagePath).getFileName().toString());
+        appointmentPack.setStoragePath(storagePath);
+        appointmentPack.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        appointmentPack.setFileSize(fileSize);
+
+        for (AppointmentPackGenerationData.SelectedItem selectedItem : generationData.selectedItems()) {
+
+            AppointmentPackItem item = new AppointmentPackItem();
+
+            item.setAppointmentPack(appointmentPack);
+            item.setResourceType(selectedItem.resourceType());
+            item.setResourceId(selectedItem.resourceId());
+            item.setDisplayOrder(selectedItem.displayOrder());
+
+            appointmentPack.getItems().add(item);
+        }
+
+        AppointmentPack savedAppointmentPack = appointmentPackRepository.saveAndFlush(appointmentPack);
+
+        return AppointmentPackResponse.from(savedAppointmentPack);
+    }
+}

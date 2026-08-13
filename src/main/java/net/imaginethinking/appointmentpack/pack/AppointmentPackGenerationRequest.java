@@ -3,6 +3,8 @@ package net.imaginethinking.appointmentpack.pack;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,19 +26,19 @@ public record AppointmentPackGenerationRequest(
         String notes,
 
         @Size(max = 100)
-        List<UUID> medicationIds,
+        List<@NotNull UUID> medicationIds,
 
         @Size(max = 100)
-        List<UUID> healthcareContactIds,
+        List<@NotNull UUID> healthcareContactIds,
 
         @Size(max = 100)
-        List<UUID> emergencyContactIds,
+        List<@NotNull UUID> emergencyContactIds,
 
         @Size(max = 100)
-        List<UUID> medicalHistoryEntryIds,
+        List<@NotNull UUID> medicalHistoryEntryIds,
 
         @Size(max = 100)
-        List<UUID> bloodTestIds
+        List<@NotNull UUID> bloodTestIds
 ) {
 
     public AppointmentPackGenerationRequest {
@@ -48,8 +50,10 @@ public record AppointmentPackGenerationRequest(
     }
 
     private static List<UUID> immutableList(List<UUID> values) {
-        return values == null
-                ? List.of()
-                : List.copyOf(values);
+        if (values == null) {
+            return List.of();
+        }
+
+        return Collections.unmodifiableList(new ArrayList<>(values));
     }
 }
