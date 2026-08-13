@@ -7,11 +7,14 @@ import java.util.UUID;
 
 public record MedicalHistoryEntryResponse(
         UUID id,
+        UUID patientRecordId,
         String title,
         String summary,
         LocalDate entryDate,
         MedicalHistorySourceType sourceType,
         UUID sourceDocumentId,
-        DocumentType sourceDocumentType
+        DocumentType sourceDocumentType,
+        UUID createdByUserId,
+        boolean archived
 ) {
 }
