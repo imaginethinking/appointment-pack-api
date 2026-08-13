@@ -15,7 +15,7 @@ public record AppointmentPackResponse(
         Instant generatedAt,
         String fileName,
         long fileSize,
-        boolean archived,
+        Instant archivedAt,
         List<ItemResponse> items
 ) {
 
@@ -39,7 +39,7 @@ public record AppointmentPackResponse(
                 appointmentPack.getGeneratedAt(),
                 appointmentPack.getFileName(),
                 appointmentPack.getFileSize(),
-                appointmentPack.getArchivedAt() != null,
+                appointmentPack.getArchivedAt(),
                 items
         );
     }
@@ -50,7 +50,9 @@ public record AppointmentPackResponse(
             int displayOrder
     ) {
 
-        public static ItemResponse from(AppointmentPackItem item) {
+        public static ItemResponse from(
+                AppointmentPackItem item
+        ) {
             return new ItemResponse(
                     item.getResourceType(),
                     item.getResourceId(),

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -106,9 +105,7 @@ public class AppointmentPackService {
                 appointmentPack.getPatientRecord(),
                 AppointmentPackPermission.CREATE);
 
-        if (appointmentPack.getArchivedAt() == null) {
-            appointmentPack.setArchivedAt(Instant.now());
-        }
+        appointmentPack.archive();
 
         return AppointmentPackResponse.from(appointmentPack);
     }
@@ -128,7 +125,7 @@ public class AppointmentPackService {
             UUID appointmentPackId) {
         AppointmentPack appointmentPack = findAppointmentPack(appointmentPackId);
 
-        if (appointmentPack.getArchivedAt() != null) {
+        if (appointmentPack.isArchived()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment pack not found");
         }
 

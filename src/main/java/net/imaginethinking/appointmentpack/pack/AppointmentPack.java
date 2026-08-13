@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.appointment.Appointment;
-import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.user.User;
 
@@ -25,7 +25,7 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "appointment_packs")
-public class AppointmentPack extends BaseEntity {
+public class AppointmentPack extends ArchivableEntity {
 
     @ManyToOne(
             fetch = FetchType.LAZY,
@@ -118,9 +118,6 @@ public class AppointmentPack extends BaseEntity {
             nullable = false
     )
     private long fileSize;
-
-    @Column(name = "archived_at")
-    private Instant archivedAt;
 
     @OneToMany(
             mappedBy = "appointmentPack",
