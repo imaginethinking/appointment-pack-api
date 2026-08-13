@@ -3,6 +3,7 @@ package net.imaginethinking.appointmentpack.appointment;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import net.imaginethinking.appointmentpack.address.PartialAddressRequest;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -42,7 +43,7 @@ public record AppointmentConfirmationRequest(
         String locationName,
 
         @Valid
-        AddressInput address,
+        PartialAddressRequest address,
 
         @Size(
                 max = 2000,
@@ -50,26 +51,4 @@ public record AppointmentConfirmationRequest(
         )
         String notes
 ) {
-
-    public record AddressInput(
-
-            @Size(max = 150)
-            String addressLine1,
-
-            @Size(max = 150)
-            String addressLine2,
-
-            @Size(max = 100)
-            String townCity,
-
-            @Size(max = 100)
-            String county,
-
-            @Size(max = 20)
-            String postcode,
-
-            @Size(max = 100)
-            String country
-    ) {
-    }
 }

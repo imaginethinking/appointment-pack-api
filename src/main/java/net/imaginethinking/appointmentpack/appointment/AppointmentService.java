@@ -1,7 +1,8 @@
 package net.imaginethinking.appointmentpack.appointment;
 
 import lombok.RequiredArgsConstructor;
-import net.imaginethinking.appointmentpack.address.Address;
+import net.imaginethinking.appointmentpack.address.AddressMapper;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
@@ -131,48 +132,11 @@ public class AppointmentService {
         appointment.setStartTime(request.startTime());
         appointment.setEndTime(request.endTime());
 
-        appointment.setService(normaliseOptionalValue(request.service()));
-        appointment.setAppointmentType(normaliseOptionalValue(request.appointmentType()));
-        appointment.setClinicianOrTeam(normaliseOptionalValue(request.clinicianOrTeam()));
-        appointment.setLocationName(normaliseOptionalValue(request.locationName()));
-        appointment.setAddress(toAddress(request.address()));
-        appointment.setNotes(normaliseOptionalValue(request.notes()));
-    }
-
-    private Address toAddress(
-            AppointmentRequest.AddressInput request) {
-        if (request == null) {
-            return null;
-        }
-
-        boolean empty = isBlank(request.addressLine1()) && isBlank(request.addressLine2()) && isBlank(request.townCity()) && isBlank(
-                request.county()) && isBlank(request.postcode()) && isBlank(request.country());
-
-        if (empty) {
-            return null;
-        }
-
-        Address address = new Address();
-
-        address.setAddressLine1(normaliseOptionalValue(request.addressLine1()));
-        address.setAddressLine2(normaliseOptionalValue(request.addressLine2()));
-        address.setTownCity(normaliseOptionalValue(request.townCity()));
-        address.setCounty(normaliseOptionalValue(request.county()));
-        address.setPostcode(normaliseOptionalValue(request.postcode()));
-        address.setCountry(normaliseOptionalValue(request.country()));
-
-        return address;
-    }
-
-    private String normaliseOptionalValue(String value) {
-        if (isBlank(value)) {
-            return null;
-        }
-
-        return value.strip();
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+        appointment.setService(TextNormalizer.stripToNull(request.service()));
+        appointment.setAppointmentType(TextNormalizer.stripToNull(request.appointmentType()));
+        appointment.setClinicianOrTeam(TextNormalizer.stripToNull(request.clinicianOrTeam()));
+        appointment.setLocationName(TextNormalizer.stripToNull(request.locationName()));
+        appointment.setAddress(AddressMapper.toAddress(request.address()));
+        appointment.setNotes(TextNormalizer.stripToNull(request.notes()));
     }
 }

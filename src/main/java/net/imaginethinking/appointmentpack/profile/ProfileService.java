@@ -1,8 +1,8 @@
 package net.imaginethinking.appointmentpack.profile;
 
 import lombok.RequiredArgsConstructor;
-import net.imaginethinking.appointmentpack.address.Address;
-import net.imaginethinking.appointmentpack.address.AddressRequest;
+import net.imaginethinking.appointmentpack.address.AddressMapper;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +28,11 @@ public class ProfileService {
     public ProfileResponse updateCurrentProfile(UUID userId, UpdateProfileRequest request) {
         Profile profile = findByUserId(userId);
 
-        profile.setFirstName(request.firstName().trim());
-        profile.setLastName(request.lastName().trim());
+        profile.setFirstName(TextNormalizer.strip(request.firstName()));
+        profile.setLastName(TextNormalizer.strip(request.lastName()));
         profile.setDateOfBirth(request.dateOfBirth());
-        profile.setGender(normaliseOptionalValue(request.gender()));
-
-        profile.setAddress(toAddress(request.address()));
+        profile.setGender(TextNormalizer.stripToNull(request.gender()));
+        profile.setAddress(AddressMapper.toAddress(request.address()));
 
         return ProfileResponse.from(profile);
     }
@@ -41,35 +40,5 @@ public class ProfileService {
     private Profile findByUserId(UUID userId) {
         return profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
-    }
-
-    private Address toAddress(AddressRequest request) {
-        if (request == null) {
-            return null;
-        }
-
-        Address address = new Address();
-
-        address.setAddressLine1(request.addressLine1().trim());
-
-        address.setAddressLine2(normaliseOptionalValue(request.addressLine2()));
-
-        address.setTownCity(request.townCity().trim());
-
-        address.setCounty(normaliseOptionalValue(request.county()));
-
-        address.setPostcode(request.postcode().trim());
-
-        address.setCountry(request.country().trim());
-
-        return address;
-    }
-
-    private String normaliseOptionalValue(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.trim();
     }
 }

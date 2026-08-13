@@ -1,8 +1,9 @@
 package net.imaginethinking.appointmentpack.contact;
 
 import lombok.RequiredArgsConstructor;
-import net.imaginethinking.appointmentpack.address.Address;
+import net.imaginethinking.appointmentpack.address.AddressMapper;
 import net.imaginethinking.appointmentpack.address.AddressRequest;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
@@ -142,37 +143,12 @@ public class HealthcareContactService {
             String email,
             AddressRequest address,
             String notes) {
-        contact.setName(name.trim());
-        contact.setRole(normaliseOptionalValue(role));
-        contact.setOrganisation(normaliseOptionalValue(organisation));
-        contact.setPhoneNumber(normaliseOptionalValue(phoneNumber));
-        contact.setEmail(normaliseOptionalValue(email));
-        contact.setAddress(toAddress(address));
-        contact.setNotes(normaliseOptionalValue(notes));
-    }
-
-    private Address toAddress(AddressRequest request) {
-        if (request == null) {
-            return null;
-        }
-
-        Address address = new Address();
-
-        address.setAddressLine1(request.addressLine1().trim());
-        address.setAddressLine2(normaliseOptionalValue(request.addressLine2()));
-        address.setTownCity(request.townCity().trim());
-        address.setCounty(normaliseOptionalValue(request.county()));
-        address.setPostcode(request.postcode().trim());
-        address.setCountry(request.country().trim());
-
-        return address;
-    }
-
-    private String normaliseOptionalValue(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.trim();
+        contact.setName(TextNormalizer.strip(name));
+        contact.setRole(TextNormalizer.stripToNull(role));
+        contact.setOrganisation(TextNormalizer.stripToNull(organisation));
+        contact.setPhoneNumber(TextNormalizer.stripToNull(phoneNumber));
+        contact.setEmail(TextNormalizer.stripToNull(email));
+        contact.setAddress(AddressMapper.toAddress(address));
+        contact.setNotes(TextNormalizer.stripToNull(notes));
     }
 }

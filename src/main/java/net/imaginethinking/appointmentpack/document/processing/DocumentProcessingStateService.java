@@ -2,8 +2,9 @@ package net.imaginethinking.appointmentpack.document.processing;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import net.imaginethinking.appointmentpack.address.Address;
+import net.imaginethinking.appointmentpack.address.AddressMapper;
 import net.imaginethinking.appointmentpack.appointment.*;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.document.*;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
@@ -24,17 +25,11 @@ import java.util.UUID;
 public class DocumentProcessingStateService {
 
     private final DocumentRepository documentRepository;
-
     private final DocumentProcessingResultRepository processingResultRepository;
-
     private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
-
     private final AppointmentRepository appointmentRepository;
-
     private final RedactionContextFactory redactionContextFactory;
-
     private final PatientAccessControlService patientAccessControlService;
-
     private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
@@ -221,12 +216,12 @@ public class DocumentProcessingStateService {
         appointment.setDate(request.date());
         appointment.setStartTime(request.startTime());
         appointment.setEndTime(request.endTime());
-        appointment.setService(normaliseOptionalValue(request.service()));
-        appointment.setAppointmentType(normaliseOptionalValue(request.appointmentType()));
-        appointment.setClinicianOrTeam(normaliseOptionalValue(request.clinicianOrTeam()));
-        appointment.setLocationName(normaliseOptionalValue(request.locationName()));
-        appointment.setAddress(toAddress(request.address()));
-        appointment.setNotes(normaliseOptionalValue(request.notes()));
+        appointment.setService(TextNormalizer.stripToNull(request.service()));
+        appointment.setAppointmentType(TextNormalizer.stripToNull(request.appointmentType()));
+        appointment.setClinicianOrTeam(TextNormalizer.stripToNull(request.clinicianOrTeam()));
+        appointment.setLocationName(TextNormalizer.stripToNull(request.locationName()));
+        appointment.setAddress(AddressMapper.toAddress(request.address()));
+        appointment.setNotes(TextNormalizer.stripToNull(request.notes()));
         appointment.setSourceDocument(document);
 
         Appointment savedAppointment = appointmentRepository.save(appointment);
@@ -295,7 +290,7 @@ public class DocumentProcessingStateService {
             applyManualSummary(result);
         }
 
-        String reviewedSummary = request.reviewedSummary().strip();
+        String reviewedSummary = TextNormalizer.strip(request.reviewedSummary());
 
         User reviewingUser = entityManager.getReference(User.class, authenticatedUserId);
 
@@ -309,7 +304,7 @@ public class DocumentProcessingStateService {
 
         historyEntry.setPatientRecord(document.getPatientRecord());
 
-        historyEntry.setTitle(request.historyTitle().strip());
+        historyEntry.setTitle(TextNormalizer.strip(request.historyTitle()));
 
         historyEntry.setSummary(reviewedSummary);
         historyEntry.setEntryDate(request.historyDate());
@@ -599,38 +594,6 @@ public class DocumentProcessingStateService {
                 result.getAppointmentCounty(),
                 result.getAppointmentPostcode(),
                 result.getAppointmentCountry());
-    }
-
-    private Address toAddress(AppointmentConfirmationRequest.AddressInput request) {
-        if (request == null) {
-            return null;
-        }
-
-        boolean empty = isBlank(request.addressLine1()) && isBlank(request.addressLine2()) && isBlank(request.townCity()) && isBlank(
-                request.county()) && isBlank(request.postcode()) && isBlank(request.country());
-
-        if (empty) {
-            return null;
-        }
-
-        Address address = new Address();
-
-        address.setAddressLine1(normaliseOptionalValue(request.addressLine1()));
-        address.setAddressLine2(normaliseOptionalValue(request.addressLine2()));
-        address.setTownCity(normaliseOptionalValue(request.townCity()));
-        address.setCounty(normaliseOptionalValue(request.county()));
-        address.setPostcode(normaliseOptionalValue(request.postcode()));
-        address.setCountry(normaliseOptionalValue(request.country()));
-
-        return address;
-    }
-
-    private String normaliseOptionalValue(String value) {
-        if (isBlank(value)) {
-            return null;
-        }
-
-        return value.strip();
     }
 
     private DocumentProcessingResult findProcessingResult(UUID documentId) {
