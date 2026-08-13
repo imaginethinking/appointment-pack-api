@@ -4,6 +4,10 @@ import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.address.AddressMapper;
 import net.imaginethinking.appointmentpack.address.PartialAddressRequest;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
@@ -22,6 +26,7 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final PatientRecordAccessService patientRecordAccessService;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public AppointmentResponse createAppointment(
@@ -51,6 +56,11 @@ public class AppointmentService {
                 request.notes());
 
         Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        publishActivity(
+                authenticatedUserId,
+                savedAppointment,
+                PatientActivityAction.CREATED);
 
         return AppointmentResponse.from(savedAppointment);
     }
@@ -101,6 +111,11 @@ public class AppointmentService {
                 request.address(),
                 request.notes());
 
+        publishActivity(
+                authenticatedUserId,
+                appointment,
+                PatientActivityAction.UPDATED);
+
         return AppointmentResponse.from(appointment);
     }
 
@@ -113,7 +128,14 @@ public class AppointmentService {
                 appointment.getPatientRecord(),
                 AppointmentPermission.EDIT);
 
-        appointment.archive();
+        if (!appointment.isArchived()) {
+            appointment.archive();
+
+            publishActivity(
+                    authenticatedUserId,
+                    appointment,
+                    PatientActivityAction.ARCHIVED);
+        }
 
         return AppointmentResponse.from(appointment);
     }
@@ -131,6 +153,18 @@ public class AppointmentService {
         }
 
         return appointment;
+    }
+
+    private void publishActivity(
+            UUID authenticatedUserId,
+            Appointment appointment,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                appointment.getPatientRecord().getId(),
+                PatientResourceType.APPOINTMENT,
+                appointment.getId(),
+                action));
     }
 
     private void validateTimes(LocalTime startTime, LocalTime endTime) {

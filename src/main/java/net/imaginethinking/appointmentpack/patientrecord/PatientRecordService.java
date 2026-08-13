@@ -2,6 +2,10 @@ package net.imaginethinking.appointmentpack.patientrecord;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.profile.Profile;
 import net.imaginethinking.appointmentpack.profile.ProfileRepository;
 import org.springframework.http.HttpStatus;
@@ -26,6 +30,7 @@ public class PatientRecordService {
     private final PatientRecordRepository patientRecordRepository;
     private final ProfileRepository profileRepository;
     private final PatientRecordAccessService patientRecordAccessService;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public PatientRecordResponse createCurrentPatientRecord(UUID userId, CreatePatientRecordRequest request) {
@@ -54,6 +59,13 @@ public class PatientRecordService {
 
         PatientRecord savedPatientRecord = patientRecordRepository.save(patientRecord);
 
+        appEventPublisher.publish(PatientActivityEvent.create(
+                userId,
+                savedPatientRecord.getId(),
+                PatientResourceType.PATIENT_RECORD,
+                savedPatientRecord.getId(),
+                PatientActivityAction.CREATED));
+
         return toResponse(savedPatientRecord);
     }
 
@@ -78,6 +90,13 @@ public class PatientRecordService {
         patientRecord.setWeight(request.weight());
         patientRecord.setWeightUnit(request.weightUnit());
         patientRecord.setBloodType(request.bloodType());
+
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                patientRecord.getId(),
+                PatientResourceType.PATIENT_RECORD,
+                patientRecord.getId(),
+                PatientActivityAction.UPDATED));
 
         return toResponse(patientRecord);
     }

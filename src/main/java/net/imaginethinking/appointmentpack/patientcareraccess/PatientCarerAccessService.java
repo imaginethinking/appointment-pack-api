@@ -1,6 +1,10 @@
 package net.imaginethinking.appointmentpack.patientcareraccess;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
 import net.imaginethinking.appointmentpack.permission.PermissionValidator;
@@ -25,6 +29,7 @@ public class PatientCarerAccessService {
     private final PatientRecordRepository patientRecordRepository;
     private final UserRepository userRepository;
     private final PermissionValidator permissionValidator;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public PatientCarerAccessResponse createInvitation(UUID patientUserId, CreateCarerInvitationRequest request) {
@@ -54,6 +59,8 @@ public class PatientCarerAccessService {
                 .orElseGet(() -> createNewInvitation(patientRecord, carer, permissions));
 
         PatientCarerAccess savedAccess = patientCarerAccessRepository.save(access);
+
+        publishActivity(patientUserId, savedAccess, PatientActivityAction.INVITED);
 
         return PatientCarerAccessResponse.from(savedAccess);
     }
@@ -94,6 +101,8 @@ public class PatientCarerAccessService {
 
         changeStatus(access, PatientCarerAccessStatus.ACTIVE);
 
+        publishActivity(carerUserId, access, PatientActivityAction.ACCEPTED);
+
         return PatientCarerAccessResponse.from(access);
     }
 
@@ -105,6 +114,8 @@ public class PatientCarerAccessService {
         requireStatus(access, PatientCarerAccessStatus.PENDING);
 
         changeStatus(access, PatientCarerAccessStatus.DECLINED);
+
+        publishActivity(carerUserId, access, PatientActivityAction.DECLINED);
 
         return PatientCarerAccessResponse.from(access);
     }
@@ -118,6 +129,8 @@ public class PatientCarerAccessService {
 
         changeStatus(access, PatientCarerAccessStatus.CANCELLED);
 
+        publishActivity(patientUserId, access, PatientActivityAction.CANCELLED);
+
         return PatientCarerAccessResponse.from(access);
     }
 
@@ -129,6 +142,8 @@ public class PatientCarerAccessService {
         requireStatus(access, PatientCarerAccessStatus.ACTIVE);
 
         changeStatus(access, PatientCarerAccessStatus.REVOKED);
+
+        publishActivity(patientUserId, access, PatientActivityAction.REVOKED);
 
         return PatientCarerAccessResponse.from(access);
     }
@@ -153,7 +168,18 @@ public class PatientCarerAccessService {
         access.setPermissions(permissions);
         access.setStatusChangedAt(Instant.now());
 
+        publishActivity(patientUserId, access, PatientActivityAction.PERMISSIONS_UPDATED);
+
         return PatientCarerAccessResponse.from(access);
+    }
+
+    private void publishActivity(UUID authenticatedUserId, PatientCarerAccess access, PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                access.getPatientRecord().getId(),
+                PatientResourceType.PATIENT_CARER_ACCESS,
+                access.getId(),
+                action));
     }
 
     private PatientCarerAccess createNewInvitation(PatientRecord patientRecord, User carer, Set<String> permissions) {

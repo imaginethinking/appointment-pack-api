@@ -14,6 +14,10 @@ import net.imaginethinking.appointmentpack.document.processing.SummarySource;
 import net.imaginethinking.appointmentpack.document.processing.api.DocumentProcessingResultResponse;
 import net.imaginethinking.appointmentpack.document.processing.api.DocumentSummaryAcceptanceRequest;
 import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingException;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermission;
@@ -37,6 +41,7 @@ public class ConsultationDocumentReviewService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final DocumentProcessingResultMapper processingResultMapper;
     private final EntityManager entityManager;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public DocumentProcessingResultResponse acceptSummary(
@@ -94,11 +99,18 @@ public class ConsultationDocumentReviewService {
         document.setStatus(DocumentStatus.ACCEPTED);
         document.setProcessingFailureReason(null);
 
+        publishDocumentActivity(
+                authenticatedUserId,
+                document,
+                PatientActivityAction.SUMMARY_ACCEPTED);
+
         return processingResultMapper.toResponse(document, result);
     }
 
     @Transactional
-    public DocumentProcessingResultResponse rejectSummary(UUID authenticatedUserId, UUID documentId) {
+    public DocumentProcessingResultResponse rejectSummary(
+            UUID authenticatedUserId,
+            UUID documentId) {
         Document document = processingRecordService.requireAvailableDocument(documentId);
 
         patientRecordAccessService.requireAccess(
@@ -121,7 +133,24 @@ public class ConsultationDocumentReviewService {
         document.setStatus(DocumentStatus.REJECTED);
         document.setProcessingFailureReason(null);
 
+        publishDocumentActivity(
+                authenticatedUserId,
+                document,
+                PatientActivityAction.SUMMARY_REJECTED);
+
         return processingResultMapper.toResponse(document, result);
+    }
+
+    private void publishDocumentActivity(
+            UUID authenticatedUserId,
+            Document document,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                document.getPatientRecord().getId(),
+                PatientResourceType.DOCUMENT,
+                document.getId(),
+                action));
     }
 
     private void validateSummaryCanBeAccepted(Document document) {

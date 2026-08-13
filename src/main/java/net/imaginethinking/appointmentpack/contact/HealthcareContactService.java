@@ -4,6 +4,10 @@ import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.address.AddressMapper;
 import net.imaginethinking.appointmentpack.address.AddressRequest;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
@@ -20,6 +24,7 @@ public class HealthcareContactService {
 
     private final HealthcareContactRepository healthcareContactRepository;
     private final PatientRecordAccessService patientRecordAccessService;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public HealthcareContactResponse createHealthcareContact(
@@ -46,6 +51,11 @@ public class HealthcareContactService {
                 request.notes());
 
         HealthcareContact savedContact = healthcareContactRepository.save(contact);
+
+        publishActivity(
+                authenticatedUserId,
+                savedContact,
+                PatientActivityAction.CREATED);
 
         return HealthcareContactResponse.from(savedContact);
     }
@@ -97,6 +107,11 @@ public class HealthcareContactService {
                 request.address(),
                 request.notes());
 
+        publishActivity(
+                authenticatedUserId,
+                contact,
+                PatientActivityAction.UPDATED);
+
         return HealthcareContactResponse.from(contact);
     }
 
@@ -109,7 +124,14 @@ public class HealthcareContactService {
                 contact.getPatientRecord(),
                 ContactPermission.EDIT);
 
-        contact.archive();
+        if (!contact.isArchived()) {
+            contact.archive();
+
+            publishActivity(
+                    authenticatedUserId,
+                    contact,
+                    PatientActivityAction.ARCHIVED);
+        }
 
         return HealthcareContactResponse.from(contact);
     }
@@ -127,6 +149,18 @@ public class HealthcareContactService {
         }
 
         return contact;
+    }
+
+    private void publishActivity(
+            UUID authenticatedUserId,
+            HealthcareContact contact,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                contact.getPatientRecord().getId(),
+                PatientResourceType.HEALTHCARE_CONTACT,
+                contact.getId(),
+                action));
     }
 
     private void applyValues(

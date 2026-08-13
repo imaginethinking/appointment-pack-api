@@ -3,6 +3,10 @@ package net.imaginethinking.appointmentpack.pack;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.appointment.Appointment;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.pack.generation.AppointmentPackGenerationData;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.user.User;
@@ -19,6 +23,7 @@ public class AppointmentPackPersistenceService {
 
     private final AppointmentPackRepository appointmentPackRepository;
     private final EntityManager entityManager;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public AppointmentPackResponse persist(
@@ -28,9 +33,7 @@ public class AppointmentPackPersistenceService {
             long fileSize) {
         AppointmentPack appointmentPack = new AppointmentPack();
 
-        appointmentPack.setPatientRecord(entityManager.getReference(
-                PatientRecord.class,
-                generationData.patientRecordId()));
+        appointmentPack.setPatientRecord(entityManager.getReference(PatientRecord.class, generationData.patientRecordId()));
 
         appointmentPack.setAppointment(entityManager.getReference(Appointment.class, generationData.appointmentId()));
         appointmentPack.setTitle(generationData.title());
@@ -56,6 +59,13 @@ public class AppointmentPackPersistenceService {
         }
 
         AppointmentPack savedAppointmentPack = appointmentPackRepository.saveAndFlush(appointmentPack);
+
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                generationData.patientRecordId(),
+                PatientResourceType.APPOINTMENT_PACK,
+                savedAppointmentPack.getId(),
+                PatientActivityAction.GENERATED));
 
         return AppointmentPackResponse.from(savedAppointmentPack);
     }

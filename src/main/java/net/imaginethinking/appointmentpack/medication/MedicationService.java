@@ -2,6 +2,10 @@ package net.imaginethinking.appointmentpack.medication;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
@@ -19,6 +23,7 @@ public class MedicationService {
 
     private final MedicationRepository medicationRepository;
     private final PatientRecordAccessService patientRecordAccessService;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public MedicationResponse createMedication(
@@ -47,6 +52,11 @@ public class MedicationService {
                 request.notes());
 
         Medication savedMedication = medicationRepository.save(medication);
+
+        publishActivity(
+                authenticatedUserId,
+                savedMedication,
+                PatientActivityAction.CREATED);
 
         return MedicationResponse.from(savedMedication);
     }
@@ -95,6 +105,11 @@ public class MedicationService {
                 request.endDate(),
                 request.notes());
 
+        publishActivity(
+                authenticatedUserId,
+                medication,
+                PatientActivityAction.UPDATED);
+
         return MedicationResponse.from(medication);
     }
 
@@ -107,7 +122,14 @@ public class MedicationService {
                 medication.getPatientRecord(),
                 MedicationPermission.EDIT);
 
-        medication.archive();
+        if (!medication.isArchived()) {
+            medication.archive();
+
+            publishActivity(
+                    authenticatedUserId,
+                    medication,
+                    PatientActivityAction.ARCHIVED);
+        }
 
         return MedicationResponse.from(medication);
     }
@@ -125,6 +147,18 @@ public class MedicationService {
         }
 
         return medication;
+    }
+
+    private void publishActivity(
+            UUID authenticatedUserId,
+            Medication medication,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                medication.getPatientRecord().getId(),
+                PatientResourceType.MEDICATION,
+                medication.getId(),
+                action));
     }
 
     private void validateDates(LocalDate startDate, LocalDate endDate) {

@@ -2,6 +2,10 @@ package net.imaginethinking.appointmentpack.bloodtest;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
@@ -23,6 +27,7 @@ public class BloodTestService {
 
     private final BloodTestRepository bloodTestRepository;
     private final PatientRecordAccessService patientRecordAccessService;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public BloodTestResponse createBloodTest(
@@ -47,15 +52,26 @@ public class BloodTestService {
 
         BloodTest savedBloodTest = bloodTestRepository.save(bloodTest);
 
+        publishActivity(
+                authenticatedUserId,
+                savedBloodTest,
+                PatientActivityAction.CREATED);
+
         return BloodTestResponse.from(savedBloodTest);
     }
 
     @Transactional(readOnly = true)
     public List<BloodTestResponse> getBloodTests(UUID authenticatedUserId, UUID patientRecordId) {
-        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, BloodTestPermission.VIEW);
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                BloodTestPermission.VIEW);
 
-        return bloodTestRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByTestDateDescCreatedAtDesc(
-                patientRecordId).stream().map(BloodTestResponse::from).toList();
+        return bloodTestRepository
+                .findAllByPatientRecord_IdAndArchivedAtIsNullOrderByTestDateDescCreatedAtDesc(patientRecordId)
+                .stream()
+                .map(BloodTestResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +106,11 @@ public class BloodTestService {
                 request.notes(),
                 request.results());
 
+        publishActivity(
+                authenticatedUserId,
+                bloodTest,
+                PatientActivityAction.UPDATED);
+
         return BloodTestResponse.from(bloodTest);
     }
 
@@ -102,7 +123,14 @@ public class BloodTestService {
                 bloodTest.getPatientRecord(),
                 BloodTestPermission.EDIT);
 
-        bloodTest.archive();
+        if (!bloodTest.isArchived()) {
+            bloodTest.archive();
+
+            publishActivity(
+                    authenticatedUserId,
+                    bloodTest,
+                    PatientActivityAction.ARCHIVED);
+        }
 
         return BloodTestResponse.from(bloodTest);
     }
@@ -120,6 +148,18 @@ public class BloodTestService {
         }
 
         return bloodTest;
+    }
+
+    private void publishActivity(
+            UUID authenticatedUserId,
+            BloodTest bloodTest,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                bloodTest.getPatientRecord().getId(),
+                PatientResourceType.BLOOD_TEST,
+                bloodTest.getId(),
+                action));
     }
 
     private void applyValues(
@@ -173,13 +213,17 @@ public class BloodTestService {
     }
 
     private String createAnalyteKey(String analyteName) {
-        String key = Normalizer.normalize(analyteName.toLowerCase(Locale.ROOT), Normalizer.Form.NFKD)
+        String key = Normalizer.normalize(
+                        analyteName.toLowerCase(Locale.ROOT),
+                        Normalizer.Form.NFKD)
                 .replaceAll("\\p{M}+", "")
                 .replaceAll("[^\\p{L}\\p{N}]+", "-")
                 .replaceAll("^-+|-+$", "");
 
         if (key.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Analyte name must contain letters or numbers");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Analyte name must contain letters or numbers");
         }
 
         return key;
@@ -194,7 +238,6 @@ public class BloodTestService {
             BigDecimal numericValue = new BigDecimal(resultValue);
 
             int scale = Math.max(numericValue.scale(), 0);
-
             int integerDigits = numericValue.precision() - numericValue.scale();
 
             if (scale > 10 || integerDigits > 20) {

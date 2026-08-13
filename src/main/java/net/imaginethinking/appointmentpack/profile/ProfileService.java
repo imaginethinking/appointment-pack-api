@@ -3,6 +3,11 @@ package net.imaginethinking.appointmentpack.profile;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.address.AddressMapper;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +20,8 @@ import java.util.UUID;
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
+    private final PatientRecordRepository patientRecordRepository;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional(readOnly = true)
     public ProfileResponse getCurrentProfile(UUID userId) {
@@ -33,6 +40,15 @@ public class ProfileService {
         profile.setDateOfBirth(request.dateOfBirth());
         profile.setGender(TextNormalizer.stripToNull(request.gender()));
         profile.setAddress(AddressMapper.toAddress(request.address()));
+
+        patientRecordRepository.findByProfileUserId(userId)
+                .ifPresent(patientRecord -> appEventPublisher.publish(
+                        PatientActivityEvent.create(
+                                userId,
+                                patientRecord.getId(),
+                                PatientResourceType.PROFILE,
+                                profile.getId(),
+                                PatientActivityAction.UPDATED)));
 
         return ProfileResponse.from(profile);
     }

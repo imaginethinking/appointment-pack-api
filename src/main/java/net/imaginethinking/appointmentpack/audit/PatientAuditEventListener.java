@@ -26,6 +26,6 @@ public class PatientAuditEventListener {
                 event.occurredAt()
         );
 
-        patientAuditEventRepository.save(auditEvent);
+        patientAuditEventRepository.saveAndFlush(auditEvent);
     }
 }

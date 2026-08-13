@@ -13,6 +13,10 @@ import net.imaginethinking.appointmentpack.document.processing.DocumentProcessin
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResult;
 import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResultMapper;
 import net.imaginethinking.appointmentpack.document.processing.api.DocumentProcessingResultResponse;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.HttpStatus;
@@ -32,6 +36,7 @@ public class AppointmentDocumentReviewService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final DocumentProcessingResultMapper processingResultMapper;
     private final EntityManager entityManager;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public AppointmentResponse confirmAppointment(
@@ -53,7 +58,9 @@ public class AppointmentDocumentReviewService {
         validateAppointmentCanBeConfirmed(document);
 
         if (appointmentRepository.existsBySourceDocument_Id(documentId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "An appointment already exists for this document");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "An appointment already exists for this document");
         }
 
         validateAppointmentTimes(request);
@@ -84,12 +91,20 @@ public class AppointmentDocumentReviewService {
         document.setStatus(DocumentStatus.ACCEPTED);
         document.setProcessingFailureReason(null);
 
+        publishDocumentActivity(
+                authenticatedUserId,
+                document,
+                PatientActivityAction.APPOINTMENT_CONFIRMED);
+
         return AppointmentResponse.from(savedAppointment);
     }
 
     @Transactional
-    public DocumentProcessingResultResponse rejectAppointment(UUID authenticatedUserId, UUID documentId) {
-        Document document = processingRecordService.requireAvailableDocument(documentId);
+    public DocumentProcessingResultResponse rejectAppointment(
+            UUID authenticatedUserId,
+            UUID documentId) {
+        Document document =
+                processingRecordService.requireAvailableDocument(documentId);
 
         patientRecordAccessService.requireAccess(
                 authenticatedUserId,
@@ -110,7 +125,24 @@ public class AppointmentDocumentReviewService {
         document.setStatus(DocumentStatus.REJECTED);
         document.setProcessingFailureReason(null);
 
+        publishDocumentActivity(
+                authenticatedUserId,
+                document,
+                PatientActivityAction.APPOINTMENT_REJECTED);
+
         return processingResultMapper.toResponse(document, result);
+    }
+
+    private void publishDocumentActivity(
+            UUID authenticatedUserId,
+            Document document,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                document.getPatientRecord().getId(),
+                PatientResourceType.DOCUMENT,
+                document.getId(),
+                action));
     }
 
     private void validateAppointmentCanBeConfirmed(Document document) {
@@ -128,5 +160,4 @@ public class AppointmentDocumentReviewService {
                     "Appointment end time must be after the start time");
         }
     }
-
 }

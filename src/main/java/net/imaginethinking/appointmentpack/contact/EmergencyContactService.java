@@ -2,6 +2,10 @@ package net.imaginethinking.appointmentpack.contact;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;
@@ -18,6 +22,7 @@ public class EmergencyContactService {
 
     private final EmergencyContactRepository emergencyContactRepository;
     private final PatientRecordAccessService patientRecordAccessService;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public EmergencyContactResponse createEmergencyContact(
@@ -25,10 +30,10 @@ public class EmergencyContactService {
             UUID patientRecordId,
             CreateEmergencyContactRequest request) {
         PatientRecord patientRecord = patientRecordAccessService.requireAccess(
-                        authenticatedUserId,
-                        patientRecordId,
-                        ContactPermission.EDIT
-                );
+                authenticatedUserId,
+                patientRecordId,
+                ContactPermission.EDIT
+        );
 
         EmergencyContact contact = new EmergencyContact();
 
@@ -44,6 +49,11 @@ public class EmergencyContactService {
                 request.notes());
 
         EmergencyContact savedContact = emergencyContactRepository.save(contact);
+
+        publishActivity(
+                authenticatedUserId,
+                savedContact,
+                PatientActivityAction.CREATED);
 
         return EmergencyContactResponse.from(savedContact);
     }
@@ -95,6 +105,11 @@ public class EmergencyContactService {
                 request.email(),
                 request.notes());
 
+        publishActivity(
+                authenticatedUserId,
+                contact,
+                PatientActivityAction.UPDATED);
+
         return EmergencyContactResponse.from(contact);
     }
 
@@ -107,7 +122,14 @@ public class EmergencyContactService {
                 contact.getPatientRecord(),
                 ContactPermission.EDIT);
 
-        contact.archive();
+        if (!contact.isArchived()) {
+            contact.archive();
+
+            publishActivity(
+                    authenticatedUserId,
+                    contact,
+                    PatientActivityAction.ARCHIVED);
+        }
 
         return EmergencyContactResponse.from(contact);
     }
@@ -127,6 +149,18 @@ public class EmergencyContactService {
         return contact;
     }
 
+    private void publishActivity(
+            UUID authenticatedUserId,
+            EmergencyContact contact,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                contact.getPatientRecord().getId(),
+                PatientResourceType.EMERGENCY_CONTACT,
+                contact.getId(),
+                action));
+    }
+
     private void applyValues(
             EmergencyContact contact,
             String name,
@@ -142,5 +176,4 @@ public class EmergencyContactService {
         contact.setEmail(TextNormalizer.stripToNull(email));
         contact.setNotes(TextNormalizer.stripToNull(notes));
     }
-
 }

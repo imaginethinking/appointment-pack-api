@@ -1,6 +1,10 @@
 package net.imaginethinking.appointmentpack.pack;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.pack.generation.AppointmentPackGenerationData;
 import net.imaginethinking.appointmentpack.pack.generation.AppointmentPackGenerationDataService;
 import net.imaginethinking.appointmentpack.pack.generation.AppointmentPackPdfRenderer;
@@ -24,6 +28,7 @@ public class AppointmentPackService {
     private final AppointmentPackGenerationDataService generationDataService;
     private final AppointmentPackPdfRenderer pdfRenderer;
     private final AppointmentPackPersistenceService persistenceService;
+    private final AppEventPublisher appEventPublisher;
 
     public AppointmentPackResponse generateAppointmentPack(
             UUID authenticatedUserId,
@@ -78,7 +83,7 @@ public class AppointmentPackService {
         return AppointmentPackResponse.from(appointmentPack);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AppointmentPackDownload downloadAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
         AppointmentPack appointmentPack = findAvailableAppointmentPack(appointmentPackId);
 
@@ -87,11 +92,15 @@ public class AppointmentPackService {
                 appointmentPack.getPatientRecord(),
                 AppointmentPackPermission.VIEW);
 
-        return new AppointmentPackDownload(
+        AppointmentPackDownload download = new AppointmentPackDownload(
                 appointmentPackStorageService.load(appointmentPack.getStoragePath()),
                 appointmentPack.getFileName(),
                 appointmentPack.getContentType(),
                 appointmentPack.getFileSize());
+
+        publishActivity(authenticatedUserId, appointmentPack, PatientActivityAction.DOWNLOADED);
+
+        return download;
     }
 
     @Transactional
@@ -103,19 +112,33 @@ public class AppointmentPackService {
                 appointmentPack.getPatientRecord(),
                 AppointmentPackPermission.CREATE);
 
-        appointmentPack.archive();
+        if (!appointmentPack.isArchived()) {
+            appointmentPack.archive();
+
+            publishActivity(authenticatedUserId, appointmentPack, PatientActivityAction.ARCHIVED);
+        }
 
         return AppointmentPackResponse.from(appointmentPack);
     }
 
-    private AppointmentPack findAppointmentPack(
-            UUID appointmentPackId) {
+    private void publishActivity(
+            UUID authenticatedUserId,
+            AppointmentPack appointmentPack,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                appointmentPack.getPatientRecord().getId(),
+                PatientResourceType.APPOINTMENT_PACK,
+                appointmentPack.getId(),
+                action));
+    }
+
+    private AppointmentPack findAppointmentPack(UUID appointmentPackId) {
         return appointmentPackRepository.findById(appointmentPackId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment pack not found"));
     }
 
-    private AppointmentPack findAvailableAppointmentPack(
-            UUID appointmentPackId) {
+    private AppointmentPack findAvailableAppointmentPack(UUID appointmentPackId) {
         AppointmentPack appointmentPack = findAppointmentPack(appointmentPackId);
 
         if (appointmentPack.isArchived()) {

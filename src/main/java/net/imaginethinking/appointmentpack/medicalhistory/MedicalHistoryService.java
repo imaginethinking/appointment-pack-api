@@ -4,6 +4,10 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.document.Document;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
@@ -22,6 +26,7 @@ public class MedicalHistoryService {
     private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
     private final PatientRecordAccessService patientRecordAccessService;
     private final EntityManager entityManager;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public MedicalHistoryEntryResponse createMedicalHistoryEntry(
@@ -45,15 +50,28 @@ public class MedicalHistoryService {
 
         MedicalHistoryEntry savedEntry = medicalHistoryEntryRepository.save(entry);
 
+        publishActivity(
+                authenticatedUserId,
+                savedEntry,
+                PatientActivityAction.CREATED);
+
         return toResponse(savedEntry);
     }
 
     @Transactional(readOnly = true)
-    public List<MedicalHistoryEntryResponse> getMedicalHistoryEntries(UUID authenticatedUserId, UUID patientRecordId) {
-        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, MedicalHistoryPermission.VIEW);
+    public List<MedicalHistoryEntryResponse> getMedicalHistoryEntries(
+            UUID authenticatedUserId,
+            UUID patientRecordId) {
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                patientRecordId,
+                MedicalHistoryPermission.VIEW);
 
-        return medicalHistoryEntryRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByEntryDateDescCreatedAtDesc(
-                patientRecordId).stream().map(this::toResponse).toList();
+        return medicalHistoryEntryRepository
+                .findAllByPatientRecord_IdAndArchivedAtIsNullOrderByEntryDateDescCreatedAtDesc(patientRecordId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -84,6 +102,11 @@ public class MedicalHistoryService {
         entry.setSummary(TextNormalizer.strip(request.summary()));
         entry.setEntryDate(request.entryDate());
 
+        publishActivity(
+                authenticatedUserId,
+                entry,
+                PatientActivityAction.UPDATED);
+
         return toResponse(entry);
     }
 
@@ -96,9 +119,28 @@ public class MedicalHistoryService {
                 entry.getPatientRecord(),
                 MedicalHistoryPermission.EDIT);
 
-        entry.archive();
+        if (!entry.isArchived()) {
+            entry.archive();
+
+            publishActivity(
+                    authenticatedUserId,
+                    entry,
+                    PatientActivityAction.ARCHIVED);
+        }
 
         return toResponse(entry);
+    }
+
+    private void publishActivity(
+            UUID authenticatedUserId,
+            MedicalHistoryEntry entry,
+            PatientActivityAction action) {
+        appEventPublisher.publish(PatientActivityEvent.create(
+                authenticatedUserId,
+                entry.getPatientRecord().getId(),
+                PatientResourceType.MEDICAL_HISTORY,
+                entry.getId(),
+                action));
     }
 
     private MedicalHistoryEntry findEntry(UUID entryId) {
@@ -112,7 +154,9 @@ public class MedicalHistoryService {
         MedicalHistoryEntry entry = findEntry(entryId);
 
         if (entry.isArchived()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Medical history entry not found");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Medical history entry not found");
         }
 
         return entry;
