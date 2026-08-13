@@ -3,28 +3,36 @@ package net.imaginethinking.appointmentpack.auth;
 import java.util.UUID;
 
 public record LoginResponse(
-        boolean mfaRequired,
+        LoginStatus status,
         UUID mfaChallengeId,
         String accessToken,
         String tokenType
 ) {
-    
+
     public static LoginResponse authenticated(String accessToken) {
         return new LoginResponse(
-                false,
+                LoginStatus.AUTHENTICATED,
                 null,
                 accessToken,
                 "Bearer"
         );
     }
 
-    public static LoginResponse pendingMfa(UUID mfaChallengeId) {
+    public static LoginResponse pendingEmailVerification() {
         return new LoginResponse(
-                true,
-                mfaChallengeId,
+                LoginStatus.EMAIL_VERIFICATION_REQUIRED,
+                null,
                 null,
                 null
         );
     }
 
+    public static LoginResponse pendingMfa(UUID mfaChallengeId) {
+        return new LoginResponse(
+                LoginStatus.MFA_REQUIRED,
+                mfaChallengeId,
+                null,
+                null
+        );
+    }
 }

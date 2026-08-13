@@ -6,6 +6,8 @@ import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
 import net.imaginethinking.appointmentpack.profile.Profile;
 
+import java.time.Instant;
+
 @Getter
 @Setter
 @Entity
@@ -37,6 +39,9 @@ public class User extends BaseEntity {
     )
     private boolean enabled = true;
 
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     @Column(
             name = "mfa_enabled",
             nullable = false
@@ -52,4 +57,8 @@ public class User extends BaseEntity {
             optional = false
     )
     private Profile profile;
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
 }
