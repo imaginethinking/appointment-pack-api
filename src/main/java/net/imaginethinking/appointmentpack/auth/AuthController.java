@@ -2,10 +2,12 @@ package net.imaginethinking.appointmentpack.auth;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.auth.mfa.MfaConfirmRequest;
+import net.imaginethinking.appointmentpack.auth.mfa.MfaLoginRequest;
+import net.imaginethinking.appointmentpack.auth.mfa.MfaSetupResponse;
 import net.imaginethinking.appointmentpack.security.AuthenticatedUserIdResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;

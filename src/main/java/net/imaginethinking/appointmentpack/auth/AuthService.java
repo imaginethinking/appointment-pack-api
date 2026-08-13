@@ -1,10 +1,11 @@
 package net.imaginethinking.appointmentpack.auth;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.auth.mfa.*;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.profile.Profile;
 import net.imaginethinking.appointmentpack.security.JwtService;
-import net.imaginethinking.appointmentpack.security.MfaTotpService;
+import net.imaginethinking.appointmentpack.auth.mfa.MfaTotpService;
 import net.imaginethinking.appointmentpack.user.EmailAddressNormalizer;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;

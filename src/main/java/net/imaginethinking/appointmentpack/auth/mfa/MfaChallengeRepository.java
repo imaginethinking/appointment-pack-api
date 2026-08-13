@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.auth;
+package net.imaginethinking.appointmentpack.auth.mfa;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

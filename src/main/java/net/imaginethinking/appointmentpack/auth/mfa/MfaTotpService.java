@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.security;
+package net.imaginethinking.appointmentpack.auth.mfa;
 
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;

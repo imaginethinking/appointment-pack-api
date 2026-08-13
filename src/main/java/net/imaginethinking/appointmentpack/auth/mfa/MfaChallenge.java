@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.auth;
+package net.imaginethinking.appointmentpack.auth.mfa;
 
 import jakarta.persistence.*;
 import lombok.Getter;

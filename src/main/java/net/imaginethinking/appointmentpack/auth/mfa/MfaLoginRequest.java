@@ -1,9 +1,16 @@
-package net.imaginethinking.appointmentpack.auth;
+package net.imaginethinking.appointmentpack.auth.mfa;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-public record MfaConfirmRequest(
+import java.util.UUID;
+
+public record MfaLoginRequest(
+
+        @NotNull
+        UUID mfaChallengeId,
+
         @NotBlank
         @Pattern(
                 regexp = "\\d{6}",
