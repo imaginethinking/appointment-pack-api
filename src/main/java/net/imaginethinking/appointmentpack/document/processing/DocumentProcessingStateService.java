@@ -2,14 +2,7 @@ package net.imaginethinking.appointmentpack.document.processing;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import net.imaginethinking.appointmentpack.address.AddressMapper;
-import net.imaginethinking.appointmentpack.common.TextNormalizer;
-import net.imaginethinking.appointmentpack.appointment.*;
 import net.imaginethinking.appointmentpack.document.*;
-import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
-import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
-import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermission;
-import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistorySourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.HttpStatus;
@@ -26,29 +19,29 @@ public class DocumentProcessingStateService {
 
     private final DocumentRepository documentRepository;
     private final DocumentProcessingResultRepository processingResultRepository;
-    private final MedicalHistoryEntryRepository medicalHistoryEntryRepository;
-    private final AppointmentRepository appointmentRepository;
     private final RedactionContextFactory redactionContextFactory;
+    private final DocumentProcessingRecordService processingRecordService;
     private final PatientRecordAccessService patientRecordAccessService;
+    private final DocumentProcessingResultMapper processingResultMapper;
     private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public DocumentProcessingResultResponse getProcessing(UUID authenticatedUserId, UUID documentId) {
-        Document document = findAvailableDocument(documentId);
+        Document document = processingRecordService.requireAvailableDocument(documentId);
 
         patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 document.getPatientRecord(),
                 DocumentPermission.VIEW);
 
-        DocumentProcessingResult result = findProcessingResult(documentId);
+        DocumentProcessingResult result = processingRecordService.requireProcessingResult(documentId);
 
-        return toResponse(document, result);
+        return processingResultMapper.toResponse(document, result);
     }
 
     @Transactional
     public DocumentExtractionContext beginExtraction(UUID authenticatedUserId, UUID documentId) {
-        Document document = findAvailableDocument(documentId);
+        Document document = processingRecordService.requireAvailableDocument(documentId);
 
         patientRecordAccessService.requireAccess(
                 authenticatedUserId,
@@ -60,7 +53,6 @@ public class DocumentProcessingStateService {
         RedactionContext redactionContext = redactionContextFactory.create(document);
 
         document.setStatus(DocumentStatus.EXTRACTING);
-
         document.setProcessingFailureReason(null);
 
         return new DocumentExtractionContext(
@@ -74,7 +66,7 @@ public class DocumentProcessingStateService {
 
     @Transactional
     public DocumentProcessingResultResponse completeExtraction(UUID documentId, DocumentExtractionResponse response) {
-        Document document = findAvailableDocument(documentId);
+        Document document = processingRecordService.requireAvailableDocument(documentId);
 
         if (document.getStatus() != DocumentStatus.EXTRACTING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Document extraction is not in progress");
@@ -85,10 +77,9 @@ public class DocumentProcessingStateService {
         DocumentProcessingResult result = saveExtractionResult(document, response);
 
         document.setStatus(determineReviewStatus(document.getDocumentType()));
-
         document.setProcessingFailureReason(null);
 
-        return toResponse(document, result);
+        return processingResultMapper.toResponse(document, result);
     }
 
     @Transactional
@@ -97,7 +88,6 @@ public class DocumentProcessingStateService {
                 .filter(document -> document.getStatus() == DocumentStatus.EXTRACTING)
                 .ifPresent(document -> {
                     document.setStatus(DocumentStatus.EXTRACTION_FAILED);
-
                     document.setProcessingFailureReason(failureReason);
                 });
     }
@@ -107,7 +97,7 @@ public class DocumentProcessingStateService {
             UUID authenticatedUserId,
             UUID documentId,
             String approvedDeidentifiedText) {
-        Document document = findAvailableDocument(documentId);
+        Document document = processingRecordService.requireAvailableDocument(documentId);
 
         patientRecordAccessService.requireAccess(
                 authenticatedUserId,
@@ -120,7 +110,7 @@ public class DocumentProcessingStateService {
                     "Only consultation outcome letters require external summarisation");
         }
 
-        DocumentProcessingResult result = findProcessingResult(documentId);
+        DocumentProcessingResult result = processingRecordService.requireProcessingResult(documentId);
 
         if (document.getStatus() == DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW) {
             approveDeidentifiedText(result, authenticatedUserId, approvedDeidentifiedText);
@@ -133,7 +123,6 @@ public class DocumentProcessingStateService {
         }
 
         document.setStatus(DocumentStatus.SUMMARISING);
-
         document.setProcessingFailureReason(null);
 
         return new DocumentSummarisationContext(document.getId(), result.getApprovedDeidentifiedText());
@@ -141,7 +130,7 @@ public class DocumentProcessingStateService {
 
     @Transactional
     public DocumentProcessingResultResponse completeSummarisation(UUID documentId, DocumentSummaryResponse response) {
-        Document document = findAvailableDocument(documentId);
+        Document document = processingRecordService.requireAvailableDocument(documentId);
 
         if (document.getStatus() != DocumentStatus.SUMMARISING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Document summarisation is not in progress");
@@ -149,7 +138,7 @@ public class DocumentProcessingStateService {
 
         validateSummaryResponse(document, response);
 
-        DocumentProcessingResult result = findProcessingResult(documentId);
+        DocumentProcessingResult result = processingRecordService.requireProcessingResult(documentId);
 
         result.setGeneratedSummary(response.summary());
         result.setReviewedSummary(null);
@@ -163,7 +152,7 @@ public class DocumentProcessingStateService {
         document.setStatus(DocumentStatus.READY_FOR_SUMMARY_REVIEW);
         document.setProcessingFailureReason(null);
 
-        return toResponse(document, result);
+        return processingResultMapper.toResponse(document, result);
     }
 
     @Transactional
@@ -172,179 +161,8 @@ public class DocumentProcessingStateService {
                 .filter(document -> document.getStatus() == DocumentStatus.SUMMARISING)
                 .ifPresent(document -> {
                     document.setStatus(DocumentStatus.SUMMARISATION_FAILED);
-
                     document.setProcessingFailureReason(failureReason);
                 });
-    }
-
-    @Transactional
-    public AppointmentResponse confirmAppointment(
-            UUID authenticatedUserId,
-            UUID documentId,
-            AppointmentConfirmationRequest request) {
-        Document document = findAvailableDocument(documentId);
-
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                DocumentPermission.EDIT);
-
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                AppointmentPermission.EDIT);
-
-        validateAppointmentCanBeConfirmed(document);
-
-        if (appointmentRepository.existsBySourceDocument_Id(documentId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "An appointment already exists for this document");
-        }
-
-        validateAppointmentTimes(request);
-
-        DocumentProcessingResult result = findProcessingResult(documentId);
-
-        User reviewingUser = entityManager.getReference(User.class, authenticatedUserId);
-
-        result.setAppointmentReviewedBy(reviewingUser);
-        result.setAppointmentReviewedAt(Instant.now());
-
-        Appointment appointment = new Appointment();
-
-        appointment.setPatientRecord(document.getPatientRecord());
-
-        appointment.setDate(request.date());
-        appointment.setStartTime(request.startTime());
-        appointment.setEndTime(request.endTime());
-        appointment.setService(TextNormalizer.stripToNull(request.service()));
-        appointment.setAppointmentType(TextNormalizer.stripToNull(request.appointmentType()));
-        appointment.setClinicianOrTeam(TextNormalizer.stripToNull(request.clinicianOrTeam()));
-        appointment.setLocationName(TextNormalizer.stripToNull(request.locationName()));
-        appointment.setAddress(AddressMapper.toAddress(request.address()));
-        appointment.setNotes(TextNormalizer.stripToNull(request.notes()));
-        appointment.setSourceDocument(document);
-
-        Appointment savedAppointment = appointmentRepository.save(appointment);
-
-        document.setStatus(DocumentStatus.ACCEPTED);
-        document.setProcessingFailureReason(null);
-
-        return AppointmentResponse.from(savedAppointment);
-    }
-
-    @Transactional
-    public DocumentProcessingResultResponse rejectAppointment(UUID authenticatedUserId, UUID documentId) {
-        Document document = findAvailableDocument(documentId);
-
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                DocumentPermission.EDIT);
-
-        if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER || document.getStatus() != DocumentStatus.READY_FOR_APPOINTMENT_REVIEW) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Appointment details cannot be rejected in the current document state");
-        }
-
-        DocumentProcessingResult result = findProcessingResult(documentId);
-
-        result.setAppointmentReviewedBy(entityManager.getReference(User.class, authenticatedUserId));
-        result.setAppointmentReviewedAt(Instant.now());
-        document.setStatus(DocumentStatus.REJECTED);
-        document.setProcessingFailureReason(null);
-
-        return toResponse(document, result);
-    }
-
-    @Transactional
-    public DocumentProcessingResultResponse acceptSummary(
-            UUID authenticatedUserId,
-            UUID documentId,
-            DocumentSummaryAcceptanceRequest request) {
-        Document document = findAvailableDocument(documentId);
-
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                DocumentPermission.EDIT);
-
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                MedicalHistoryPermission.EDIT);
-
-        validateSummaryCanBeAccepted(document);
-
-        if (medicalHistoryEntryRepository.existsBySourceDocumentId(documentId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A medical-history entry already exists for this document");
-        }
-
-        DocumentProcessingResult result = findProcessingResult(documentId);
-
-        if (document.getStatus() == DocumentStatus.READY_FOR_SUMMARY_REVIEW) {
-            validateGeneratedSummary(result);
-        } else {
-            applyManualSummary(result);
-        }
-
-        String reviewedSummary = TextNormalizer.strip(request.reviewedSummary());
-
-        User reviewingUser = entityManager.getReference(User.class, authenticatedUserId);
-
-        Instant reviewedAt = Instant.now();
-
-        result.setReviewedSummary(reviewedSummary);
-        result.setSummaryReviewedBy(reviewingUser);
-        result.setSummaryReviewedAt(reviewedAt);
-
-        MedicalHistoryEntry historyEntry = new MedicalHistoryEntry();
-
-        historyEntry.setPatientRecord(document.getPatientRecord());
-
-        historyEntry.setTitle(TextNormalizer.strip(request.historyTitle()));
-
-        historyEntry.setSummary(reviewedSummary);
-        historyEntry.setEntryDate(request.historyDate());
-        historyEntry.setSourceType(MedicalHistorySourceType.DOCUMENT_SUMMARY);
-        historyEntry.setSourceDocument(document);
-        historyEntry.setCreatedBy(reviewingUser);
-
-        medicalHistoryEntryRepository.save(historyEntry);
-
-        document.setStatus(DocumentStatus.ACCEPTED);
-        document.setProcessingFailureReason(null);
-
-        return toResponse(document, result);
-    }
-
-    @Transactional
-    public DocumentProcessingResultResponse rejectSummary(UUID authenticatedUserId, UUID documentId) {
-        Document document = findAvailableDocument(documentId);
-
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                document.getPatientRecord(),
-                DocumentPermission.EDIT);
-
-        if (document.getDocumentType() != DocumentType.CONSULTATION_OUTCOME_LETTER || document.getStatus() != DocumentStatus.READY_FOR_SUMMARY_REVIEW) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Document summary cannot be rejected in its current status");
-        }
-
-        DocumentProcessingResult result = findProcessingResult(documentId);
-
-        result.setReviewedSummary(null);
-        result.setSummaryReviewedBy(entityManager.getReference(User.class, authenticatedUserId));
-        result.setSummaryReviewedAt(Instant.now());
-
-        document.setStatus(DocumentStatus.REJECTED);
-        document.setProcessingFailureReason(null);
-
-        return toResponse(document, result);
     }
 
     private void approveDeidentifiedText(
@@ -356,9 +174,7 @@ public class DocumentProcessingStateService {
         }
 
         result.setApprovedDeidentifiedText(approvedDeidentifiedText);
-
         result.setDeidentificationReviewedBy(entityManager.getReference(User.class, authenticatedUserId));
-
         result.setDeidentificationReviewedAt(Instant.now());
     }
 
@@ -371,58 +187,12 @@ public class DocumentProcessingStateService {
         }
     }
 
-    private void validateAppointmentCanBeConfirmed(Document document) {
-        if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER || document.getStatus() != DocumentStatus.READY_FOR_APPOINTMENT_REVIEW) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Appointment cannot be confirmed in the current document state");
-        }
-    }
-
-    private void validateAppointmentTimes(AppointmentConfirmationRequest request) {
-        if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Appointment end time must be after the start time");
-        }
-    }
-
-    private void validateSummaryCanBeAccepted(Document document) {
-        if (document.getDocumentType() != DocumentType.CONSULTATION_OUTCOME_LETTER) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Only consultation outcome summaries can be accepted into medical history");
-        }
-
-        boolean acceptable = document.getStatus() == DocumentStatus.READY_FOR_SUMMARY_REVIEW || document.getStatus() == DocumentStatus.SUMMARISATION_FAILED;
-
-        if (!acceptable) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Document summary cannot be accepted in its current status");
-        }
-    }
-
-    private void validateGeneratedSummary(DocumentProcessingResult result) {
-        if (isBlank(result.getGeneratedSummary()) || result.getSummarySource() == null) {
-            throw new DocumentProcessingException("Document processing result contains no generated summary");
-        }
-    }
-
-    private void applyManualSummary(DocumentProcessingResult result) {
-        result.setGeneratedSummary(null);
-        result.setSummarySource(SummarySource.MANUAL);
-        result.setModelName(null);
-        result.setPromptVersion(null);
-    }
-
     private DocumentProcessingResult saveExtractionResult(Document document, DocumentExtractionResponse response) {
         DocumentProcessingResult result = processingResultRepository.findByDocumentId(document.getId())
                 .orElseGet(DocumentProcessingResult::new);
 
         result.setDocument(document);
         result.setExtractedText(response.extractedText());
-
         result.setProcessingWarning(response.processingWarning());
         result.setProcessorVersion(response.processorVersion());
 
@@ -435,20 +205,16 @@ public class DocumentProcessingStateService {
 
         result.setAppointmentReviewedBy(null);
         result.setAppointmentReviewedAt(null);
-
         result.setDeidentificationReviewedBy(null);
         result.setDeidentificationReviewedAt(null);
-
         result.setSummaryReviewedBy(null);
         result.setSummaryReviewedAt(null);
 
         if (document.getDocumentType() == DocumentType.APPOINTMENT_LETTER) {
             result.setMachineDeidentifiedText(null);
-
             applyAppointmentDetails(result, response.appointmentDetails());
         } else {
             clearAppointmentDetails(result);
-
             result.setMachineDeidentifiedText(response.deidentifiedText());
         }
 
@@ -559,95 +325,7 @@ public class DocumentProcessingStateService {
         };
     }
 
-    private AppointmentDetailsResponse toAppointmentDetails(Document document, DocumentProcessingResult result) {
-        if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER) {
-            return null;
-        }
-
-        AppointmentDetailsResponse.AddressDetails address = toAppointmentAddress(result);
-
-        return new AppointmentDetailsResponse(
-                result.getAppointmentDate(),
-                result.getAppointmentStartTime(),
-                result.getAppointmentEndTime(),
-                result.getAppointmentService(),
-                result.getAppointmentType(),
-                result.getAppointmentClinicianOrTeam(),
-                result.getAppointmentLocationName(),
-                address);
-    }
-
-    private AppointmentDetailsResponse.AddressDetails toAppointmentAddress(
-            DocumentProcessingResult result) {
-        boolean empty = isBlank(result.getAppointmentAddressLine1()) && isBlank(result.getAppointmentAddressLine2()) && isBlank(
-                result.getAppointmentTownCity()) && isBlank(result.getAppointmentCounty()) && isBlank(result.getAppointmentPostcode()) && isBlank(
-                result.getAppointmentCountry());
-
-        if (empty) {
-            return null;
-        }
-
-        return new AppointmentDetailsResponse.AddressDetails(
-                result.getAppointmentAddressLine1(),
-                result.getAppointmentAddressLine2(),
-                result.getAppointmentTownCity(),
-                result.getAppointmentCounty(),
-                result.getAppointmentPostcode(),
-                result.getAppointmentCountry());
-    }
-
-    private DocumentProcessingResult findProcessingResult(UUID documentId) {
-        return processingResultRepository.findByDocumentId(documentId)
-                .orElseThrow(() -> new DocumentProcessingException("Document processing result was not found"));
-    }
-
-    private Document findAvailableDocument(UUID documentId) {
-        Document document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
-
-        if (document.getStatus() == DocumentStatus.ARCHIVED) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found");
-        }
-
-        return document;
-    }
-
-    private DocumentProcessingResultResponse toResponse(Document document, DocumentProcessingResult result) {
-        DocumentProcessingResultResponse.ModelMetadata model = result.getModelName() == null ? null : new DocumentProcessingResultResponse.ModelMetadata(result.getModelName(),
-                result.getPromptVersion());
-
-        UUID appointmentReviewerId = result.getAppointmentReviewedBy() == null ? null : result.getAppointmentReviewedBy()
-                .getId();
-
-        UUID deidentificationReviewerId = result.getDeidentificationReviewedBy() == null ? null : result.getDeidentificationReviewedBy()
-                .getId();
-
-        UUID summaryReviewerId = result.getSummaryReviewedBy() == null ? null : result.getSummaryReviewedBy().getId();
-
-        return new DocumentProcessingResultResponse(
-                document.getId(),
-                document.getDocumentType(),
-                document.getStatus(),
-                result.getExtractedText(),
-                result.getMachineDeidentifiedText(),
-                result.getApprovedDeidentifiedText(),
-                toAppointmentDetails(document, result),
-                result.getGeneratedSummary(),
-                result.getReviewedSummary(),
-                result.getSummarySource(),
-                result.getProcessingWarning(),
-                result.getProcessorVersion(),
-                model,
-                appointmentReviewerId,
-                result.getAppointmentReviewedAt(),
-                deidentificationReviewerId,
-                result.getDeidentificationReviewedAt(),
-                summaryReviewerId,
-                result.getSummaryReviewedAt());
-    }
-
-    private boolean isBlank(
-            String value) {
+    private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
 }

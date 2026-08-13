@@ -17,6 +17,8 @@ public class DocumentProcessingService {
     private static final String SUMMARISATION_FAILURE_MESSAGE = "External summary generation is currently unavailable.";
 
     private final DocumentProcessingStateService documentProcessingStateService;
+    private final AppointmentDocumentReviewService appointmentDocumentReviewService;
+    private final ConsultationDocumentReviewService consultationDocumentReviewService;
     private final DocumentStorageService documentStorageService;
     private final DocumentProcessingClient documentProcessingClient;
 
@@ -66,22 +68,22 @@ public class DocumentProcessingService {
             UUID authenticatedUserId,
             UUID documentId,
             AppointmentConfirmationRequest request) {
-        return documentProcessingStateService.confirmAppointment(authenticatedUserId, documentId, request);
+        return appointmentDocumentReviewService.confirmAppointment(authenticatedUserId, documentId, request);
     }
 
     public DocumentProcessingResultResponse rejectAppointment(UUID authenticatedUserId, UUID documentId) {
-        return documentProcessingStateService.rejectAppointment(authenticatedUserId, documentId);
+        return appointmentDocumentReviewService.rejectAppointment(authenticatedUserId, documentId);
     }
 
     public DocumentProcessingResultResponse acceptSummary(
             UUID authenticatedUserId,
             UUID documentId,
             DocumentSummaryAcceptanceRequest request) {
-        return documentProcessingStateService.acceptSummary(authenticatedUserId, documentId, request);
+        return consultationDocumentReviewService.acceptSummary(authenticatedUserId, documentId, request);
     }
 
     public DocumentProcessingResultResponse rejectSummary(UUID authenticatedUserId, UUID documentId) {
-        return documentProcessingStateService.rejectSummary(authenticatedUserId, documentId);
+        return consultationDocumentReviewService.rejectSummary(authenticatedUserId, documentId);
     }
 
     private void recordExtractionFailure(UUID documentId, RuntimeException originalException) {
