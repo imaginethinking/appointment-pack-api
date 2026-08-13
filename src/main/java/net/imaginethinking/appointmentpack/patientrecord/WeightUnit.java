@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.patientrecord.measurement;
+package net.imaginethinking.appointmentpack.patientrecord;
 
 public enum WeightUnit {
     KILOGRAMS,

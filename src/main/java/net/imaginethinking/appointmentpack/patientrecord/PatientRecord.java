@@ -5,9 +5,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.BaseEntity;
-import net.imaginethinking.appointmentpack.patientrecord.bloodtype.BloodType;
-import net.imaginethinking.appointmentpack.patientrecord.measurement.HeightUnit;
-import net.imaginethinking.appointmentpack.patientrecord.measurement.WeightUnit;
 import net.imaginethinking.appointmentpack.profile.Profile;
 
 import java.math.BigDecimal;

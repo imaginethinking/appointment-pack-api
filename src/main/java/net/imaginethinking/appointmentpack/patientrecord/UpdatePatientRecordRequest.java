@@ -3,9 +3,6 @@ package net.imaginethinking.appointmentpack.patientrecord;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Size;
-import net.imaginethinking.appointmentpack.patientrecord.bloodtype.BloodType;
-import net.imaginethinking.appointmentpack.patientrecord.measurement.HeightUnit;
-import net.imaginethinking.appointmentpack.patientrecord.measurement.WeightUnit;
 
 import java.math.BigDecimal;
 

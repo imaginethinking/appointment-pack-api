@@ -2,8 +2,6 @@ package net.imaginethinking.appointmentpack.patientrecord;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
-import net.imaginethinking.appointmentpack.patientrecord.measurement.HeightUnit;
-import net.imaginethinking.appointmentpack.patientrecord.measurement.WeightUnit;
 import net.imaginethinking.appointmentpack.profile.Profile;
 import net.imaginethinking.appointmentpack.profile.ProfileRepository;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.patientrecord.bloodtype;
+package net.imaginethinking.appointmentpack.patientrecord;
 
 public enum BloodType {
     A_POSITIVE,
