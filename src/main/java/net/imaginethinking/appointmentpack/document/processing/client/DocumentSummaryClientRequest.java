@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.document.processing;
+package net.imaginethinking.appointmentpack.document.processing.client;
 
 import java.util.UUID;
 

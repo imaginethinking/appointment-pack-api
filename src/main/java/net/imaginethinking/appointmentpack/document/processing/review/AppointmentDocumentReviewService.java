@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.document.processing;
+package net.imaginethinking.appointmentpack.document.processing.review;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +9,10 @@ import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.document.DocumentPermission;
 import net.imaginethinking.appointmentpack.document.DocumentStatus;
 import net.imaginethinking.appointmentpack.document.DocumentType;
+import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingRecordService;
+import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResult;
+import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingResultMapper;
+import net.imaginethinking.appointmentpack.document.processing.api.DocumentProcessingResultResponse;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.HttpStatus;

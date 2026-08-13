@@ -1,6 +1,9 @@
-package net.imaginethinking.appointmentpack.document.processing;
+package net.imaginethinking.appointmentpack.document.processing.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import net.imaginethinking.appointmentpack.document.processing.context.DocumentExtractionContext;
+import net.imaginethinking.appointmentpack.document.processing.context.DocumentSummarisationContext;
+import net.imaginethinking.appointmentpack.document.processing.context.RedactionContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;

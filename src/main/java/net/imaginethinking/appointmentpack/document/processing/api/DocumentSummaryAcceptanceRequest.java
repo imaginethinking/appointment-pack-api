@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.document.processing;
+package net.imaginethinking.appointmentpack.document.processing.api;
 
 import jakarta.validation.constraints.*;
 

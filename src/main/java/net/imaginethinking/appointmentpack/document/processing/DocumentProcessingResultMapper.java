@@ -2,6 +2,8 @@ package net.imaginethinking.appointmentpack.document.processing;
 
 import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.document.DocumentType;
+import net.imaginethinking.appointmentpack.document.processing.api.AppointmentDetailsResponse;
+import net.imaginethinking.appointmentpack.document.processing.api.DocumentProcessingResultResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;

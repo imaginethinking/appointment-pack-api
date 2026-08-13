@@ -1,7 +1,8 @@
-package net.imaginethinking.appointmentpack.document.processing;
+package net.imaginethinking.appointmentpack.document.processing.api;
 
 import net.imaginethinking.appointmentpack.document.DocumentStatus;
 import net.imaginethinking.appointmentpack.document.DocumentType;
+import net.imaginethinking.appointmentpack.document.processing.SummarySource;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.document.DocumentRepository;
 import net.imaginethinking.appointmentpack.document.DocumentStatus;
+import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

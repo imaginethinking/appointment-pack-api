@@ -1,8 +1,8 @@
 package net.imaginethinking.appointmentpack.common.error;
 
-import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingException;
-import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingTimeoutException;
-import net.imaginethinking.appointmentpack.document.processing.DocumentProcessingUnavailableException;
+import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingException;
+import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingTimeoutException;
+import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;

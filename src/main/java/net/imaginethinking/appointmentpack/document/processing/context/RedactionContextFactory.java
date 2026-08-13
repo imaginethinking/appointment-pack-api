@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.document.processing;
+package net.imaginethinking.appointmentpack.document.processing.context;
 
 import net.imaginethinking.appointmentpack.address.Address;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
