@@ -9,24 +9,47 @@ import net.imaginethinking.appointmentpack.profile.Profile;
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = {@UniqueConstraint(
+                name = "uk_user_email",
+                columnNames = "email"
+        )}
+)
 public class User extends BaseEntity {
 
-    @Column(nullable = false, unique = true, length = 254)
+    @Column(
+            name = "email",
+            nullable = false,
+            length = 254
+    )
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(
+            name = "password_hash",
+            nullable = false
+    )
     private String passwordHash;
 
-    @Column(name = "enabled", nullable = false)
+    @Column(
+            name = "enabled",
+            nullable = false
+    )
     private boolean enabled = true;
 
-    @Column(name = "mfaEnabled", nullable = false)
-    private boolean mfaEnabled = false;
+    @Column(
+            name = "mfa_enabled",
+            nullable = false
+    )
+    private boolean mfaEnabled;
 
-    @Column(name = "mfaSecret", nullable = true)
+    @Column(name = "mfa_secret")
     private String mfaSecret;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = false)
+    @OneToOne(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            optional = false
+    )
     private Profile profile;
 }

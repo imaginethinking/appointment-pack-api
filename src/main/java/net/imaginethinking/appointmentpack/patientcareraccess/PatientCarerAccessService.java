@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
 import net.imaginethinking.appointmentpack.permission.PermissionValidator;
+import net.imaginethinking.appointmentpack.user.EmailAddressNormalizer;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -11,16 +12,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.security.Permission;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class PatientCarerAccessService {
+
     private final PatientCarerAccessRepository patientCarerAccessRepository;
     private final PatientRecordRepository patientRecordRepository;
     private final UserRepository userRepository;
@@ -30,13 +30,13 @@ public class PatientCarerAccessService {
     public PatientCarerAccessResponse inviteCarer(UUID patientUserId, CreateCarerInvitationRequest request) {
         PatientRecord patientRecord = getOwnedPatientRecord(patientUserId);
 
-        String normalisedEmail = request.carerEmail().trim().toLowerCase(Locale.ROOT);
+        String carerEmail = EmailAddressNormalizer.normalise(request.carerEmail());
 
-        User carer = userRepository.findByEmailIgnoreCase(normalisedEmail)
+        User carer = userRepository.findByEmail(carerEmail)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "No registered account was found for this email address"
-                ));
+                        "No registered account was found for this email address")
+                );
 
         if (carer.getId().equals(patientUserId)) {
             throw new ResponseStatusException(
@@ -47,12 +47,10 @@ public class PatientCarerAccessService {
 
         Set<String> permissions = permissionValidator.validate(request.permissions());
 
-        PatientCarerAccess access = patientCarerAccessRepository
-                .findByPatientRecord_IdAndCarer_Id(
+        PatientCarerAccess access = patientCarerAccessRepository.findByPatientRecord_IdAndCarer_Id(
                         patientRecord.getId(),
-                        carer.getId()
-                )
-                .map((a) -> prepareExistingInvitation(a, permissions))
+                        carer.getId())
+                .map(existingAccess -> prepareExistingInvitation(existingAccess, permissions))
                 .orElseGet(() -> createInvitation(patientRecord, carer, permissions));
 
         PatientCarerAccess savedAccess = patientCarerAccessRepository.save(access);
@@ -64,10 +62,7 @@ public class PatientCarerAccessService {
     public List<PatientCarerAccessResponse> getRelationshipsAsPatient(UUID patientUserId) {
         PatientRecord patientRecord = getOwnedPatientRecord(patientUserId);
 
-        return patientCarerAccessRepository
-                .findAllByPatientRecord_IdOrderByInvitedAtDesc(
-                        patientRecord.getId()
-                )
+        return patientCarerAccessRepository.findAllByPatientRecord_IdOrderByInvitedAtDesc(patientRecord.getId())
                 .stream()
                 .map(PatientCarerAccessResponse::from)
                 .toList();
@@ -75,8 +70,7 @@ public class PatientCarerAccessService {
 
     @Transactional(readOnly = true)
     public List<PatientCarerAccessResponse> getRelationshipsAsCarer(UUID carerUserId) {
-        return patientCarerAccessRepository
-                .findAllByCarer_IdOrderByInvitedAtDesc(carerUserId)
+        return patientCarerAccessRepository.findAllByCarer_IdOrderByInvitedAtDesc(carerUserId)
                 .stream()
                 .map(PatientCarerAccessResponse::from)
                 .toList();
@@ -130,6 +124,29 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
+    @Transactional
+    public PatientCarerAccessResponse updatePermissions(
+            UUID patientUserId,
+            UUID accessId,
+            UpdatePatientCarerPermissionsRequest request) {
+        PatientCarerAccess access = getAccess(accessId);
+
+        requirePatientOwner(access, patientUserId);
+
+        if (access.getStatus() != PatientCarerAccessStatus.PENDING && access.getStatus() != PatientCarerAccessStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Permissions can only be updated for pending or active relationships");
+        }
+
+        Set<String> permissions = permissionValidator.validate(request.permissions());
+
+        access.setPermissions(permissions);
+        access.setStatusChangedAt(Instant.now());
+
+        return PatientCarerAccessResponse.from(access);
+    }
+
     private PatientCarerAccess createInvitation(PatientRecord patientRecord, User carer, Set<String> permissions) {
         Instant now = Instant.now();
 
@@ -173,16 +190,16 @@ public class PatientCarerAccessService {
         return patientRecordRepository.findByProfileUserId(patientUserId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
+                        "Patient record not found")
+                );
     }
 
     private PatientCarerAccess getAccess(UUID accessId) {
         return patientCarerAccessRepository.findById(accessId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Patient-carer relationship not found"
-                ));
+                        "Patient-carer relationship not found")
+                );
     }
 
     private void requireCarer(PatientCarerAccess access, UUID authenticatedUserId) {
@@ -195,11 +212,7 @@ public class PatientCarerAccessService {
     }
 
     private void requirePatientOwner(PatientCarerAccess access, UUID authenticatedUserId) {
-        UUID patientOwnerId = access
-                .getPatientRecord()
-                .getProfile()
-                .getUser()
-                .getId();
+        UUID patientOwnerId = access.getPatientRecord().getProfile().getUser().getId();
 
         if (!patientOwnerId.equals(authenticatedUserId)) {
             throw new ResponseStatusException(
@@ -221,26 +234,5 @@ public class PatientCarerAccessService {
     private void changeStatus(PatientCarerAccess access, PatientCarerAccessStatus status) {
         access.setStatus(status);
         access.setStatusChangedAt(Instant.now());
-    }
-
-    @Transactional
-    public PatientCarerAccessResponse updatePermissions(UUID patientUserId, UUID accessId, UpdatePatientCarerPermissionsRequest request) {
-        PatientCarerAccess access = getAccess(accessId);
-
-        requirePatientOwner(access, patientUserId);
-
-        if (access.getStatus() != PatientCarerAccessStatus.PENDING && access.getStatus() != PatientCarerAccessStatus.ACTIVE) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Permissions can only be updated for pending or active relationships"
-            );
-        }
-
-        Set<String> permissions = permissionValidator.validate(request.permissions());
-
-        access.setPermissions(permissions);
-        access.setStatusChangedAt(Instant.now());
-
-        return PatientCarerAccessResponse.from(access);
     }
 }

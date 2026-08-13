@@ -1,9 +1,11 @@
 package net.imaginethinking.appointmentpack.auth;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.profile.Profile;
 import net.imaginethinking.appointmentpack.security.JwtService;
 import net.imaginethinking.appointmentpack.security.MfaTotpService;
+import net.imaginethinking.appointmentpack.user.EmailAddressNormalizer;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -20,33 +22,43 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final Duration MFA_CHALLENGE_LIFETIME = Duration.ofMinutes(5);
+    private static final int MAX_MFA_ATTEMPTS = 5;
+
     private final UserRepository userRepository;
     private final MfaChallengeRepository mfaChallengeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MfaTotpService mfaTotpService;
 
-    private static final Duration MFA_CHALLENGE_LIFETIME = Duration.ofMinutes(5);
-    private static final int MAX_MFA_ATTEMPTS = 5;
-
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email address already registered");
+        String email = EmailAddressNormalizer.normalise(request.email());
+
+        if (userRepository.existsByEmail(email)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Email address already registered"
+            );
         }
 
         if (!Objects.equals(request.password(), request.confirmPassword())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Passwords do not match"
+            );
         }
 
         User user = new User();
-        user.setEmail(request.email());
+
+        user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
 
         Profile profile = new Profile();
         profile.setUser(user);
-        profile.setFirstName(request.firstName());
-        profile.setLastName(request.lastName());
+        profile.setFirstName(TextNormalizer.strip(request.firstName()));
+        profile.setLastName(TextNormalizer.strip(request.lastName()));
         profile.setDateOfBirth(request.dateOfBirth());
 
         user.setProfile(profile);
@@ -56,18 +68,17 @@ public class AuthService {
         return new RegisterResponse(
                 registeredUser.getId(),
                 registeredUser.getEmail(),
-                registeredUser.getProfile().getId()
-        );
+                registeredUser.getProfile().getId());
     }
 
-
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmailIgnoreCase(request.email())
-                .orElseThrow(this::invalidCredentials);
+        String email = EmailAddressNormalizer.normalise(request.email());
+
+        User user = userRepository.findByEmail(email).orElseThrow(this::invalidCredentials);
 
         boolean passwordMatches = passwordEncoder.matches(request.password(), user.getPasswordHash());
 
-        if (!passwordMatches) {
+        if (!passwordMatches || !user.isEnabled()) {
             throw invalidCredentials();
         }
 
@@ -93,24 +104,12 @@ public class AuthService {
         return LoginResponse.pendingMfa(savedChallenge.getId());
     }
 
-    private ResponseStatusException invalidCredentials() {
-        return new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED,
-                "Invalid email or password"
-        );
-    }
-
-
     @Transactional
     public MfaSetupResponse setupMfa(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        User user = findUser(userId);
 
         if (user.isMfaEnabled()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "MFA is already enabled"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "MFA is already enabled");
         }
 
         String secret = mfaTotpService.generateSecret();
@@ -119,15 +118,12 @@ public class AuthService {
         user.setMfaSecret(secret);
         user.setMfaEnabled(false);
 
-        userRepository.save(user);
-
         return new MfaSetupResponse(provisioningUri);
     }
 
     @Transactional
     public void confirmMfa(UUID userId, MfaConfirmRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        User user = findUser(userId);
 
         if (user.isMfaEnabled()) {
             throw new ResponseStatusException(
@@ -138,7 +134,7 @@ public class AuthService {
 
         if (user.getMfaSecret() == null) {
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    HttpStatus.CONFLICT,
                     "MFA setup has not been started"
             );
         }
@@ -157,20 +153,19 @@ public class AuthService {
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse completeMfaLogin(MfaLoginRequest request) {
-
-        MfaChallenge challenge = mfaChallengeRepository
-                .findById(request.mfaChallengeId())
+        MfaChallenge challenge = mfaChallengeRepository.findById(request.mfaChallengeId())
                 .orElseThrow(this::invalidMfaChallenge);
 
         Instant now = Instant.now();
 
-        if (challenge.isUsed() || !challenge.getExpiresAt().isAfter(now) || challenge.getFailedAttempts() >= MAX_MFA_ATTEMPTS) {
+        if (challenge.isUsed() || !challenge.getExpiresAt()
+                .isAfter(now) || challenge.getFailedAttempts() >= MAX_MFA_ATTEMPTS) {
             throw invalidMfaChallenge();
         }
 
         User user = challenge.getUser();
 
-        if (!user.isMfaEnabled() || user.getMfaSecret() == null) {
+        if (!user.isEnabled() || !user.isMfaEnabled() || user.getMfaSecret() == null) {
             challenge.setUsed(true);
             throw invalidMfaChallenge();
         }
@@ -198,11 +193,25 @@ public class AuthService {
         return LoginResponse.authenticated(accessToken);
     }
 
+    private User findUser(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found")
+                );
+    }
+
+    private ResponseStatusException invalidCredentials() {
+        return new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Invalid email or password"
+        );
+    }
+
     private ResponseStatusException invalidMfaChallenge() {
         return new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,
                 "Invalid or expired MFA challenge"
         );
     }
-
 }
