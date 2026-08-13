@@ -3,6 +3,7 @@ package net.imaginethinking.appointmentpack.pack;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.appointment.Appointment;
+import net.imaginethinking.appointmentpack.pack.generation.AppointmentPackGenerationData;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.MediaType;

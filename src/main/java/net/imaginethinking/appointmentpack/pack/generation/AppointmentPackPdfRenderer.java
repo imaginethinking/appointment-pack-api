@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.pack;
+package net.imaginethinking.appointmentpack.pack.generation;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import org.springframework.core.io.ClassPathResource;

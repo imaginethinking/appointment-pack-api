@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.pack;
+package net.imaginethinking.appointmentpack.pack.generation;
 
 import net.imaginethinking.appointmentpack.address.Address;
 import net.imaginethinking.appointmentpack.appointment.Appointment;

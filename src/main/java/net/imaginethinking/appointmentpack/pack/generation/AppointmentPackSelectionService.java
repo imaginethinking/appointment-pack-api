@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.pack;
+package net.imaginethinking.appointmentpack.pack.generation;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.appointment.Appointment;
@@ -14,6 +14,8 @@ import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryPermissi
 import net.imaginethinking.appointmentpack.medication.Medication;
 import net.imaginethinking.appointmentpack.medication.MedicationPermission;
 import net.imaginethinking.appointmentpack.medication.MedicationRepository;
+import net.imaginethinking.appointmentpack.pack.AppointmentPackGenerationRequest;
+import net.imaginethinking.appointmentpack.pack.AppointmentPackPermission;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import org.springframework.http.HttpStatus;

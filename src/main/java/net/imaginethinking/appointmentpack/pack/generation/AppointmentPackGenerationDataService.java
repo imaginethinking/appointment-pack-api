@@ -1,8 +1,9 @@
-package net.imaginethinking.appointmentpack.pack;
+package net.imaginethinking.appointmentpack.pack.generation;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.appointment.Appointment;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.pack.AppointmentPackGenerationRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

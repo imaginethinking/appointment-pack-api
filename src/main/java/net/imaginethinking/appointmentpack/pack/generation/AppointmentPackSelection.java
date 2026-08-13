@@ -1,4 +1,4 @@
-package net.imaginethinking.appointmentpack.pack;
+package net.imaginethinking.appointmentpack.pack.generation;
 
 import net.imaginethinking.appointmentpack.appointment.Appointment;
 import net.imaginethinking.appointmentpack.bloodtest.BloodTest;
@@ -6,6 +6,7 @@ import net.imaginethinking.appointmentpack.contact.EmergencyContact;
 import net.imaginethinking.appointmentpack.contact.HealthcareContact;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medication.Medication;
+import net.imaginethinking.appointmentpack.pack.AppointmentPackItemType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
 import java.util.ArrayList;

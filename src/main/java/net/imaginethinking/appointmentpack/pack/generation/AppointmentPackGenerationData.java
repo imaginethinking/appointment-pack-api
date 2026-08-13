@@ -1,4 +1,6 @@
-package net.imaginethinking.appointmentpack.pack;
+package net.imaginethinking.appointmentpack.pack.generation;
+
+import net.imaginethinking.appointmentpack.pack.AppointmentPackItemType;
 
 import java.time.Instant;
 import java.util.List;
