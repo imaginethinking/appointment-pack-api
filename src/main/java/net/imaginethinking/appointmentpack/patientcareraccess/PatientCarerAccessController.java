@@ -3,93 +3,102 @@ package net.imaginethinking.appointmentpack.patientcareraccess;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.security.AuthenticatedUserIdResolver;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/patient-carer-access")
 @RequiredArgsConstructor
+@RequestMapping("/api/v1/patient-carer-access")
 public class PatientCarerAccessController {
+
     private final PatientCarerAccessService patientCarerAccessService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
-    @PostMapping("/invitation")
-    public ResponseEntity<PatientCarerAccessResponse> inviteCarer(@AuthenticationPrincipal Jwt jwt, @RequestBody @Valid CreateCarerInvitationRequest request) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    @PostMapping
+    public ResponseEntity<PatientCarerAccessResponse> createInvitation(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody CreateCarerInvitationRequest request) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientCarerAccessResponse response = patientCarerAccessService.inviteCarer(userId, request);
+        PatientCarerAccessResponse response = patientCarerAccessService.createInvitation(authenticatedUserId, request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return ResponseEntity.created(URI.create("/api/v1/patient-carer-access/" + response.id())).body(response);
+    }
+
+    @GetMapping("/{accessId}")
+    public ResponseEntity<PatientCarerAccessResponse> getRelationship(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID accessId) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
+
+        return ResponseEntity.ok(patientCarerAccessService.getRelationship(authenticatedUserId, accessId));
     }
 
     @GetMapping("/as-patient")
-    public ResponseEntity<List<PatientCarerAccessResponse>> getAsPatient(@AuthenticationPrincipal Jwt jwt) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<List<PatientCarerAccessResponse>> getRelationshipsAsPatient(
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        List<PatientCarerAccessResponse> response = patientCarerAccessService.getRelationshipsAsPatient(userId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientCarerAccessService.getRelationshipsAsPatient(authenticatedUserId));
     }
 
     @GetMapping("/as-carer")
-    public ResponseEntity<List<PatientCarerAccessResponse>> getAsCarer(@AuthenticationPrincipal Jwt jwt) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<List<PatientCarerAccessResponse>> getRelationshipsAsCarer(
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        List<PatientCarerAccessResponse> response = patientCarerAccessService.getRelationshipsAsCarer(userId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientCarerAccessService.getRelationshipsAsCarer(authenticatedUserId));
     }
 
     @PatchMapping("/{accessId}/accept")
-    public ResponseEntity<PatientCarerAccessResponse> acceptInvitation(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID accessId) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientCarerAccessResponse> acceptInvitation(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID accessId) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientCarerAccessResponse response = patientCarerAccessService.acceptInvitation(userId, accessId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientCarerAccessService.acceptInvitation(authenticatedUserId, accessId));
     }
 
     @PatchMapping("/{accessId}/decline")
-    public ResponseEntity<PatientCarerAccessResponse> declineInvitation(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID accessId) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientCarerAccessResponse> declineInvitation(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID accessId) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientCarerAccessResponse response = patientCarerAccessService.declineInvitation(userId, accessId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientCarerAccessService.declineInvitation(authenticatedUserId, accessId));
     }
 
     @PatchMapping("/{accessId}/revoke")
-    public ResponseEntity<PatientCarerAccessResponse> revokeAccess(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID accessId) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientCarerAccessResponse> revokeAccess(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID accessId) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientCarerAccessResponse response = patientCarerAccessService.revokeAccess(userId, accessId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientCarerAccessService.revokeAccess(authenticatedUserId, accessId));
     }
 
     @PatchMapping("/{accessId}/cancel")
-    public ResponseEntity<PatientCarerAccessResponse> cancelInvitation(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID accessId) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientCarerAccessResponse> cancelInvitation(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID accessId) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientCarerAccessResponse response = patientCarerAccessService.cancelInvitation(userId, accessId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientCarerAccessService.cancelInvitation(authenticatedUserId, accessId));
     }
 
-    @PatchMapping("/{accessId}/permissions")
-    public ResponseEntity<PatientCarerAccessResponse> updatePermissions(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID accessId, @RequestBody @Valid UpdatePatientCarerPermissionsRequest request) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    @PutMapping("/{accessId}/permissions")
+    public ResponseEntity<PatientCarerAccessResponse> updatePermissions(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID accessId,
+            @Valid @RequestBody UpdatePatientCarerPermissionsRequest request) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientCarerAccessResponse response = patientCarerAccessService.updatePermissions(userId, accessId, request);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientCarerAccessService.updatePermissions(authenticatedUserId, accessId, request));
     }
 }

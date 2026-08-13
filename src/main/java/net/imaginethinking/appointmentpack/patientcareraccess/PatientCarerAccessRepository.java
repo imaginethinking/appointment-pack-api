@@ -9,14 +9,29 @@ import java.util.UUID;
 
 public interface PatientCarerAccessRepository extends JpaRepository<PatientCarerAccess, UUID> {
 
-    Optional<PatientCarerAccess> findByPatientRecord_IdAndCarer_Id(UUID patientRecordId, UUID carerUserId);
+    Optional<PatientCarerAccess> findByPatientRecord_IdAndCarer_Id(
+            UUID patientRecordId,
+            UUID carerUserId
+    );
+
+    @Override
+    @EntityGraph(attributePaths = {
+            "patientRecord",
+            "patientRecord.profile",
+            "patientRecord.profile.user",
+            "carer",
+            "carer.profile",
+            "permissions"
+    })
+    Optional<PatientCarerAccess> findById(UUID accessId);
 
     @EntityGraph(attributePaths = {
             "patientRecord",
             "patientRecord.profile",
             "patientRecord.profile.user",
             "carer",
-            "carer.profile"
+            "carer.profile",
+            "permissions"
     })
     List<PatientCarerAccess> findAllByPatientRecord_IdOrderByInvitedAtDesc(UUID patientRecordId);
 
@@ -25,12 +40,15 @@ public interface PatientCarerAccessRepository extends JpaRepository<PatientCarer
             "patientRecord.profile",
             "patientRecord.profile.user",
             "carer",
-            "carer.profile"
+            "carer.profile",
+            "permissions"
     })
     List<PatientCarerAccess> findAllByCarer_IdOrderByInvitedAtDesc(UUID carerUserId);
 
-
     @EntityGraph(attributePaths = "permissions")
-    Optional<PatientCarerAccess> findByPatientRecordIdAndCarerIdAndStatus(UUID patientRecordId, UUID carerId, PatientCarerAccessStatus status
+    Optional<PatientCarerAccess> findByPatientRecordIdAndCarerIdAndStatus(
+            UUID patientRecordId,
+            UUID carerId,
+            PatientCarerAccessStatus status
     );
 }

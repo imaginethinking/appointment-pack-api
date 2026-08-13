@@ -27,8 +27,8 @@ public class PatientCarerAccessService {
     private final PermissionValidator permissionValidator;
 
     @Transactional
-    public PatientCarerAccessResponse inviteCarer(UUID patientUserId, CreateCarerInvitationRequest request) {
-        PatientRecord patientRecord = getOwnedPatientRecord(patientUserId);
+    public PatientCarerAccessResponse createInvitation(UUID patientUserId, CreateCarerInvitationRequest request) {
+        PatientRecord patientRecord = requireOwnedPatientRecord(patientUserId);
 
         String carerEmail = EmailAddressNormalizer.normalise(request.carerEmail());
 
@@ -51,7 +51,7 @@ public class PatientCarerAccessService {
                         patientRecord.getId(),
                         carer.getId())
                 .map(existingAccess -> prepareExistingInvitation(existingAccess, permissions))
-                .orElseGet(() -> createInvitation(patientRecord, carer, permissions));
+                .orElseGet(() -> createNewInvitation(patientRecord, carer, permissions));
 
         PatientCarerAccess savedAccess = patientCarerAccessRepository.save(access);
 
@@ -59,8 +59,17 @@ public class PatientCarerAccessService {
     }
 
     @Transactional(readOnly = true)
+    public PatientCarerAccessResponse getRelationship(UUID authenticatedUserId, UUID accessId) {
+        PatientCarerAccess access = findAccess(accessId);
+
+        requireParticipant(access, authenticatedUserId);
+
+        return PatientCarerAccessResponse.from(access);
+    }
+
+    @Transactional(readOnly = true)
     public List<PatientCarerAccessResponse> getRelationshipsAsPatient(UUID patientUserId) {
-        PatientRecord patientRecord = getOwnedPatientRecord(patientUserId);
+        PatientRecord patientRecord = requireOwnedPatientRecord(patientUserId);
 
         return patientCarerAccessRepository.findAllByPatientRecord_IdOrderByInvitedAtDesc(patientRecord.getId())
                 .stream()
@@ -78,7 +87,7 @@ public class PatientCarerAccessService {
 
     @Transactional
     public PatientCarerAccessResponse acceptInvitation(UUID carerUserId, UUID accessId) {
-        PatientCarerAccess access = getAccess(accessId);
+        PatientCarerAccess access = findAccess(accessId);
 
         requireCarer(access, carerUserId);
         requireStatus(access, PatientCarerAccessStatus.PENDING);
@@ -90,7 +99,7 @@ public class PatientCarerAccessService {
 
     @Transactional
     public PatientCarerAccessResponse declineInvitation(UUID carerUserId, UUID accessId) {
-        PatientCarerAccess access = getAccess(accessId);
+        PatientCarerAccess access = findAccess(accessId);
 
         requireCarer(access, carerUserId);
         requireStatus(access, PatientCarerAccessStatus.PENDING);
@@ -102,7 +111,7 @@ public class PatientCarerAccessService {
 
     @Transactional
     public PatientCarerAccessResponse cancelInvitation(UUID patientUserId, UUID accessId) {
-        PatientCarerAccess access = getAccess(accessId);
+        PatientCarerAccess access = findAccess(accessId);
 
         requirePatientOwner(access, patientUserId);
         requireStatus(access, PatientCarerAccessStatus.PENDING);
@@ -114,7 +123,7 @@ public class PatientCarerAccessService {
 
     @Transactional
     public PatientCarerAccessResponse revokeAccess(UUID patientUserId, UUID accessId) {
-        PatientCarerAccess access = getAccess(accessId);
+        PatientCarerAccess access = findAccess(accessId);
 
         requirePatientOwner(access, patientUserId);
         requireStatus(access, PatientCarerAccessStatus.ACTIVE);
@@ -129,7 +138,7 @@ public class PatientCarerAccessService {
             UUID patientUserId,
             UUID accessId,
             UpdatePatientCarerPermissionsRequest request) {
-        PatientCarerAccess access = getAccess(accessId);
+        PatientCarerAccess access = findAccess(accessId);
 
         requirePatientOwner(access, patientUserId);
 
@@ -147,10 +156,11 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
-    private PatientCarerAccess createInvitation(PatientRecord patientRecord, User carer, Set<String> permissions) {
+    private PatientCarerAccess createNewInvitation(PatientRecord patientRecord, User carer, Set<String> permissions) {
         Instant now = Instant.now();
 
         PatientCarerAccess access = new PatientCarerAccess();
+
         access.setPatientRecord(patientRecord);
         access.setCarer(carer);
         access.setStatus(PatientCarerAccessStatus.PENDING);
@@ -186,7 +196,7 @@ public class PatientCarerAccessService {
         return access;
     }
 
-    private PatientRecord getOwnedPatientRecord(UUID patientUserId) {
+    private PatientRecord requireOwnedPatientRecord(UUID patientUserId) {
         return patientRecordRepository.findByProfileUserId(patientUserId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -194,7 +204,7 @@ public class PatientCarerAccessService {
                 );
     }
 
-    private PatientCarerAccess getAccess(UUID accessId) {
+    private PatientCarerAccess findAccess(UUID accessId) {
         return patientCarerAccessRepository.findById(accessId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -202,8 +212,19 @@ public class PatientCarerAccessService {
                 );
     }
 
+    private void requireParticipant(PatientCarerAccess access, UUID authenticatedUserId) {
+        if (isCarer(access, authenticatedUserId) || isPatientOwner(access, authenticatedUserId)) {
+            return;
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "You cannot view this carer relationship"
+        );
+    }
+
     private void requireCarer(PatientCarerAccess access, UUID authenticatedUserId) {
-        if (!access.getCarer().getId().equals(authenticatedUserId)) {
+        if (!isCarer(access, authenticatedUserId)) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "You cannot respond to this invitation"
@@ -212,14 +233,22 @@ public class PatientCarerAccessService {
     }
 
     private void requirePatientOwner(PatientCarerAccess access, UUID authenticatedUserId) {
-        UUID patientOwnerId = access.getPatientRecord().getProfile().getUser().getId();
-
-        if (!patientOwnerId.equals(authenticatedUserId)) {
+        if (!isPatientOwner(access, authenticatedUserId)) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "You cannot manage this carer relationship"
             );
         }
+    }
+
+    private boolean isCarer(PatientCarerAccess access, UUID authenticatedUserId) {
+        return access.getCarer().getId().equals(authenticatedUserId);
+    }
+
+    private boolean isPatientOwner(PatientCarerAccess access, UUID authenticatedUserId) {
+        UUID patientOwnerId = access.getPatientRecord().getProfile().getUser().getId();
+
+        return patientOwnerId.equals(authenticatedUserId);
     }
 
     private void requireStatus(PatientCarerAccess access, PatientCarerAccessStatus expectedStatus) {

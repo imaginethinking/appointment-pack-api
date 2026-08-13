@@ -12,48 +12,51 @@ import java.net.URI;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/patient-records")
 @RequiredArgsConstructor
+@RequestMapping("/api/v1/patient-records")
 public class PatientRecordController {
 
     private final PatientRecordService patientRecordService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
     @PostMapping
-    public ResponseEntity<PatientRecordResponse> createCurrentPatientRecord(@AuthenticationPrincipal Jwt jwt, @RequestBody @Valid CreatePatientRecordRequest request) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientRecordResponse> createCurrentPatientRecord(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody CreatePatientRecordRequest request) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientRecordResponse response = patientRecordService.createCurrentPatientRecord(userId, request);
+        PatientRecordResponse response = patientRecordService.createCurrentPatientRecord(authenticatedUserId, request);
 
-        return ResponseEntity
-                .created(URI.create("/api/v1/patient-records/me"))
-                .body(response);
+        return ResponseEntity.created(URI.create("/api/v1/patient-records/" + response.id())).body(response);
     }
 
     @GetMapping("/me")
-    public ResponseEntity<PatientRecordResponse> getCurrentPatientRecord(@AuthenticationPrincipal Jwt jwt) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientRecordResponse> getCurrentPatientRecord(
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientRecordResponse response = patientRecordService.getCurrentPatientRecord(userId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientRecordService.getCurrentPatientRecord(authenticatedUserId));
     }
 
     @GetMapping("/{patientRecordId}")
-    public ResponseEntity<PatientRecordResponse> getPatientRecord(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID patientRecordId) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientRecordResponse> getPatientRecord(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID patientRecordId) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientRecordResponse response = patientRecordService.getPatientRecord(userId, patientRecordId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientRecordService.getPatientRecord(authenticatedUserId, patientRecordId));
     }
 
     @PutMapping("/{patientRecordId}")
-    public ResponseEntity<PatientRecordResponse> updatePatientRecord(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID patientRecordId, @RequestBody @Valid UpdatePatientRecordRequest request) {
-        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+    public ResponseEntity<PatientRecordResponse> updatePatientRecord(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID patientRecordId,
+            @Valid @RequestBody UpdatePatientRecordRequest request) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        PatientRecordResponse response = patientRecordService.updatePatientRecord(userId, patientRecordId, request);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(patientRecordService.updatePatientRecord(
+                authenticatedUserId,
+                patientRecordId,
+                request));
     }
 }
