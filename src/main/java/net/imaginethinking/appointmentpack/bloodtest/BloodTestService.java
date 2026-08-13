@@ -46,7 +46,7 @@ public class BloodTestService {
 
         patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, BloodTestPermission.VIEW);
 
-        return bloodTestRepository.findAllByPatientRecord_IdAndArchivedFalseOrderByTestDateDescCreatedAtDesc(
+        return bloodTestRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByTestDateDescCreatedAtDesc(
                 patientRecordId).stream().map(BloodTestResponse::from).toList();
     }
 
@@ -85,7 +85,7 @@ public class BloodTestService {
                 bloodTest.getPatientRecord(),
                 BloodTestPermission.EDIT);
 
-        bloodTest.setArchived(true);
+        bloodTest.archive();
 
         return BloodTestResponse.from(bloodTest);
     }

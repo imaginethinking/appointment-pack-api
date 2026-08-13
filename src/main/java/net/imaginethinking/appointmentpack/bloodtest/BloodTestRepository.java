@@ -8,5 +8,5 @@ import java.util.UUID;
 public interface BloodTestRepository
         extends JpaRepository<BloodTest, UUID> {
 
-    List<BloodTest> findAllByPatientRecord_IdAndArchivedFalseOrderByTestDateDescCreatedAtDesc(UUID patientRecordId);
+    List<BloodTest> findAllByPatientRecord_IdAndArchivedAtIsNullOrderByTestDateDescCreatedAtDesc(UUID patientRecordId);
 }

@@ -1,19 +1,9 @@
 package net.imaginethinking.appointmentpack.bloodtest;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
 import java.time.LocalDate;
@@ -25,14 +15,12 @@ import java.util.List;
 @Entity
 @Table(
         name = "blood_tests",
-        indexes = {
-                @Index(
-                        name = "idx_blood_test_patient_date",
-                        columnList = "patient_record_id, test_date"
-                )
-        }
+        indexes = {@Index(
+                name = "idx_blood_test_patient_date",
+                columnList = "patient_record_id, test_date"
+        )}
 )
-public class BloodTest extends BaseEntity {
+public class BloodTest extends ArchivableEntity {
 
     @ManyToOne(
             fetch = FetchType.LAZY,
@@ -70,12 +58,6 @@ public class BloodTest extends BaseEntity {
             length = 2000
     )
     private String notes;
-
-    @Column(
-            name = "archived",
-            nullable = false
-    )
-    private boolean archived;
 
     @OneToMany(
             mappedBy = "bloodTest",

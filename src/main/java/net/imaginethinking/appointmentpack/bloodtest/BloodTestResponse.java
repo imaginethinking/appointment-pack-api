@@ -14,7 +14,7 @@ public record BloodTestResponse(
         LocalDate testDate,
         String provider,
         String notes,
-        boolean archived,
+        Instant archivedAt,
         List<ResultResponse> results,
         Instant createdAt,
         Instant updatedAt
@@ -37,7 +37,7 @@ public record BloodTestResponse(
                 bloodTest.getTestDate(),
                 bloodTest.getProvider(),
                 bloodTest.getNotes(),
-                bloodTest.isArchived(),
+                bloodTest.getArchivedAt(),
                 results,
                 bloodTest.getCreatedAt(),
                 bloodTest.getUpdatedAt()
