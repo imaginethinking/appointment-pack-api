@@ -3,9 +3,12 @@ package net.imaginethinking.appointmentpack.auth;
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.auth.mfa.*;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.auth.AuthenticationAction;
+import net.imaginethinking.appointmentpack.event.auth.AuthenticationEvent;
+import net.imaginethinking.appointmentpack.event.auth.AuthenticationOutcome;
 import net.imaginethinking.appointmentpack.profile.Profile;
 import net.imaginethinking.appointmentpack.security.JwtService;
-import net.imaginethinking.appointmentpack.auth.mfa.MfaTotpService;
 import net.imaginethinking.appointmentpack.user.EmailAddressNormalizer;
 import net.imaginethinking.appointmentpack.user.User;
 import net.imaginethinking.appointmentpack.user.UserRepository;
@@ -25,6 +28,7 @@ import java.util.UUID;
 public class AuthService {
 
     private static final Duration MFA_CHALLENGE_LIFETIME = Duration.ofMinutes(5);
+
     private static final int MAX_MFA_ATTEMPTS = 5;
 
     private final UserRepository userRepository;
@@ -32,6 +36,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MfaTotpService mfaTotpService;
+    private final EmailVerificationService emailVerificationService;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
@@ -66,34 +72,56 @@ public class AuthService {
 
         User registeredUser = userRepository.save(user);
 
+        emailVerificationService.issueInitialVerification(registeredUser);
+
+        appEventPublisher.publish(AuthenticationEvent.create(
+                registeredUser.getId(),
+                AuthenticationAction.REGISTRATION,
+                AuthenticationOutcome.SUCCEEDED));
+
         return new RegisterResponse(
                 registeredUser.getId(),
                 registeredUser.getEmail(),
-                registeredUser.getProfile().getId());
+                registeredUser.getProfile().getId(),
+                true);
     }
 
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse login(LoginRequest request) {
         String email = EmailAddressNormalizer.normalise(request.email());
 
-        User user = userRepository.findByEmail(email).orElseThrow(this::invalidCredentials);
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            publishAuthenticationEvent(null, AuthenticationAction.LOGIN, AuthenticationOutcome.FAILED);
+
+            throw invalidCredentials();
+        }
 
         boolean passwordMatches = passwordEncoder.matches(request.password(), user.getPasswordHash());
 
         if (!passwordMatches || !user.isEnabled()) {
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.FAILED);
+
             throw invalidCredentials();
+        }
+
+        if (!user.isEmailVerified()) {
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.BLOCKED);
+
+            return LoginResponse.pendingEmailVerification();
         }
 
         if (!user.isMfaEnabled()) {
             String accessToken = jwtService.generateAccessToken(user);
 
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.SUCCEEDED);
+
             return LoginResponse.authenticated(accessToken);
         }
 
         if (user.getMfaSecret() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "MFA configuration is invalid"
-            );
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "MFA configuration is invalid");
         }
 
         MfaChallenge challenge = new MfaChallenge();
@@ -101,6 +129,9 @@ public class AuthService {
         challenge.setExpiresAt(Instant.now().plus(MFA_CHALLENGE_LIFETIME));
 
         MfaChallenge savedChallenge = mfaChallengeRepository.save(challenge);
+
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.STARTED);
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_CHALLENGE, AuthenticationOutcome.CREATED);
 
         return LoginResponse.pendingMfa(savedChallenge.getId());
     }
@@ -119,55 +150,61 @@ public class AuthService {
         user.setMfaSecret(secret);
         user.setMfaEnabled(false);
 
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_SETUP, AuthenticationOutcome.STARTED);
+
         return new MfaSetupResponse(provisioningUri);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public void confirmMfa(UUID userId, MfaConfirmRequest request) {
         User user = findUser(userId);
 
         if (user.isMfaEnabled()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "MFA is already enabled"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "MFA is already enabled");
         }
 
         if (user.getMfaSecret() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "MFA setup has not been started"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "MFA setup has not been started");
         }
 
         boolean valid = mfaTotpService.isValidCode(user.getMfaSecret(), request.code());
 
         if (!valid) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Invalid MFA code"
-            );
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_SETUP, AuthenticationOutcome.FAILED);
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid MFA code");
         }
 
         user.setMfaEnabled(true);
+
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_SETUP, AuthenticationOutcome.ENABLED);
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse completeMfaLogin(MfaLoginRequest request) {
-        MfaChallenge challenge = mfaChallengeRepository.findById(request.mfaChallengeId())
-                .orElseThrow(this::invalidMfaChallenge);
+        MfaChallenge challenge = mfaChallengeRepository.findById(request.mfaChallengeId()).orElse(null);
 
-        Instant now = Instant.now();
+        if (challenge == null) {
+            publishAuthenticationEvent(null, AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.FAILED);
 
-        if (challenge.isUsed() || !challenge.getExpiresAt()
-                .isAfter(now) || challenge.getFailedAttempts() >= MAX_MFA_ATTEMPTS) {
             throw invalidMfaChallenge();
         }
 
         User user = challenge.getUser();
+        Instant now = Instant.now();
 
-        if (!user.isEnabled() || !user.isMfaEnabled() || user.getMfaSecret() == null) {
+        if (challenge.isUsed() || !challenge.getExpiresAt()
+                .isAfter(now) || challenge.getFailedAttempts() >= MAX_MFA_ATTEMPTS) {
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.FAILED);
+
+            throw invalidMfaChallenge();
+        }
+
+        if (!user.isEnabled() || !user.isEmailVerified() || !user.isMfaEnabled() || user.getMfaSecret() == null) {
             challenge.setUsed(true);
+
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.FAILED);
+
             throw invalidMfaChallenge();
         }
 
@@ -181,25 +218,28 @@ public class AuthService {
                 challenge.setUsed(true);
             }
 
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid MFA code"
-            );
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.FAILED);
+
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid MFA code");
         }
 
         challenge.setUsed(true);
 
         String accessToken = jwtService.generateAccessToken(user);
 
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.SUCCEEDED);
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.SUCCEEDED);
+
         return LoginResponse.authenticated(accessToken);
     }
 
     private User findUser(UUID userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "User not found")
-                );
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    private void publishAuthenticationEvent(UUID userId, AuthenticationAction action, AuthenticationOutcome outcome) {
+        appEventPublisher.publish(AuthenticationEvent.create(userId, action, outcome));
     }
 
     private ResponseStatusException invalidCredentials() {

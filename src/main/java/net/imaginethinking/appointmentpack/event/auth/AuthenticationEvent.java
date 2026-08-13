@@ -9,7 +9,7 @@ import java.util.UUID;
 public record AuthenticationEvent(
         UUID eventId,
         Instant occurredAt,
-        UUID actorUserId,
+        UUID userId,
         AuthenticationAction action,
         AuthenticationOutcome outcome
 ) implements AppEvent {
@@ -21,17 +21,7 @@ public record AuthenticationEvent(
         Objects.requireNonNull(outcome, "Authentication outcome must not be null");
     }
 
-    public static AuthenticationEvent create(
-            UUID actorUserId,
-            AuthenticationAction action,
-            AuthenticationOutcome outcome
-    ) {
-        return new AuthenticationEvent(
-                UUID.randomUUID(),
-                Instant.now(),
-                actorUserId,
-                action,
-                outcome
-        );
+    public static AuthenticationEvent create(UUID userId, AuthenticationAction action, AuthenticationOutcome outcome) {
+        return new AuthenticationEvent(UUID.randomUUID(), Instant.now(), userId, action, outcome);
     }
 }

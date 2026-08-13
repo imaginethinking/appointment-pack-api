@@ -23,15 +23,15 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
+    private final PasswordResetService passwordResetService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@RequestBody @Valid RegisterRequest request) {
         RegisterResponse response = authService.register(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
@@ -46,6 +46,34 @@ public class AuthController {
         LoginResponse response = authService.completeMfaLogin(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/email-verification/resend")
+    public ResponseEntity<Void> resendEmailVerification(@RequestBody @Valid EmailVerificationResendRequest request) {
+        emailVerificationService.resend(request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/email-verification/confirm")
+    public ResponseEntity<Void> confirmEmailVerification(@RequestBody @Valid EmailVerificationConfirmRequest request) {
+        emailVerificationService.confirm(request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<Void> requestPasswordReset(@RequestBody @Valid PasswordResetRequest request) {
+        passwordResetService.requestReset(request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<Void> confirmPasswordReset(@RequestBody @Valid PasswordResetConfirmRequest request) {
+        passwordResetService.confirmReset(request);
+
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/mfa/setup")
