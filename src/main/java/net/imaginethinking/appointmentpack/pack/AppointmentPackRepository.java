@@ -1,0 +1,12 @@
+package net.imaginethinking.appointmentpack.pack;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface AppointmentPackRepository
+        extends JpaRepository<AppointmentPack, UUID> {
+
+    List<AppointmentPack> findAllByPatientRecord_IdAndArchivedAtIsNullOrderByGeneratedAtDesc(UUID patientRecordId);
+}
