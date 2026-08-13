@@ -1,28 +1,21 @@
 package net.imaginethinking.appointmentpack.pack.storage;
 
+import net.imaginethinking.appointmentpack.common.storage.FileSystemStorage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.UUID;
 
 @Service
 public class AppointmentPackStorageService {
 
-    private final Path storageDirectory;
+    private final FileSystemStorage fileSystemStorage;
 
     public AppointmentPackStorageService(
             @Value("${appointment-pack.appointment-packs.storage-directory}")
             String storageDirectory) {
-        this.storageDirectory = Path.of(storageDirectory).toAbsolutePath().normalize();
-
-        initialiseStorageDirectory();
+        fileSystemStorage = new FileSystemStorage(storageDirectory);
     }
 
     public String store(byte[] pdfBytes) {
@@ -31,64 +24,22 @@ public class AppointmentPackStorageService {
         }
 
         String storedFileName = UUID.randomUUID() + ".pdf";
-        String directoryName = storedFileName.substring(0, 2);
+        String storagePath = createStoragePath(storedFileName);
 
-        Path relativePath = Path.of(directoryName, storedFileName);
-
-        Path targetPath = resolve(relativePath.toString());
-
-        try {
-            Files.createDirectories(targetPath.getParent());
-
-            Files.write(targetPath, pdfBytes, StandardOpenOption.CREATE_NEW);
-
-            return relativePath.toString();
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to store appointment pack", exception);
-        }
+        return fileSystemStorage.store(pdfBytes, storagePath);
     }
 
     public Resource load(String storagePath) {
-        Path filePath = resolve(storagePath);
-
-        try {
-            Resource resource = new UrlResource(filePath.toUri());
-
-            if (!resource.exists() || !resource.isReadable()) {
-                throw new IllegalStateException("Stored appointment pack is not readable");
-            }
-
-            return resource;
-        } catch (MalformedURLException exception) {
-            throw new IllegalStateException("Failed to load appointment pack", exception);
-        }
+        return fileSystemStorage.load(storagePath);
     }
 
     public void delete(String storagePath) {
-        Path filePath = resolve(storagePath);
-
-        try {
-            Files.deleteIfExists(filePath);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to delete appointment pack", exception);
-        }
+        fileSystemStorage.delete(storagePath);
     }
 
-    private Path resolve(String storagePath) {
-        Path resolvedPath = storageDirectory.resolve(storagePath).normalize();
+    private String createStoragePath(String storedFileName) {
+        String directoryName = storedFileName.substring(0, 2);
 
-        if (!resolvedPath.startsWith(storageDirectory)) {
-            throw new IllegalArgumentException("Invalid appointment pack storage path");
-        }
-
-        return resolvedPath;
-    }
-
-    private void initialiseStorageDirectory() {
-        try {
-            Files.createDirectories(storageDirectory);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to initialise appointment pack storage", exception);
-        }
+        return directoryName + "/" + storedFileName;
     }
 }
