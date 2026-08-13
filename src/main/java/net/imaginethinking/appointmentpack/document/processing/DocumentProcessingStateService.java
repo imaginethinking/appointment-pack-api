@@ -316,7 +316,6 @@ public class DocumentProcessingStateService {
         historyEntry.setSourceType(MedicalHistorySourceType.DOCUMENT_SUMMARY);
         historyEntry.setSourceDocument(document);
         historyEntry.setCreatedBy(reviewingUser);
-        historyEntry.setArchived(false);
 
         medicalHistoryEntryRepository.save(historyEntry);
 

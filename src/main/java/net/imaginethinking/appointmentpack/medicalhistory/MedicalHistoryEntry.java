@@ -3,7 +3,7 @@ package net.imaginethinking.appointmentpack.medicalhistory;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.user.User;
@@ -24,7 +24,7 @@ import java.time.LocalDate;
                 columnNames = "source_document_id"
         )}
 )
-public class MedicalHistoryEntry extends BaseEntity {
+public class MedicalHistoryEntry extends ArchivableEntity {
 
     @ManyToOne(
             fetch = FetchType.LAZY,
@@ -88,10 +88,4 @@ public class MedicalHistoryEntry extends BaseEntity {
             )
     )
     private User createdBy;
-
-    @Column(
-            name = "archived",
-            nullable = false
-    )
-    private boolean archived;
 }

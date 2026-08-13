@@ -8,7 +8,5 @@ import java.util.UUID;
 public interface MedicalHistoryEntryRepository extends JpaRepository<MedicalHistoryEntry, UUID> {
     boolean existsBySourceDocumentId(UUID documentId);
 
-    List<MedicalHistoryEntry> findAllByPatientRecordIdAndArchivedFalseOrderByEntryDateDescCreatedAtDesc(
-            UUID patientRecordId
-    );
+    List<MedicalHistoryEntry> findAllByPatientRecord_IdAndArchivedAtIsNullOrderByEntryDateDescCreatedAtDesc(UUID patientRecordId);
 }

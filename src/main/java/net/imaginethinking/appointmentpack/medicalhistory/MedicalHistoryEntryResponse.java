@@ -2,6 +2,7 @@ package net.imaginethinking.appointmentpack.medicalhistory;
 
 import net.imaginethinking.appointmentpack.document.DocumentType;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -15,6 +16,6 @@ public record MedicalHistoryEntryResponse(
         UUID sourceDocumentId,
         DocumentType sourceDocumentType,
         UUID createdByUserId,
-        boolean archived
+        Instant archivedAt
 ) {
 }

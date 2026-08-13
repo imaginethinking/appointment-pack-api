@@ -45,7 +45,6 @@ public class MedicalHistoryService {
         entry.setSourceType(MedicalHistorySourceType.MANUAL);
         entry.setSourceDocument(null);
         entry.setCreatedBy(entityManager.getReference(User.class, authenticatedUserId));
-        entry.setArchived(false);
 
         MedicalHistoryEntry savedEntry = medicalHistoryEntryRepository.save(entry);
 
@@ -61,7 +60,7 @@ public class MedicalHistoryService {
                 patientRecord,
                 MedicalHistoryPermission.VIEW);
 
-        return medicalHistoryEntryRepository.findAllByPatientRecordIdAndArchivedFalseOrderByEntryDateDescCreatedAtDesc(
+        return medicalHistoryEntryRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByEntryDateDescCreatedAtDesc(
                 patientRecordId).stream().map(this::toResponse).toList();
     }
 
@@ -105,7 +104,7 @@ public class MedicalHistoryService {
                 entry.getPatientRecord(),
                 MedicalHistoryPermission.EDIT);
 
-        entry.setArchived(true);
+        entry.archive();
 
         return toResponse(entry);
     }
@@ -135,8 +134,6 @@ public class MedicalHistoryService {
     private MedicalHistoryEntryResponse toResponse(MedicalHistoryEntry entry) {
         Document sourceDocument = entry.getSourceDocument();
 
-        UUID sourceDocumentId = sourceDocument == null ? null : sourceDocument.getId();
-
         return new MedicalHistoryEntryResponse(
                 entry.getId(),
                 entry.getPatientRecord().getId(),
@@ -144,9 +141,9 @@ public class MedicalHistoryService {
                 entry.getSummary(),
                 entry.getEntryDate(),
                 entry.getSourceType(),
-                sourceDocumentId,
+                sourceDocument == null ? null : sourceDocument.getId(),
                 sourceDocument == null ? null : sourceDocument.getDocumentType(),
                 entry.getCreatedBy().getId(),
-                entry.isArchived());
+                entry.getArchivedAt());
     }
 }
