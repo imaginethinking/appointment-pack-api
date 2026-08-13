@@ -130,7 +130,7 @@ public class AuthService {
 
         MfaChallenge savedChallenge = mfaChallengeRepository.save(challenge);
 
-        publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.STARTED);
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.MFA_REQUIRED);
         publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_CHALLENGE, AuthenticationOutcome.CREATED);
 
         return LoginResponse.pendingMfa(savedChallenge.getId());
@@ -141,7 +141,10 @@ public class AuthService {
         User user = findUser(userId);
 
         if (user.isMfaEnabled()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "MFA is already enabled");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "MFA is already enabled"
+            );
         }
 
         String secret = mfaTotpService.generateSecret();
@@ -220,7 +223,10 @@ public class AuthService {
 
             publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.FAILED);
 
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid MFA code");
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid MFA code"
+            );
         }
 
         challenge.setUsed(true);
@@ -228,14 +234,16 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(user);
 
         publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.SUCCEEDED);
-        publishAuthenticationEvent(user.getId(), AuthenticationAction.LOGIN, AuthenticationOutcome.SUCCEEDED);
 
         return LoginResponse.authenticated(accessToken);
     }
 
     private User findUser(UUID userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found")
+                );
     }
 
     private void publishAuthenticationEvent(UUID userId, AuthenticationAction action, AuthenticationOutcome outcome) {
