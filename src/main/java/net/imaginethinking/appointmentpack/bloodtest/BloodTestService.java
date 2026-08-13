@@ -1,6 +1,7 @@
 package net.imaginethinking.appointmentpack.bloodtest;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
@@ -111,10 +112,10 @@ public class BloodTestService {
     }
 
     private void applyValues(BloodTest bloodTest, BloodTestRequest request) {
-        bloodTest.setTitle(normaliseOptionalValue(request.title()));
+        bloodTest.setTitle(TextNormalizer.stripToNull(request.title()));
         bloodTest.setTestDate(request.testDate());
-        bloodTest.setProvider(normaliseOptionalValue(request.provider()));
-        bloodTest.setNotes(normaliseOptionalValue(request.notes()));
+        bloodTest.setProvider(TextNormalizer.stripToNull(request.provider()));
+        bloodTest.setNotes(TextNormalizer.stripToNull(request.notes()));
 
         replaceResults(bloodTest, request.results());
     }
@@ -127,7 +128,7 @@ public class BloodTestService {
         for (int index = 0; index < inputs.size(); index++) {
             BloodTestRequest.ResultInput input = inputs.get(index);
 
-            String analyteName = input.analyteName().strip();
+            String analyteName = TextNormalizer.strip(input.analyteName());
             String analyteKey = createAnalyteKey(analyteName);
 
             if (!analyteKeys.add(analyteKey)) {
@@ -136,7 +137,7 @@ public class BloodTestService {
                         "A blood test cannot contain duplicate analytes");
             }
 
-            String resultValue = input.resultValue().strip();
+            String resultValue = TextNormalizer.strip(input.resultValue());
 
             BloodTestResult result = new BloodTestResult();
 
@@ -145,8 +146,8 @@ public class BloodTestService {
             result.setAnalyteKey(analyteKey);
             result.setResultValue(resultValue);
             result.setNumericValue(deriveNumericValue(resultValue));
-            result.setUnit(normaliseOptionalValue(input.unit()));
-            result.setReferenceRange(normaliseOptionalValue(input.referenceRange()));
+            result.setUnit(TextNormalizer.stripToNull(input.unit()));
+            result.setReferenceRange(TextNormalizer.stripToNull(input.referenceRange()));
             result.setFlag(input.flag());
             result.setDisplayOrder(index);
 
@@ -189,11 +190,4 @@ public class BloodTestService {
         }
     }
 
-    private String normaliseOptionalValue(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.strip();
-    }
 }

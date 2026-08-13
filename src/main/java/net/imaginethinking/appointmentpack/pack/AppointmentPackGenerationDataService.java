@@ -6,6 +6,7 @@ import net.imaginethinking.appointmentpack.appointment.Appointment;
 import net.imaginethinking.appointmentpack.appointment.AppointmentPermission;
 import net.imaginethinking.appointmentpack.appointment.AppointmentRepository;
 import net.imaginethinking.appointmentpack.bloodtest.*;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.contact.*;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntryRepository;
@@ -39,9 +40,7 @@ import java.util.stream.Collectors;
 public class AppointmentPackGenerationDataService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMMM uuuu", Locale.UK);
-
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm", Locale.UK);
-
     private static final ZoneId APPLICATION_ZONE = ZoneId.of("Europe/London");
 
     private final PatientRecordRepository patientRecordRepository;
@@ -92,7 +91,7 @@ public class AppointmentPackGenerationDataService {
 
         String title = resolveTitle(request.title(), appointment);
 
-        String notes = normaliseOptionalValue(request.notes());
+        String notes = TextNormalizer.stripToNull(request.notes());
 
         AppointmentPackRenderModel renderModel = buildRenderModel(
                 patientRecord,
@@ -137,7 +136,7 @@ public class AppointmentPackGenerationDataService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found");
         }
 
-        if (appointment.getArchivedAt() != null) {
+        if (appointment.isArchived()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found");
         }
 
@@ -309,11 +308,11 @@ public class AppointmentPackGenerationDataService {
         Profile profile = patientRecord.getProfile();
 
         return new AppointmentPackRenderModel.PatientInformation(
-                profile.getFirstName().strip() + " " + profile.getLastName().strip(),
+                TextNormalizer.strip(profile.getFirstName()) + " " + TextNormalizer.strip(profile.getLastName()),
                 formatDate(profile.getDateOfBirth()),
-                normaliseOptionalValue(patientRecord.getNhsNumber()),
-                normaliseOptionalValue(patientRecord.getChiNumber()),
-                normaliseOptionalValue(patientRecord.getHcNumber()),
+                TextNormalizer.stripToNull(patientRecord.getNhsNumber()),
+                TextNormalizer.stripToNull(patientRecord.getChiNumber()),
+                TextNormalizer.stripToNull(patientRecord.getHcNumber()),
                 formatBloodType(patientRecord.getBloodType()),
                 toAddressLines(profile.getAddress()));
     }
@@ -323,12 +322,12 @@ public class AppointmentPackGenerationDataService {
                 formatDate(appointment.getDate()),
                 formatTime(appointment.getStartTime()),
                 formatTime(appointment.getEndTime()),
-                normaliseOptionalValue(appointment.getService()),
-                normaliseOptionalValue(appointment.getAppointmentType()),
-                normaliseOptionalValue(appointment.getClinicianOrTeam()),
-                normaliseOptionalValue(appointment.getLocationName()),
+                TextNormalizer.stripToNull(appointment.getService()),
+                TextNormalizer.stripToNull(appointment.getAppointmentType()),
+                TextNormalizer.stripToNull(appointment.getClinicianOrTeam()),
+                TextNormalizer.stripToNull(appointment.getLocationName()),
                 toAddressLines(appointment.getAddress()),
-                normaliseOptionalValue(appointment.getNotes()));
+                TextNormalizer.stripToNull(appointment.getNotes()));
     }
 
     private AppointmentPackRenderModel.MedicationInformation toMedicationInformation(Medication medication) {
@@ -377,7 +376,7 @@ public class AppointmentPackGenerationDataService {
                 .map(this::toBloodResultInformation)
                 .toList();
 
-        String title = normaliseOptionalValue(bloodTest.getTitle());
+        String title = TextNormalizer.stripToNull(bloodTest.getTitle());
 
         if (title == null) {
             title = "Blood test";
@@ -449,20 +448,20 @@ public class AppointmentPackGenerationDataService {
     }
 
     private String resolveTitle(String requestedTitle, Appointment appointment) {
-        String title = normaliseOptionalValue(requestedTitle);
+        String title = TextNormalizer.stripToNull(requestedTitle);
 
         if (title != null) {
             return title;
         }
 
-        String service = normaliseOptionalValue(appointment.getService());
+        String service = TextNormalizer.stripToNull(appointment.getService());
 
         String defaultTitle = service == null ? "Appointment Pack" : service + " Appointment Pack";
 
         defaultTitle += " – " + formatDate(appointment.getDate());
 
         if (defaultTitle.length() > 250) {
-            return defaultTitle.substring(0, 250).strip();
+            return TextNormalizer.strip(defaultTitle.substring(0, 250));
         }
 
         return defaultTitle;
@@ -504,7 +503,7 @@ public class AppointmentPackGenerationDataService {
     }
 
     private void addIfPresent(List<String> values, String value) {
-        String normalisedValue = normaliseOptionalValue(value);
+        String normalisedValue = TextNormalizer.stripToNull(value);
 
         if (normalisedValue != null) {
             values.add(normalisedValue);
@@ -557,11 +556,4 @@ public class AppointmentPackGenerationDataService {
         };
     }
 
-    private String normaliseOptionalValue(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.strip();
-    }
 }

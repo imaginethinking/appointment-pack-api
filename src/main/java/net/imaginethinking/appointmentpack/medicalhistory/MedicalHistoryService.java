@@ -2,6 +2,7 @@ package net.imaginethinking.appointmentpack.medicalhistory;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
@@ -39,8 +40,8 @@ public class MedicalHistoryService {
         MedicalHistoryEntry entry = new MedicalHistoryEntry();
 
         entry.setPatientRecord(patientRecord);
-        entry.setTitle(request.title().strip());
-        entry.setSummary(request.summary().strip());
+        entry.setTitle(TextNormalizer.strip(request.title()));
+        entry.setSummary(TextNormalizer.strip(request.summary()));
         entry.setEntryDate(request.entryDate());
         entry.setSourceType(MedicalHistorySourceType.MANUAL);
         entry.setSourceDocument(null);
@@ -88,8 +89,8 @@ public class MedicalHistoryService {
                 entry.getPatientRecord(),
                 MedicalHistoryPermission.EDIT);
 
-        entry.setTitle(request.title().strip());
-        entry.setSummary(request.summary().strip());
+        entry.setTitle(TextNormalizer.strip(request.title()));
+        entry.setSummary(TextNormalizer.strip(request.summary()));
         entry.setEntryDate(request.entryDate());
 
         return toResponse(entry);

@@ -1,6 +1,7 @@
 package net.imaginethinking.appointmentpack.medication;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
@@ -35,7 +36,6 @@ public class MedicationService {
         Medication medication = new Medication();
 
         medication.setPatientRecord(patientRecord);
-
         applyValues(
                 medication,
                 request.name(),
@@ -151,20 +151,13 @@ public class MedicationService {
             LocalDate startDate,
             LocalDate endDate,
             String notes) {
-        medication.setName(name.strip());
-        medication.setDose(normaliseOptionalValue(dose));
-        medication.setForm(normaliseOptionalValue(form));
-        medication.setInstructions(normaliseOptionalValue(instructions));
+        medication.setName(TextNormalizer.strip(name));
+        medication.setDose(TextNormalizer.stripToNull(dose));
+        medication.setForm(TextNormalizer.stripToNull(form));
+        medication.setInstructions(TextNormalizer.stripToNull(instructions));
         medication.setStartDate(startDate);
         medication.setEndDate(endDate);
-        medication.setNotes(normaliseOptionalValue(notes));
+        medication.setNotes(TextNormalizer.stripToNull(notes));
     }
 
-    private String normaliseOptionalValue(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.strip();
-    }
 }

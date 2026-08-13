@@ -1,6 +1,7 @@
 package net.imaginethinking.appointmentpack.contact;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordRepository;
@@ -137,19 +138,12 @@ public class EmergencyContactService {
             String alternativePhoneNumber,
             String email,
             String notes) {
-        contact.setName(name.trim());
-        contact.setRelationship(relationship.trim());
-        contact.setPhoneNumber(phoneNumber.trim());
-        contact.setAlternativePhoneNumber(normaliseOptionalValue(alternativePhoneNumber));
-        contact.setEmail(normaliseOptionalValue(email));
-        contact.setNotes(normaliseOptionalValue(notes));
+        contact.setName(TextNormalizer.strip(name));
+        contact.setRelationship(TextNormalizer.strip(relationship));
+        contact.setPhoneNumber(TextNormalizer.strip(phoneNumber));
+        contact.setAlternativePhoneNumber(TextNormalizer.stripToNull(alternativePhoneNumber));
+        contact.setEmail(TextNormalizer.stripToNull(email));
+        contact.setNotes(TextNormalizer.stripToNull(notes));
     }
 
-    private String normaliseOptionalValue(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.trim();
-    }
 }

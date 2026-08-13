@@ -1,6 +1,7 @@
 package net.imaginethinking.appointmentpack.document.processing;
 
 import net.imaginethinking.appointmentpack.address.Address;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.document.Document;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.profile.Profile;
@@ -14,13 +15,9 @@ import java.util.*;
 public class RedactionContextFactory {
 
     private static final DateTimeFormatter UK_NUMERIC_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.UK);
-
     private static final DateTimeFormatter UK_DASH_DATE = DateTimeFormatter.ofPattern("dd-MM-uuuu", Locale.UK);
-
     private static final DateTimeFormatter UK_DOT_DATE = DateTimeFormatter.ofPattern("dd.MM.uuuu", Locale.UK);
-
     private static final DateTimeFormatter LONG_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu", Locale.UK);
-
     private static final DateTimeFormatter SHORT_MONTH_DATE = DateTimeFormatter.ofPattern("d MMM uuuu", Locale.UK);
 
     public RedactionContext create(Document document) {
@@ -31,19 +28,13 @@ public class RedactionContextFactory {
         Set<String> knownValues = new LinkedHashSet<>();
 
         addValue(knownValues, profile.getFirstName());
-
         addValue(knownValues, profile.getLastName());
 
         addFullNameValues(knownValues, profile.getFirstName(), profile.getLastName());
-
         addDateValues(knownValues, profile.getDateOfBirth());
-
         addIdentifierValues(knownValues, patientRecord.getNhsNumber());
-
         addIdentifierValues(knownValues, patientRecord.getChiNumber());
-
         addIdentifierValues(knownValues, patientRecord.getHcNumber());
-
         addAddressValues(knownValues, profile.getAddress());
 
         return new RedactionContext(new ArrayList<>(knownValues));
@@ -55,7 +46,6 @@ public class RedactionContextFactory {
         }
 
         addValue(values, firstName + " " + lastName);
-
         addValue(values, lastName + ", " + firstName);
     }
 
@@ -105,11 +95,8 @@ public class RedactionContextFactory {
         }
 
         addValue(values, address.getAddressLine1());
-
         addValue(values, address.getAddressLine2());
-
         addValue(values, address.getTownCity());
-
         addValue(values, address.getCounty());
 
         addPostcodeValues(values, address.getPostcode());
@@ -117,18 +104,13 @@ public class RedactionContextFactory {
         List<String> addressParts = new ArrayList<>();
 
         addAddressPart(addressParts, address.getAddressLine1());
-
         addAddressPart(addressParts, address.getAddressLine2());
-
         addAddressPart(addressParts, address.getTownCity());
-
         addAddressPart(addressParts, address.getCounty());
-
         addAddressPart(addressParts, address.getPostcode());
 
         if (!addressParts.isEmpty()) {
             addValue(values, String.join(", ", addressParts));
-
             addValue(values, String.join(" ", addressParts));
         }
     }
@@ -139,7 +121,6 @@ public class RedactionContextFactory {
         }
 
         addValue(values, postcode);
-
         addValue(values, postcode.replaceAll("\\s+", ""));
     }
 
@@ -148,7 +129,7 @@ public class RedactionContextFactory {
             return;
         }
 
-        parts.add(value.trim());
+        parts.add(TextNormalizer.strip(value));
     }
 
     private void addValue(Set<String> values, String value) {
@@ -156,7 +137,7 @@ public class RedactionContextFactory {
             return;
         }
 
-        String normalisedValue = value.trim();
+        String normalisedValue = TextNormalizer.strip(value);
 
         if (!normalisedValue.isBlank()) {
             values.add(normalisedValue);

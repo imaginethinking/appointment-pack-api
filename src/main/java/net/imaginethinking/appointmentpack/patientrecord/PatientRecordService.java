@@ -1,6 +1,7 @@
 package net.imaginethinking.appointmentpack.patientrecord;
 
 import lombok.RequiredArgsConstructor;
+import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.patientcareraccess.PatientAccessControlService;
 import net.imaginethinking.appointmentpack.patientrecord.measurement.HeightUnit;
 import net.imaginethinking.appointmentpack.patientrecord.measurement.WeightUnit;
@@ -32,16 +33,10 @@ public class PatientRecordService {
     @Transactional
     public PatientRecordResponse createCurrentPatientRecord(UUID userId, CreatePatientRecordRequest request) {
         Profile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Profile not found"
-                ));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 
         if (patientRecordRepository.existsByProfileId(profile.getId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Patient record already exists"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient record already exists");
         }
 
         validateMeasurement("Height", request.height(), request.heightUnit());
@@ -50,9 +45,9 @@ public class PatientRecordService {
 
         PatientRecord patientRecord = new PatientRecord();
         patientRecord.setProfile(profile);
-        patientRecord.setNhsNumber(normalise(request.nhsNumber()));
-        patientRecord.setChiNumber(normalise(request.chiNumber()));
-        patientRecord.setHcNumber(normalise(request.hcNumber()));
+        patientRecord.setNhsNumber(TextNormalizer.stripToNull(request.nhsNumber()));
+        patientRecord.setChiNumber(TextNormalizer.stripToNull(request.chiNumber()));
+        patientRecord.setHcNumber(TextNormalizer.stripToNull(request.hcNumber()));
         patientRecord.setHeight(request.height());
         patientRecord.setHeightUnit(request.heightUnit());
         patientRecord.setWeight(request.weight());
@@ -65,27 +60,22 @@ public class PatientRecordService {
     }
 
     @Transactional
-    public PatientRecordResponse updatePatientRecord(UUID authenticatedUserId, UUID patientRecordId, UpdatePatientRecordRequest request) {
-        PatientRecord patientRecord = patientRecordRepository
-                .findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
+    public PatientRecordResponse updatePatientRecord(
+            UUID authenticatedUserId,
+            UUID patientRecordId,
+            UpdatePatientRecordRequest request) {
+        PatientRecord patientRecord = patientRecordRepository.findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
 
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                patientRecord,
-                PatientRecordPermission.EDIT
-        );
+        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, PatientRecordPermission.EDIT);
 
         validateMeasurement("Height", request.height(), request.heightUnit());
         validateMeasurement("Weight", request.weight(), request.weightUnit());
 
 
-        patientRecord.setNhsNumber(normalise(request.nhsNumber()));
-        patientRecord.setChiNumber(normalise(request.chiNumber()));
-        patientRecord.setHcNumber(normalise(request.hcNumber()));
+        patientRecord.setNhsNumber(TextNormalizer.stripToNull(request.nhsNumber()));
+        patientRecord.setChiNumber(TextNormalizer.stripToNull(request.chiNumber()));
+        patientRecord.setHcNumber(TextNormalizer.stripToNull(request.hcNumber()));
         patientRecord.setHeight(request.height());
         patientRecord.setHeightUnit(request.heightUnit());
         patientRecord.setWeight(request.weight());
@@ -97,29 +87,18 @@ public class PatientRecordService {
 
     @Transactional(readOnly = true)
     public PatientRecordResponse getCurrentPatientRecord(UUID userId) {
-        PatientRecord patientRecord = patientRecordRepository
-                .findByProfileUserId(userId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
+        PatientRecord patientRecord = patientRecordRepository.findByProfileUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
 
         return toResponse(patientRecord);
     }
 
     @Transactional(readOnly = true)
     public PatientRecordResponse getPatientRecord(UUID authenticatedUserId, UUID patientRecordId) {
-        PatientRecord patientRecord = patientRecordRepository
-                .findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
+        PatientRecord patientRecord = patientRecordRepository.findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
 
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                patientRecord,
-                PatientRecordPermission.VIEW);
+        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, PatientRecordPermission.VIEW);
 
         return toResponse(patientRecord);
     }
@@ -136,8 +115,7 @@ public class PatientRecordService {
                 patientRecord.getWeight(),
                 patientRecord.getWeightUnit(),
                 calculateBmi(patientRecord),
-                patientRecord.getBloodType()
-        );
+                patientRecord.getBloodType());
     }
 
     private BigDecimal calculateBmi(PatientRecord patientRecord) {
@@ -148,52 +126,30 @@ public class PatientRecordService {
             return null;
         }
 
-        BigDecimal heightInMeters = convertHeightToMeters(
-                patientRecord.getHeight(),
-                patientRecord.getHeightUnit()
-        );
+        BigDecimal heightInMeters = convertHeightToMeters(patientRecord.getHeight(), patientRecord.getHeightUnit());
 
         BigDecimal weightInKilograms = convertWeightToKilograms(
                 patientRecord.getWeight(),
-                patientRecord.getWeightUnit()
-        );
+                patientRecord.getWeightUnit());
 
         BigDecimal heightSquared = heightInMeters.multiply(heightInMeters);
 
-        return weightInKilograms.divide(
-                heightSquared,
-                2,
-                RoundingMode.HALF_UP
-        );
+        return weightInKilograms.divide(heightSquared, 2, RoundingMode.HALF_UP);
     }
 
-    private BigDecimal convertHeightToMeters(
-            BigDecimal height,
-            HeightUnit unit
-    ) {
+    private BigDecimal convertHeightToMeters(BigDecimal height, HeightUnit unit) {
         return switch (unit) {
             case METERS -> height;
-            case CENTIMETERS -> height.divide(
-                    CENTIMETERS_PER_METER,
-                    8,
-                    RoundingMode.HALF_UP
-            );
+            case CENTIMETERS -> height.divide(CENTIMETERS_PER_METER, 8, RoundingMode.HALF_UP);
             case FEET -> height.multiply(METERS_PER_FOOT);
             case INCHES -> height.multiply(METERS_PER_INCH);
         };
     }
 
-    private BigDecimal convertWeightToKilograms(
-            BigDecimal weight,
-            WeightUnit unit
-    ) {
+    private BigDecimal convertWeightToKilograms(BigDecimal weight, WeightUnit unit) {
         return switch (unit) {
             case KILOGRAMS -> weight;
-            case GRAMS -> weight.divide(
-                    GRAMS_PER_KILOGRAM,
-                    8,
-                    RoundingMode.HALF_UP
-            );
+            case GRAMS -> weight.divide(GRAMS_PER_KILOGRAM, 8, RoundingMode.HALF_UP);
             case STONE -> weight.multiply(KILOGRAMS_PER_STONE);
             case POUNDS -> weight.multiply(KILOGRAMS_PER_POUND);
         };
@@ -203,16 +159,8 @@ public class PatientRecordService {
         if ((value == null) != (unit == null)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    measurementName + " value and unit must be provided together"
-            );
+                    measurementName + " value and unit must be provided together");
         }
     }
 
-    private String normalise(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.trim();
-    }
 }
