@@ -24,10 +24,10 @@ public class MedicalHistoryService {
     private final EntityManager entityManager;
 
     @Transactional
-    public MedicalHistoryEntryResponse createEntry(
+    public MedicalHistoryEntryResponse createMedicalHistoryEntry(
             UUID authenticatedUserId,
             UUID patientRecordId,
-            MedicalHistoryEntryRequest request) {
+            CreateMedicalHistoryEntryRequest request) {
         PatientRecord patientRecord = patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 patientRecordId,
@@ -49,18 +49,15 @@ public class MedicalHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<MedicalHistoryEntryResponse> getHistory(UUID authenticatedUserId, UUID patientRecordId) {
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                patientRecordId,
-                MedicalHistoryPermission.VIEW);
+    public List<MedicalHistoryEntryResponse> getMedicalHistoryEntries(UUID authenticatedUserId, UUID patientRecordId) {
+        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, MedicalHistoryPermission.VIEW);
 
         return medicalHistoryEntryRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByEntryDateDescCreatedAtDesc(
                 patientRecordId).stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public MedicalHistoryEntryResponse getEntry(UUID authenticatedUserId, UUID entryId) {
+    public MedicalHistoryEntryResponse getMedicalHistoryEntry(UUID authenticatedUserId, UUID entryId) {
         MedicalHistoryEntry entry = findAvailableEntry(entryId);
 
         patientRecordAccessService.requireAccess(
@@ -72,10 +69,10 @@ public class MedicalHistoryService {
     }
 
     @Transactional
-    public MedicalHistoryEntryResponse updateEntry(
+    public MedicalHistoryEntryResponse updateMedicalHistoryEntry(
             UUID authenticatedUserId,
             UUID entryId,
-            MedicalHistoryEntryRequest request) {
+            UpdateMedicalHistoryEntryRequest request) {
         MedicalHistoryEntry entry = findAvailableEntry(entryId);
 
         patientRecordAccessService.requireAccess(
@@ -91,7 +88,7 @@ public class MedicalHistoryService {
     }
 
     @Transactional
-    public MedicalHistoryEntryResponse archiveEntry(UUID authenticatedUserId, UUID entryId) {
+    public MedicalHistoryEntryResponse archiveMedicalHistoryEntry(UUID authenticatedUserId, UUID entryId) {
         MedicalHistoryEntry entry = findEntry(entryId);
 
         patientRecordAccessService.requireAccess(

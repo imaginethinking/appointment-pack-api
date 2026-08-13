@@ -24,7 +24,7 @@ public class BloodTestController {
     public ResponseEntity<BloodTestResponse> createBloodTest(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID patientRecordId,
-            @Valid @RequestBody BloodTestRequest request) {
+            @Valid @RequestBody CreateBloodTestRequest request) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
         BloodTestResponse response = bloodTestService.createBloodTest(authenticatedUserId, patientRecordId, request);
@@ -38,9 +38,7 @@ public class BloodTestController {
             @PathVariable UUID patientRecordId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        List<BloodTestResponse> response = bloodTestService.getBloodTests(authenticatedUserId, patientRecordId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(bloodTestService.getBloodTests(authenticatedUserId, patientRecordId));
     }
 
     @GetMapping("/blood-tests/{bloodTestId}")
@@ -49,21 +47,17 @@ public class BloodTestController {
             @PathVariable UUID bloodTestId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        BloodTestResponse response = bloodTestService.getBloodTest(authenticatedUserId, bloodTestId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(bloodTestService.getBloodTest(authenticatedUserId, bloodTestId));
     }
 
     @PutMapping("/blood-tests/{bloodTestId}")
     public ResponseEntity<BloodTestResponse> updateBloodTest(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID bloodTestId,
-            @Valid @RequestBody BloodTestRequest request) {
+            @Valid @RequestBody UpdateBloodTestRequest request) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        BloodTestResponse response = bloodTestService.updateBloodTest(authenticatedUserId, bloodTestId, request);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(bloodTestService.updateBloodTest(authenticatedUserId, bloodTestId, request));
     }
 
     @PatchMapping("/blood-tests/{bloodTestId}/archive")
@@ -72,8 +66,6 @@ public class BloodTestController {
             @PathVariable UUID bloodTestId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        BloodTestResponse response = bloodTestService.archiveBloodTest(authenticatedUserId, bloodTestId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(bloodTestService.archiveBloodTest(authenticatedUserId, bloodTestId));
     }
 }

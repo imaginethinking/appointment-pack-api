@@ -7,24 +7,21 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
-public record MedicalHistoryEntryRequest(
+public record UpdateMedicalHistoryEntryRequest(
 
-        @NotBlank(message = "History title is required")
-        @Size(
+        @NotBlank(message = "History title is required") @Size(
                 max = 200,
                 message = "History title must not exceed 200 characters"
         )
         String title,
 
-        @NotBlank(message = "History summary is required")
-        @Size(
+        @NotBlank(message = "History summary is required") @Size(
                 max = 10000,
                 message = "History summary must not exceed 10000 characters"
         )
         String summary,
 
-        @NotNull(message = "History date is required")
-        @PastOrPresent(
+        @NotNull(message = "History date is required") @PastOrPresent(
                 message = "History date must not be in the future"
         )
         LocalDate entryDate

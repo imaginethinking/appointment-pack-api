@@ -8,7 +8,7 @@ import net.imaginethinking.appointmentpack.address.PartialAddressRequest;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public record AppointmentRequest(
+public record CreateAppointmentRequest(
 
         @NotNull(message = "Appointment date is required")
         LocalDate date,

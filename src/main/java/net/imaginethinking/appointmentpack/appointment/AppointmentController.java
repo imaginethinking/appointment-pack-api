@@ -24,7 +24,7 @@ public class AppointmentController {
     public ResponseEntity<AppointmentResponse> createAppointment(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID patientRecordId,
-            @Valid @RequestBody AppointmentRequest request) {
+            @Valid @RequestBody CreateAppointmentRequest request) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
         AppointmentResponse response = appointmentService.createAppointment(
@@ -41,9 +41,7 @@ public class AppointmentController {
             @PathVariable UUID patientRecordId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        List<AppointmentResponse> response = appointmentService.getAppointments(authenticatedUserId, patientRecordId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(appointmentService.getAppointments(authenticatedUserId, patientRecordId));
     }
 
     @GetMapping("/appointments/{appointmentId}")
@@ -52,24 +50,17 @@ public class AppointmentController {
             @PathVariable UUID appointmentId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        AppointmentResponse response = appointmentService.getAppointment(authenticatedUserId, appointmentId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(appointmentService.getAppointment(authenticatedUserId, appointmentId));
     }
 
     @PutMapping("/appointments/{appointmentId}")
     public ResponseEntity<AppointmentResponse> updateAppointment(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID appointmentId,
-            @Valid @RequestBody AppointmentRequest request) {
+            @Valid @RequestBody UpdateAppointmentRequest request) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        AppointmentResponse response = appointmentService.updateAppointment(
-                authenticatedUserId,
-                appointmentId,
-                request);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(appointmentService.updateAppointment(authenticatedUserId, appointmentId, request));
     }
 
     @PatchMapping("/appointments/{appointmentId}/archive")
@@ -78,8 +69,6 @@ public class AppointmentController {
             @PathVariable UUID appointmentId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        AppointmentResponse response = appointmentService.archiveAppointment(authenticatedUserId, appointmentId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(appointmentService.archiveAppointment(authenticatedUserId, appointmentId));
     }
 }

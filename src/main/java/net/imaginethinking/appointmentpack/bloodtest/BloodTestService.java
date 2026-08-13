@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -24,7 +25,10 @@ public class BloodTestService {
     private final PatientRecordAccessService patientRecordAccessService;
 
     @Transactional
-    public BloodTestResponse createBloodTest(UUID authenticatedUserId, UUID patientRecordId, BloodTestRequest request) {
+    public BloodTestResponse createBloodTest(
+            UUID authenticatedUserId,
+            UUID patientRecordId,
+            CreateBloodTestRequest request) {
         PatientRecord patientRecord = patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 patientRecordId,
@@ -33,7 +37,13 @@ public class BloodTestService {
         BloodTest bloodTest = new BloodTest();
         bloodTest.setPatientRecord(patientRecord);
 
-        applyValues(bloodTest, request);
+        applyValues(
+                bloodTest,
+                request.title(),
+                request.testDate(),
+                request.provider(),
+                request.notes(),
+                request.results());
 
         BloodTest savedBloodTest = bloodTestRepository.save(bloodTest);
 
@@ -42,10 +52,7 @@ public class BloodTestService {
 
     @Transactional(readOnly = true)
     public List<BloodTestResponse> getBloodTests(UUID authenticatedUserId, UUID patientRecordId) {
-        patientRecordAccessService.requireAccess(
-                authenticatedUserId,
-                patientRecordId,
-                BloodTestPermission.VIEW);
+        patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, BloodTestPermission.VIEW);
 
         return bloodTestRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByTestDateDescCreatedAtDesc(
                 patientRecordId).stream().map(BloodTestResponse::from).toList();
@@ -64,7 +71,10 @@ public class BloodTestService {
     }
 
     @Transactional
-    public BloodTestResponse updateBloodTest(UUID authenticatedUserId, UUID bloodTestId, BloodTestRequest request) {
+    public BloodTestResponse updateBloodTest(
+            UUID authenticatedUserId,
+            UUID bloodTestId,
+            UpdateBloodTestRequest request) {
         BloodTest bloodTest = findAvailableBloodTest(bloodTestId);
 
         patientRecordAccessService.requireAccess(
@@ -72,7 +82,13 @@ public class BloodTestService {
                 bloodTest.getPatientRecord(),
                 BloodTestPermission.EDIT);
 
-        applyValues(bloodTest, request);
+        applyValues(
+                bloodTest,
+                request.title(),
+                request.testDate(),
+                request.provider(),
+                request.notes(),
+                request.results());
 
         return BloodTestResponse.from(bloodTest);
     }
@@ -106,22 +122,28 @@ public class BloodTestService {
         return bloodTest;
     }
 
-    private void applyValues(BloodTest bloodTest, BloodTestRequest request) {
-        bloodTest.setTitle(TextNormalizer.stripToNull(request.title()));
-        bloodTest.setTestDate(request.testDate());
-        bloodTest.setProvider(TextNormalizer.stripToNull(request.provider()));
-        bloodTest.setNotes(TextNormalizer.stripToNull(request.notes()));
+    private void applyValues(
+            BloodTest bloodTest,
+            String title,
+            LocalDate testDate,
+            String provider,
+            String notes,
+            List<BloodTestResultRequest> results) {
+        bloodTest.setTitle(TextNormalizer.stripToNull(title));
+        bloodTest.setTestDate(testDate);
+        bloodTest.setProvider(TextNormalizer.stripToNull(provider));
+        bloodTest.setNotes(TextNormalizer.stripToNull(notes));
 
-        replaceResults(bloodTest, request.results());
+        replaceResults(bloodTest, results);
     }
 
-    private void replaceResults(BloodTest bloodTest, List<BloodTestRequest.ResultInput> inputs) {
+    private void replaceResults(BloodTest bloodTest, List<BloodTestResultRequest> inputs) {
         Set<String> analyteKeys = new HashSet<>();
 
         bloodTest.getResults().clear();
 
         for (int index = 0; index < inputs.size(); index++) {
-            BloodTestRequest.ResultInput input = inputs.get(index);
+            BloodTestResultRequest input = inputs.get(index);
 
             String analyteName = TextNormalizer.strip(input.analyteName());
             String analyteKey = createAnalyteKey(analyteName);
@@ -184,5 +206,4 @@ public class BloodTestService {
             return null;
         }
     }
-
 }

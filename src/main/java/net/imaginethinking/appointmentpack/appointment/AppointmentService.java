@@ -2,6 +2,7 @@ package net.imaginethinking.appointmentpack.appointment;
 
 import lombok.RequiredArgsConstructor;
 import net.imaginethinking.appointmentpack.address.AddressMapper;
+import net.imaginethinking.appointmentpack.address.PartialAddressRequest;
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,19 +27,28 @@ public class AppointmentService {
     public AppointmentResponse createAppointment(
             UUID authenticatedUserId,
             UUID patientRecordId,
-            AppointmentRequest request) {
+            CreateAppointmentRequest request) {
         PatientRecord patientRecord = patientRecordAccessService.requireAccess(
                 authenticatedUserId,
                 patientRecordId,
                 AppointmentPermission.EDIT);
 
-        validateTimes(request);
+        validateTimes(request.startTime(), request.endTime());
 
         Appointment appointment = new Appointment();
-
         appointment.setPatientRecord(patientRecord);
 
-        applyValues(appointment, request);
+        applyValues(
+                appointment,
+                request.date(),
+                request.startTime(),
+                request.endTime(),
+                request.service(),
+                request.appointmentType(),
+                request.clinicianOrTeam(),
+                request.locationName(),
+                request.address(),
+                request.notes());
 
         Appointment savedAppointment = appointmentRepository.save(appointment);
 
@@ -67,7 +79,7 @@ public class AppointmentService {
     public AppointmentResponse updateAppointment(
             UUID authenticatedUserId,
             UUID appointmentId,
-            AppointmentRequest request) {
+            UpdateAppointmentRequest request) {
         Appointment appointment = findAvailableAppointment(appointmentId);
 
         patientRecordAccessService.requireAccess(
@@ -75,9 +87,19 @@ public class AppointmentService {
                 appointment.getPatientRecord(),
                 AppointmentPermission.EDIT);
 
-        validateTimes(request);
+        validateTimes(request.startTime(), request.endTime());
 
-        applyValues(appointment, request);
+        applyValues(
+                appointment,
+                request.date(),
+                request.startTime(),
+                request.endTime(),
+                request.service(),
+                request.appointmentType(),
+                request.clinicianOrTeam(),
+                request.locationName(),
+                request.address(),
+                request.notes());
 
         return AppointmentResponse.from(appointment);
     }
@@ -111,24 +133,33 @@ public class AppointmentService {
         return appointment;
     }
 
-    private void validateTimes(AppointmentRequest request) {
-        if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
+    private void validateTimes(LocalTime startTime, LocalTime endTime) {
+        if (endTime != null && !endTime.isAfter(startTime)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Appointment end time must be after the start time");
         }
     }
 
-    private void applyValues(Appointment appointment, AppointmentRequest request) {
-        appointment.setDate(request.date());
-        appointment.setStartTime(request.startTime());
-        appointment.setEndTime(request.endTime());
-
-        appointment.setService(TextNormalizer.stripToNull(request.service()));
-        appointment.setAppointmentType(TextNormalizer.stripToNull(request.appointmentType()));
-        appointment.setClinicianOrTeam(TextNormalizer.stripToNull(request.clinicianOrTeam()));
-        appointment.setLocationName(TextNormalizer.stripToNull(request.locationName()));
-        appointment.setAddress(AddressMapper.toAddress(request.address()));
-        appointment.setNotes(TextNormalizer.stripToNull(request.notes()));
+    private void applyValues(
+            Appointment appointment,
+            LocalDate date,
+            LocalTime startTime,
+            LocalTime endTime,
+            String service,
+            String appointmentType,
+            String clinicianOrTeam,
+            String locationName,
+            PartialAddressRequest address,
+            String notes) {
+        appointment.setDate(date);
+        appointment.setStartTime(startTime);
+        appointment.setEndTime(endTime);
+        appointment.setService(TextNormalizer.stripToNull(service));
+        appointment.setAppointmentType(TextNormalizer.stripToNull(appointmentType));
+        appointment.setClinicianOrTeam(TextNormalizer.stripToNull(clinicianOrTeam));
+        appointment.setLocationName(TextNormalizer.stripToNull(locationName));
+        appointment.setAddress(AddressMapper.toAddress(address));
+        appointment.setNotes(TextNormalizer.stripToNull(notes));
     }
 }

@@ -18,17 +18,16 @@ import java.util.UUID;
 public class MedicalHistoryController {
 
     private final MedicalHistoryService medicalHistoryService;
-
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
     @PostMapping("/patient-records/{patientRecordId}/medical-history")
-    public ResponseEntity<MedicalHistoryEntryResponse> createEntry(
+    public ResponseEntity<MedicalHistoryEntryResponse> createMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID patientRecordId,
-            @Valid @RequestBody MedicalHistoryEntryRequest request) {
+            @Valid @RequestBody CreateMedicalHistoryEntryRequest request) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        MedicalHistoryEntryResponse response = medicalHistoryService.createEntry(
+        MedicalHistoryEntryResponse response = medicalHistoryService.createMedicalHistoryEntry(
                 authenticatedUserId,
                 patientRecordId,
                 request);
@@ -37,49 +36,42 @@ public class MedicalHistoryController {
     }
 
     @GetMapping("/patient-records/{patientRecordId}/medical-history")
-    public ResponseEntity<List<MedicalHistoryEntryResponse>> getMedicalHistory(
+    public ResponseEntity<List<MedicalHistoryEntryResponse>> getMedicalHistoryEntries(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID patientRecordId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        List<MedicalHistoryEntryResponse> response = medicalHistoryService.getHistory(
-                authenticatedUserId,
-                patientRecordId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(medicalHistoryService.getMedicalHistoryEntries(authenticatedUserId, patientRecordId));
     }
 
     @GetMapping("/medical-history/{entryId}")
-    public ResponseEntity<MedicalHistoryEntryResponse> getEntry(
+    public ResponseEntity<MedicalHistoryEntryResponse> getMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID entryId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        MedicalHistoryEntryResponse response = medicalHistoryService.getEntry(authenticatedUserId, entryId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(medicalHistoryService.getMedicalHistoryEntry(authenticatedUserId, entryId));
     }
 
     @PutMapping("/medical-history/{entryId}")
-    public ResponseEntity<MedicalHistoryEntryResponse> updateEntry(
+    public ResponseEntity<MedicalHistoryEntryResponse> updateMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID entryId,
-            @Valid @RequestBody MedicalHistoryEntryRequest request) {
+            @Valid @RequestBody UpdateMedicalHistoryEntryRequest request) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        MedicalHistoryEntryResponse response = medicalHistoryService.updateEntry(authenticatedUserId, entryId, request);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(medicalHistoryService.updateMedicalHistoryEntry(
+                authenticatedUserId,
+                entryId,
+                request));
     }
 
     @PatchMapping("/medical-history/{entryId}/archive")
-    public ResponseEntity<MedicalHistoryEntryResponse> archiveEntry(
+    public ResponseEntity<MedicalHistoryEntryResponse> archiveMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID entryId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        MedicalHistoryEntryResponse response = medicalHistoryService.archiveEntry(authenticatedUserId, entryId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(medicalHistoryService.archiveMedicalHistoryEntry(authenticatedUserId, entryId));
     }
 }
