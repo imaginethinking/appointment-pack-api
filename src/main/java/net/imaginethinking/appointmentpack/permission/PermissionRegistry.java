@@ -1,6 +1,7 @@
 package net.imaginethinking.appointmentpack.permission;
 
 import net.imaginethinking.appointmentpack.appointment.AppointmentPermission;
+import net.imaginethinking.appointmentpack.audit.AuditPermission;
 import net.imaginethinking.appointmentpack.bloodtest.BloodTestPermission;
 import net.imaginethinking.appointmentpack.contact.ContactPermission;
 import net.imaginethinking.appointmentpack.document.DocumentPermission;
@@ -31,6 +32,7 @@ public class PermissionRegistry {
         register(registeredPermissions, ContactPermission.values());
         register(registeredPermissions, BloodTestPermission.values());
         register(registeredPermissions, AppointmentPackPermission.values());
+        register(registeredPermissions, AuditPermission.values());
 
         permissions= Map.copyOf(registeredPermissions);
     }
