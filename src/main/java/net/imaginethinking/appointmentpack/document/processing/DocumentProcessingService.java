@@ -5,18 +5,21 @@ import net.imaginethinking.appointmentpack.appointment.AppointmentConfirmationRe
 import net.imaginethinking.appointmentpack.appointment.AppointmentResponse;
 import net.imaginethinking.appointmentpack.document.processing.api.DocumentProcessingResultResponse;
 import net.imaginethinking.appointmentpack.document.processing.api.DocumentSummaryAcceptanceRequest;
-import net.imaginethinking.appointmentpack.document.processing.client.DocumentExtractionResponse;
-import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingClient;
-import net.imaginethinking.appointmentpack.document.processing.client.DocumentSummaryResponse;
+import net.imaginethinking.appointmentpack.document.processing.client.*;
 import net.imaginethinking.appointmentpack.document.processing.context.DocumentExtractionContext;
 import net.imaginethinking.appointmentpack.document.processing.context.DocumentSummarisationContext;
 import net.imaginethinking.appointmentpack.document.processing.review.AppointmentDocumentReviewService;
 import net.imaginethinking.appointmentpack.document.processing.review.ConsultationDocumentReviewService;
 import net.imaginethinking.appointmentpack.document.storage.DocumentStorageService;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.processing.DocumentProcessingEvent;
+import net.imaginethinking.appointmentpack.event.processing.DocumentProcessingFailureReason;
+import net.imaginethinking.appointmentpack.event.processing.DocumentProcessingOperation;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class DocumentProcessingService {
     private final ConsultationDocumentReviewService consultationDocumentReviewService;
     private final DocumentStorageService documentStorageService;
     private final DocumentProcessingClient documentProcessingClient;
+    private final AppEventPublisher appEventPublisher;
 
     public DocumentProcessingResultResponse getProcessing(UUID authenticatedUserId, UUID documentId) {
         return documentProcessingStateService.getProcessing(authenticatedUserId, documentId);
@@ -40,14 +44,38 @@ public class DocumentProcessingService {
                 authenticatedUserId,
                 documentId);
 
+        long startedAtNanos = System.nanoTime();
+
         try {
             Resource resource = documentStorageService.load(context.storagePath());
 
             DocumentExtractionResponse response = documentProcessingClient.extract(context, resource);
 
-            return documentProcessingStateService.completeExtraction(context.documentId(), response);
+            DocumentProcessingResultResponse result = documentProcessingStateService.completeExtraction(
+                    context.documentId(),
+                    response);
+
+            appEventPublisher.publish(DocumentProcessingEvent.succeeded(
+                    authenticatedUserId,
+                    context.documentId(),
+                    context.documentType(),
+                    DocumentProcessingOperation.EXTRACTION,
+                    elapsedMilliseconds(startedAtNanos),
+                    response.processorVersion(),
+                    null,
+                    null));
+
+            return result;
         } catch (RuntimeException exception) {
             recordExtractionFailure(context.documentId(), exception);
+
+            appEventPublisher.publish(DocumentProcessingEvent.failed(
+                    authenticatedUserId,
+                    context.documentId(),
+                    context.documentType(),
+                    DocumentProcessingOperation.EXTRACTION,
+                    elapsedMilliseconds(startedAtNanos),
+                    classifyFailure(exception)));
 
             throw exception;
         }
@@ -62,12 +90,36 @@ public class DocumentProcessingService {
                 documentId,
                 approvedDeidentifiedText);
 
+        long startedAtNanos = System.nanoTime();
+
         try {
             DocumentSummaryResponse response = documentProcessingClient.summarise(context);
 
-            return documentProcessingStateService.completeSummarisation(context.documentId(), response);
+            DocumentProcessingResultResponse result = documentProcessingStateService.completeSummarisation(
+                    context.documentId(),
+                    response);
+
+            appEventPublisher.publish(DocumentProcessingEvent.succeeded(
+                    authenticatedUserId,
+                    context.documentId(),
+                    context.documentType(),
+                    DocumentProcessingOperation.AI_SUMMARISATION,
+                    elapsedMilliseconds(startedAtNanos),
+                    response.processorVersion(),
+                    response.modelName(),
+                    response.promptVersion()));
+
+            return result;
         } catch (RuntimeException exception) {
             recordSummarisationFailure(context.documentId(), exception);
+
+            appEventPublisher.publish(DocumentProcessingEvent.failed(
+                    authenticatedUserId,
+                    context.documentId(),
+                    context.documentType(),
+                    DocumentProcessingOperation.AI_SUMMARISATION,
+                    elapsedMilliseconds(startedAtNanos),
+                    classifyFailure(exception)));
 
             throw exception;
         }
@@ -109,5 +161,25 @@ public class DocumentProcessingService {
         } catch (RuntimeException persistenceException) {
             originalException.addSuppressed(persistenceException);
         }
+    }
+
+    private DocumentProcessingFailureReason classifyFailure(RuntimeException exception) {
+        if (exception instanceof DocumentProcessingTimeoutException) {
+            return DocumentProcessingFailureReason.TIMEOUT;
+        }
+
+        if (exception instanceof DocumentProcessingUnavailableException) {
+            return DocumentProcessingFailureReason.SERVICE_UNAVAILABLE;
+        }
+
+        if (exception instanceof DocumentProcessingException) {
+            return DocumentProcessingFailureReason.PROCESSING_ERROR;
+        }
+
+        return DocumentProcessingFailureReason.UNKNOWN;
+    }
+
+    private long elapsedMilliseconds(long startedAtNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
     }
 }
