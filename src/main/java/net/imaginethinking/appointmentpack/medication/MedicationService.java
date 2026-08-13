@@ -25,21 +25,17 @@ public class MedicationService {
     public MedicationResponse createMedication(
             UUID authenticatedUserId,
             UUID patientRecordId,
-            CreateMedicationRequest request
-    ) {
+            CreateMedicationRequest request) {
         PatientRecord patientRecord = findPatientRecord(patientRecordId);
 
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                patientRecord,
-                MedicationPermission.EDIT
-        );
+        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, MedicationPermission.EDIT);
 
         validateDates(request.startDate(), request.endDate());
 
         Medication medication = new Medication();
 
         medication.setPatientRecord(patientRecord);
+
         applyValues(
                 medication,
                 request.name(),
@@ -48,8 +44,7 @@ public class MedicationService {
                 request.instructions(),
                 request.startDate(),
                 request.endDate(),
-                request.notes()
-        );
+                request.notes());
 
         Medication savedMedication = medicationRepository.save(medication);
 
@@ -57,37 +52,23 @@ public class MedicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<MedicationResponse> getMedications(
-            UUID authenticatedUserId,
-            UUID patientRecordId
-    ) {
+    public List<MedicationResponse> getMedications(UUID authenticatedUserId, UUID patientRecordId) {
         PatientRecord patientRecord = findPatientRecord(patientRecordId);
 
-        patientAccessControlService.requirePermission(
-                authenticatedUserId,
-                patientRecord,
-                MedicationPermission.VIEW
-        );
+        patientAccessControlService.requirePermission(authenticatedUserId, patientRecord, MedicationPermission.VIEW);
 
-        return medicationRepository
-                .findAllByPatientRecord_IdAndArchivedFalseOrderByStartDateDescCreatedAtDesc(patientRecordId)
-                .stream()
-                .map(MedicationResponse::from)
-                .toList();
+        return medicationRepository.findAllByPatientRecord_IdAndArchivedAtIsNullOrderByStartDateDescCreatedAtDesc(
+                patientRecordId).stream().map(MedicationResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
-    public MedicationResponse getMedication(
-            UUID authenticatedUserId,
-            UUID medicationId
-    ) {
+    public MedicationResponse getMedication(UUID authenticatedUserId, UUID medicationId) {
         Medication medication = findAvailableMedication(medicationId);
 
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
                 medication.getPatientRecord(),
-                MedicationPermission.VIEW
-        );
+                MedicationPermission.VIEW);
 
         return MedicationResponse.from(medication);
     }
@@ -96,15 +77,13 @@ public class MedicationService {
     public MedicationResponse updateMedication(
             UUID authenticatedUserId,
             UUID medicationId,
-            UpdateMedicationRequest request
-    ) {
+            UpdateMedicationRequest request) {
         Medication medication = findAvailableMedication(medicationId);
 
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
                 medication.getPatientRecord(),
-                MedicationPermission.EDIT
-        );
+                MedicationPermission.EDIT);
 
         validateDates(request.startDate(), request.endDate());
 
@@ -116,71 +95,50 @@ public class MedicationService {
                 request.instructions(),
                 request.startDate(),
                 request.endDate(),
-                request.notes()
-        );
+                request.notes());
 
         return MedicationResponse.from(medication);
     }
 
     @Transactional
-    public MedicationResponse archiveMedication(
-            UUID authenticatedUserId,
-            UUID medicationId
-    ) {
+    public MedicationResponse archiveMedication(UUID authenticatedUserId, UUID medicationId) {
         Medication medication = findMedication(medicationId);
 
         patientAccessControlService.requirePermission(
                 authenticatedUserId,
                 medication.getPatientRecord(),
-                MedicationPermission.EDIT
-        );
+                MedicationPermission.EDIT);
 
-        if (!medication.isArchived()) {
-            medication.setArchived(true);
-        }
+        medication.archive();
 
         return MedicationResponse.from(medication);
     }
 
     private PatientRecord findPatientRecord(UUID patientRecordId) {
-        return patientRecordRepository
-                .findById(patientRecordId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found"
-                ));
+        return patientRecordRepository.findById(patientRecordId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private Medication findMedication(UUID medicationId) {
-        return medicationRepository
-                .findById(medicationId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Medication not found"
-                ));
+        return medicationRepository.findById(medicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medication not found"));
     }
 
     private Medication findAvailableMedication(UUID medicationId) {
         Medication medication = findMedication(medicationId);
 
         if (medication.isArchived()) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Medication not found"
-            );
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Medication not found");
         }
 
         return medication;
     }
 
     private void validateDates(LocalDate startDate, LocalDate endDate) {
-        if (startDate != null
-                && endDate != null
-                && endDate.isBefore(startDate)) {
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Medication end date cannot be before start date"
-            );
+                    "Medication end date cannot be before start date");
         }
     }
 
@@ -192,8 +150,7 @@ public class MedicationService {
             String instructions,
             LocalDate startDate,
             LocalDate endDate,
-            String notes
-    ) {
+            String notes) {
         medication.setName(name.strip());
         medication.setDose(normaliseOptionalValue(dose));
         medication.setForm(normaliseOptionalValue(form));

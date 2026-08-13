@@ -7,5 +7,5 @@ import java.util.UUID;
 
 public interface MedicationRepository extends JpaRepository<Medication, UUID> {
 
-    List<Medication> findAllByPatientRecord_IdAndArchivedFalseOrderByStartDateDescCreatedAtDesc(UUID patientRecordId);
+    List<Medication> findAllByPatientRecord_IdAndArchivedAtIsNullOrderByStartDateDescCreatedAtDesc(UUID patientRecordId);
 }

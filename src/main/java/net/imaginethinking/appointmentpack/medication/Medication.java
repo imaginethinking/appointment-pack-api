@@ -3,7 +3,7 @@ package net.imaginethinking.appointmentpack.medication;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import net.imaginethinking.appointmentpack.common.BaseEntity;
+import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
 import java.time.LocalDate;
@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @Setter
 @Entity
 @Table(name = "medications")
-public class Medication extends BaseEntity {
+public class Medication extends ArchivableEntity {
 
     @ManyToOne(
             fetch = FetchType.LAZY,
@@ -63,10 +63,4 @@ public class Medication extends BaseEntity {
             length = 2000
     )
     private String notes;
-
-    @Column(
-            name = "archived",
-            nullable = false
-    )
-    private boolean archived;
 }

@@ -14,7 +14,7 @@ public record MedicationResponse(
         LocalDate startDate,
         LocalDate endDate,
         String notes,
-        boolean archived,
+        Instant archivedAt,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -30,7 +30,7 @@ public record MedicationResponse(
                 medication.getStartDate(),
                 medication.getEndDate(),
                 medication.getNotes(),
-                medication.isArchived(),
+                medication.getArchivedAt(),
                 medication.getCreatedAt(),
                 medication.getUpdatedAt()
         );
