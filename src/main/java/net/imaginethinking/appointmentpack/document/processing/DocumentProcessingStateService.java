@@ -134,7 +134,10 @@ public class DocumentProcessingStateService {
         document.setStatus(DocumentStatus.SUMMARISING);
         document.setProcessingFailureReason(null);
 
-        return new DocumentSummarisationContext(document.getId(), result.getApprovedDeidentifiedText());
+        return new DocumentSummarisationContext(
+                document.getId(),
+                document.getDocumentType(),
+                result.getApprovedDeidentifiedText());
     }
 
     @Transactional
