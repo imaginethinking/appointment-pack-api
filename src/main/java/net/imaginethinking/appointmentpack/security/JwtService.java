@@ -24,12 +24,12 @@ public class JwtService {
         Instant now = Instant.now();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("appointment-pack-api")
+                .issuer(JwtClaims.ISSUER)
                 .issuedAt(now)
                 .expiresAt(now.plus(1, ChronoUnit.HOURS))
                 .subject(user.getId().toString())
-                .claim("purpose", "ACCESS")
-                .claim("roles", rolesFor(user))
+                .claim(JwtClaims.PURPOSE, JwtClaims.ACCESS_PURPOSE)
+                .claim(JwtClaims.ROLES, rolesFor(user))
                 .build();
 
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256)
