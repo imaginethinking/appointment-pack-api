@@ -7,13 +7,13 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record UpdatePatientRecordRequest(
-        @Size(max = 20)
+        @Size(max = 10)
         String nhsNumber,
 
-        @Size(max = 20)
+        @Size(max = 10)
         String chiNumber,
 
-        @Size(max = 20)
+        @Size(max = 10)
         String hcNumber,
 
         @DecimalMin("0.01")
