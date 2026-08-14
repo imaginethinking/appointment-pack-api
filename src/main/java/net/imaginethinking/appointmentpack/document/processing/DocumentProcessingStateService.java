@@ -12,6 +12,10 @@ import net.imaginethinking.appointmentpack.document.processing.context.DocumentE
 import net.imaginethinking.appointmentpack.document.processing.context.DocumentSummarisationContext;
 import net.imaginethinking.appointmentpack.document.processing.context.RedactionContext;
 import net.imaginethinking.appointmentpack.document.processing.context.RedactionContextFactory;
+import net.imaginethinking.appointmentpack.event.AppEventPublisher;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityAction;
+import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
+import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecordAccessService;
 import net.imaginethinking.appointmentpack.user.User;
 import org.springframework.http.HttpStatus;
@@ -33,6 +37,7 @@ public class DocumentProcessingStateService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final DocumentProcessingResultMapper processingResultMapper;
     private final EntityManager entityManager;
+    private final AppEventPublisher appEventPublisher;
 
     @Transactional(readOnly = true)
     public DocumentProcessingResultResponse getProcessing(UUID authenticatedUserId, UUID documentId) {
@@ -43,9 +48,9 @@ public class DocumentProcessingStateService {
                 document.getPatientRecord(),
                 DocumentPermission.VIEW);
 
-        DocumentProcessingResult result = processingRecordService.requireProcessingResult(documentId);
-
-        return processingResultMapper.toResponse(document, result);
+        return processingRecordService.findProcessingResult(documentId)
+                .map(result -> processingResultMapper.toResponse(document, result))
+                .orElseGet(() -> processingResultMapper.toResponse(document));
     }
 
     @Transactional
@@ -123,6 +128,13 @@ public class DocumentProcessingStateService {
 
         if (document.getStatus() == DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW) {
             approveDeidentifiedText(result, authenticatedUserId, approvedDeidentifiedText);
+
+            appEventPublisher.publish(PatientActivityEvent.create(
+                    authenticatedUserId,
+                    document.getPatientRecord().getId(),
+                    PatientResourceType.DOCUMENT,
+                    document.getId(),
+                    PatientActivityAction.DEIDENTIFICATION_APPROVED));
         } else if (document.getStatus() == DocumentStatus.SUMMARISATION_FAILED) {
             validateRetrySnapshot(result, approvedDeidentifiedText);
         } else {
