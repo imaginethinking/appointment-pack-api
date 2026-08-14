@@ -11,11 +11,39 @@ import java.util.UUID;
 @Component
 public class DocumentProcessingResultMapper {
 
-    public DocumentProcessingResultResponse toResponse(Document document, DocumentProcessingResult result) {
-        DocumentProcessingResultResponse.ModelMetadata model = result.getModelName() == null
-                ? null
-                : new DocumentProcessingResultResponse.ModelMetadata(result.getModelName(),
-                result.getPromptVersion());
+    public DocumentProcessingResultResponse toResponse(Document document) {
+        return new DocumentProcessingResultResponse(
+                document.getId(),
+                document.getDocumentType(),
+                document.getStatus(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    public DocumentProcessingResultResponse toResponse(
+            Document document,
+            DocumentProcessingResult result) {
+        DocumentProcessingResultResponse.ModelMetadata model =
+                result.getModelName() == null
+                        ? null
+                        : new DocumentProcessingResultResponse.ModelMetadata(
+                        result.getModelName(),
+                        result.getPromptVersion());
 
         UUID appointmentReviewerId = result.getAppointmentReviewedBy() == null
                 ? null
@@ -25,7 +53,9 @@ public class DocumentProcessingResultMapper {
                 ? null
                 : result.getDeidentificationReviewedBy().getId();
 
-        UUID summaryReviewerId = result.getSummaryReviewedBy() == null ? null : result.getSummaryReviewedBy().getId();
+        UUID summaryReviewerId = result.getSummaryReviewedBy() == null
+                ? null
+                : result.getSummaryReviewedBy().getId();
 
         return new DocumentProcessingResultResponse(
                 document.getId(),
@@ -46,11 +76,15 @@ public class DocumentProcessingResultMapper {
                 deidentificationReviewerId,
                 result.getDeidentificationReviewedAt(),
                 summaryReviewerId,
-                result.getSummaryReviewedAt());
+                result.getSummaryReviewedAt()
+        );
     }
 
-    private AppointmentDetailsResponse toAppointmentDetails(Document document, DocumentProcessingResult result) {
-        if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER) {
+    private AppointmentDetailsResponse toAppointmentDetails(
+            Document document,
+            DocumentProcessingResult result) {
+        if (document.getDocumentType()
+                != DocumentType.APPOINTMENT_LETTER) {
             return null;
         }
 
@@ -62,13 +96,19 @@ public class DocumentProcessingResultMapper {
                 result.getAppointmentType(),
                 result.getAppointmentClinicianOrTeam(),
                 result.getAppointmentLocationName(),
-                toAppointmentAddress(result));
+                toAppointmentAddress(result)
+        );
     }
 
-    private AppointmentDetailsResponse.AddressDetails toAppointmentAddress(DocumentProcessingResult result) {
-        boolean empty = isBlank(result.getAppointmentAddressLine1()) && isBlank(result.getAppointmentAddressLine2()) && isBlank(
-                result.getAppointmentTownCity()) && isBlank(result.getAppointmentCounty()) && isBlank(result.getAppointmentPostcode()) && isBlank(
-                result.getAppointmentCountry());
+    private AppointmentDetailsResponse.AddressDetails
+    toAppointmentAddress(
+            DocumentProcessingResult result) {
+        boolean empty = isBlank(result.getAppointmentAddressLine1())
+                && isBlank(result.getAppointmentAddressLine2())
+                && isBlank(result.getAppointmentTownCity())
+                && isBlank(result.getAppointmentCounty())
+                && isBlank(result.getAppointmentPostcode())
+                && isBlank(result.getAppointmentCountry());
 
         if (empty) {
             return null;
@@ -80,7 +120,8 @@ public class DocumentProcessingResultMapper {
                 result.getAppointmentTownCity(),
                 result.getAppointmentCounty(),
                 result.getAppointmentPostcode(),
-                result.getAppointmentCountry());
+                result.getAppointmentCountry()
+        );
     }
 
     private boolean isBlank(String value) {
