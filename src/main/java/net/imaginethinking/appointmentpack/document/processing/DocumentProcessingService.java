@@ -17,6 +17,7 @@ import net.imaginethinking.appointmentpack.event.processing.DocumentProcessingFa
 import net.imaginethinking.appointmentpack.event.processing.DocumentProcessingOperation;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -174,6 +175,14 @@ public class DocumentProcessingService {
 
         if (exception instanceof DocumentProcessingException) {
             return DocumentProcessingFailureReason.PROCESSING_ERROR;
+        }
+
+        if (exception instanceof ResponseStatusException responseStatusException) {
+            int status = responseStatusException.getStatusCode().value();
+
+            if (status == 413 || status == 415 || status == 422) {
+                return DocumentProcessingFailureReason.PROCESSING_ERROR;
+            }
         }
 
         return DocumentProcessingFailureReason.UNKNOWN;
