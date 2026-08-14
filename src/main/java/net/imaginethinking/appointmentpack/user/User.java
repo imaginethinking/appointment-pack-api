@@ -39,6 +39,14 @@ public class User extends BaseEntity {
     )
     private boolean enabled = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "role",
+            nullable = false,
+            length = 20
+    )
+    private UserRole role = UserRole.USER;
+
     @Column(name = "email_verified_at")
     private Instant emailVerifiedAt;
 
