@@ -148,6 +148,7 @@ public class AuthService {
         }
 
         String secret = mfaTotpService.generateSecret();
+
         String provisioningUri = mfaTotpService.generateProvisioningUri(user.getEmail(), secret);
 
         user.setMfaSecret(secret);
@@ -185,7 +186,7 @@ public class AuthService {
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse completeMfaLogin(MfaLoginRequest request) {
-        MfaChallenge challenge = mfaChallengeRepository.findById(request.mfaChallengeId()).orElse(null);
+        MfaChallenge challenge = mfaChallengeRepository.findByIdForUpdate(request.mfaChallengeId()).orElse(null);
 
         if (challenge == null) {
             publishAuthenticationEvent(null, AuthenticationAction.MFA_LOGIN, AuthenticationOutcome.FAILED);
