@@ -33,7 +33,8 @@ public class DocumentService {
             DocumentStatus.READY_FOR_SUMMARY_REVIEW,
             DocumentStatus.EXTRACTION_FAILED,
             DocumentStatus.SUMMARISATION_FAILED,
-            DocumentStatus.REJECTED);
+            DocumentStatus.REJECTED,
+            DocumentStatus.ACCEPTED);
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
@@ -70,7 +71,7 @@ public class DocumentService {
         String storagePath = null;
 
         try {
-            storagePath = documentStorageService.store(file);
+            storagePath = documentStorageService.store(file, contentType);
 
             Document document = new Document();
             document.setPatientRecord(patientRecord);
@@ -85,10 +86,7 @@ public class DocumentService {
 
             Document savedDocument = documentRepository.saveAndFlush(document);
 
-            publishActivity(
-                    authenticatedUserId,
-                    savedDocument,
-                    PatientActivityAction.UPLOADED);
+            publishActivity(authenticatedUserId, savedDocument, PatientActivityAction.UPLOADED);
 
             return toResponse(savedDocument);
         } catch (RuntimeException exception) {
@@ -105,11 +103,8 @@ public class DocumentService {
                 DocumentPermission.VIEW);
 
         return documentRepository.findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
-                        patientRecordId,
-                        DocumentStatus.ARCHIVED)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+                patientRecordId,
+                DocumentStatus.ARCHIVED).stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -139,10 +134,7 @@ public class DocumentService {
                 document.getContentType(),
                 document.getFileSize());
 
-        publishActivity(
-                authenticatedUserId,
-                document,
-                PatientActivityAction.DOWNLOADED);
+        publishActivity(authenticatedUserId, document, PatientActivityAction.DOWNLOADED);
 
         return download;
     }
@@ -163,23 +155,18 @@ public class DocumentService {
         if (!ARCHIVABLE_STATUSES.contains(document.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Document cannot be archived in its current status");
+                    "Document cannot be archived in its current status"
+            );
         }
 
         document.setStatus(DocumentStatus.ARCHIVED);
 
-        publishActivity(
-                authenticatedUserId,
-                document,
-                PatientActivityAction.ARCHIVED);
+        publishActivity(authenticatedUserId, document, PatientActivityAction.ARCHIVED);
 
         return toResponse(document);
     }
 
-    private void publishActivity(
-            UUID authenticatedUserId,
-            Document document,
-            PatientActivityAction action) {
+    private void publishActivity(UUID authenticatedUserId, Document document, PatientActivityAction action) {
         appEventPublisher.publish(PatientActivityEvent.create(
                 authenticatedUserId,
                 document.getPatientRecord().getId(),
@@ -192,7 +179,8 @@ public class DocumentService {
         return documentRepository.findById(documentId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Document not found"));
+                        "Document not found")
+                );
     }
 
     private Document findAvailableDocument(UUID documentId) {
@@ -201,7 +189,8 @@ public class DocumentService {
         if (document.getStatus() == DocumentStatus.ARCHIVED) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Document not found");
+                    "Document not found"
+            );
         }
 
         return document;
@@ -233,14 +222,10 @@ public class DocumentService {
             return "document";
         }
 
-        return fileName.length() <= 255
-                ? fileName
-                : fileName.substring(0, 255);
+        return fileName.length() <= 255 ? fileName : fileName.substring(0, 255);
     }
 
-    private void deleteStoredFileAfterFailure(
-            String storagePath,
-            RuntimeException originalException) {
+    private void deleteStoredFileAfterFailure(String storagePath, RuntimeException originalException) {
         if (storagePath == null) {
             return;
         }

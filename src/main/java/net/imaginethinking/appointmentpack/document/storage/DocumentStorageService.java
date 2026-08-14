@@ -3,13 +3,12 @@ package net.imaginethinking.appointmentpack.document.storage;
 import net.imaginethinking.appointmentpack.common.storage.FileSystemStorage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -23,12 +22,12 @@ public class DocumentStorageService {
         fileSystemStorage = new FileSystemStorage(storageDirectory);
     }
 
-    public String store(MultipartFile file) {
+    public String store(MultipartFile file, String contentType) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Document file must not be empty");
         }
 
-        String storedFileName = createStoredFileName(file.getOriginalFilename());
+        String storedFileName = createStoredFileName(contentType);
 
         String storagePath = createStoragePath(storedFileName);
 
@@ -47,16 +46,17 @@ public class DocumentStorageService {
         fileSystemStorage.delete(storagePath);
     }
 
-    private String createStoredFileName(String originalFileName) {
-        String extension = StringUtils.getFilenameExtension(originalFileName);
+    private String createStoredFileName(String contentType) {
+        String extension = switch (contentType) {
+            case MediaType.APPLICATION_PDF_VALUE -> "pdf";
+            case MediaType.IMAGE_PNG_VALUE -> "png";
+            case MediaType.IMAGE_JPEG_VALUE -> "jpg";
 
-        String generatedFileName = UUID.randomUUID().toString();
+            default ->
+                    throw new IllegalArgumentException("Unsupported validated document content type: " + contentType);
+        };
 
-        if (!StringUtils.hasText(extension)) {
-            return generatedFileName;
-        }
-
-        return generatedFileName + "." + extension.toLowerCase(Locale.ROOT);
+        return UUID.randomUUID() + "." + extension;
     }
 
     private String createStoragePath(String storedFileName) {
