@@ -5,6 +5,7 @@ import net.imaginethinking.appointmentpack.document.processing.client.DocumentPr
 import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -65,6 +66,15 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_GATEWAY,
                 "Processing response invalid",
                 "Document processing returned an invalid response");
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLockingFailure(
+            ObjectOptimisticLockingFailureException exception) {
+        return createProblem(
+                HttpStatus.CONFLICT,
+                "Conflict",
+                "The resource was modified by another request. Refresh and try again");
     }
 
     @ExceptionHandler(ResponseStatusException.class)
