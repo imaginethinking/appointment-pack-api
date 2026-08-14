@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,21 +21,33 @@ public class DocumentProcessingRecordService {
     private final DocumentProcessingResultRepository processingResultRepository;
 
     @Transactional(readOnly = true)
-    public Document requireAvailableDocument(UUID documentId) {
+    public Document requireAvailableDocument(
+            UUID documentId) {
         Document document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Document not found")
+                );
 
         if (document.getStatus() == DocumentStatus.ARCHIVED) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Document not found"
+            );
         }
 
         return document;
     }
 
     @Transactional(readOnly = true)
+    public Optional<DocumentProcessingResult> findProcessingResult(UUID documentId) {
+        return processingResultRepository.findByDocumentId(documentId);
+    }
+
+    @Transactional(readOnly = true)
     public DocumentProcessingResult requireProcessingResult(
             UUID documentId) {
-        return processingResultRepository.findByDocumentId(documentId)
-                .orElseThrow(() -> new DocumentProcessingException("Document processing result was not found"));
+        return findProcessingResult(documentId).orElseThrow(() -> new DocumentProcessingException(
+                "Document processing result was not found"));
     }
 }
