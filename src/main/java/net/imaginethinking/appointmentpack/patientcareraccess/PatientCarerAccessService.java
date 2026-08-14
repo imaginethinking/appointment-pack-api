@@ -40,14 +40,10 @@ public class PatientCarerAccessService {
         User carer = userRepository.findByEmail(carerEmail)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "No registered account was found for this email address")
-                );
+                        "No registered account was found for this email address"));
 
         if (carer.getId().equals(patientUserId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "You cannot invite yourself as a carer"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot invite yourself as a carer");
         }
 
         Set<String> permissions = permissionValidator.validate(request.permissions());
@@ -165,10 +161,11 @@ public class PatientCarerAccessService {
 
         Set<String> permissions = permissionValidator.validate(request.permissions());
 
-        access.setPermissions(permissions);
-        access.setStatusChangedAt(Instant.now());
+        if (!access.getPermissions().equals(permissions)) {
+            access.setPermissions(permissions);
 
-        publishActivity(patientUserId, access, PatientActivityAction.PERMISSIONS_UPDATED);
+            publishActivity(patientUserId, access, PatientActivityAction.PERMISSIONS_UPDATED);
+        }
 
         return PatientCarerAccessResponse.from(access);
     }
@@ -199,17 +196,11 @@ public class PatientCarerAccessService {
 
     private PatientCarerAccess prepareExistingInvitation(PatientCarerAccess access, Set<String> permissions) {
         if (access.getStatus() == PatientCarerAccessStatus.PENDING) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A pending invitation already exists"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A pending invitation already exists");
         }
 
         if (access.getStatus() == PatientCarerAccessStatus.ACTIVE) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "This user is already an active carer"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This user is already an active carer");
         }
 
         Instant now = Instant.now();
@@ -224,18 +215,14 @@ public class PatientCarerAccessService {
 
     private PatientRecord requireOwnedPatientRecord(UUID patientUserId) {
         return patientRecordRepository.findByProfileUserId(patientUserId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Patient record not found")
-                );
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
     private PatientCarerAccess findAccess(UUID accessId) {
         return patientCarerAccessRepository.findById(accessId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Patient-carer relationship not found")
-                );
+                        "Patient-carer relationship not found"));
     }
 
     private void requireParticipant(PatientCarerAccess access, UUID authenticatedUserId) {
@@ -243,27 +230,18 @@ public class PatientCarerAccessService {
             return;
         }
 
-        throw new ResponseStatusException(
-                HttpStatus.FORBIDDEN,
-                "You cannot view this carer relationship"
-        );
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot view this carer relationship");
     }
 
     private void requireCarer(PatientCarerAccess access, UUID authenticatedUserId) {
         if (!isCarer(access, authenticatedUserId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "You cannot respond to this invitation"
-            );
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot respond to this invitation");
         }
     }
 
     private void requirePatientOwner(PatientCarerAccess access, UUID authenticatedUserId) {
         if (!isPatientOwner(access, authenticatedUserId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "You cannot manage this carer relationship"
-            );
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot manage this carer relationship");
         }
     }
 
@@ -279,10 +257,7 @@ public class PatientCarerAccessService {
 
     private void requireStatus(PatientCarerAccess access, PatientCarerAccessStatus expectedStatus) {
         if (access.getStatus() != expectedStatus) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "The relationship is not in the required state"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "The relationship is not in the required state");
         }
     }
 
