@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,9 +40,19 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
                     where event.userId is not null
                       and event.occurredAt >= :from
                       and event.occurredAt < :to
+                      and (
+                            event.category in :activityCategories
+                            or (
+                                event.authenticationAction in :successfulAuthenticationActions
+                                and event.authenticationOutcome = :successfulOutcome
+                            )
+                      )
                     """
     )
-    long countDistinctUsersInRange(
+    long countDistinctActiveUsersInRange(
+            @Param("activityCategories") Collection<OperationalEventCategory> activityCategories,
+            @Param("successfulAuthenticationActions") Collection<AuthenticationAction> successfulAuthenticationActions,
+            @Param("successfulOutcome") AuthenticationOutcome successfulOutcome,
             @Param("from") Instant from,
             @Param("to") Instant to
     );
