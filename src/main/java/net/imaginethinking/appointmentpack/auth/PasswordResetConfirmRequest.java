@@ -2,18 +2,18 @@ package net.imaginethinking.appointmentpack.auth;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import net.imaginethinking.appointmentpack.auth.validation.StrongPassword;
 
 public record PasswordResetConfirmRequest(
         @NotBlank(message = "Password reset token is required")
         @Size(max = 256)
         String token,
 
-        @NotBlank(message = "New password is required")
-        @Size(min = 8, message = "Password must contain at least 8 characters")
+        @StrongPassword
         String newPassword,
 
         @NotBlank(message = "Password confirmation is required")
-        @Size(min = 8, message = "Password confirmation must contain at least 8 characters")
+        @Size(max = 128)
         String confirmPassword
 ) {
 }
