@@ -20,7 +20,7 @@ public class PermissionValidator {
                     HttpStatus.BAD_REQUEST,
                     "Permissions must be provided"
             );
-        };
+        }
 
         Set<String> permissions = new HashSet<>(requestedPermissions);
         Set<String> unsupportedPermissions = new HashSet<>(permissions);
