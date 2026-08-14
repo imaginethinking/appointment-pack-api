@@ -12,27 +12,37 @@ import net.imaginethinking.appointmentpack.user.User;
 @Entity
 @Table(
         name = "documents",
-        indexes = {
-                @Index(
-                        name = "idx_documents_patient_record",
-                        columnList = "patient_record_id"
-                ),
-                @Index(
-                        name = "idx_documents_status",
-                        columnList = "status"
-                )
-        }
+        indexes = {@Index(
+                name = "idx_documents_patient_record",
+                columnList = "patient_record_id"
+        ), @Index(
+                name = "idx_documents_status",
+                columnList = "status"
+        )}
 )
 public class Document extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @Version
+    @Column(
+            name = "version",
+            nullable = false
+    )
+    private long version;
+
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
     @JoinColumn(
             name = "patient_record_id",
             nullable = false
     )
     private PatientRecord patientRecord;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
     @JoinColumn(
             name = "uploaded_by_user_id",
             nullable = false
@@ -40,28 +50,58 @@ public class Document extends BaseEntity {
     private User uploadedBy;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(
+            nullable = false,
+            length = 50
+    )
     private DocumentStatus status = DocumentStatus.UPLOADED;
 
-    @Column(name = "original_file_name", nullable = false)
+    @Column(
+            name = "original_file_name",
+            nullable = false
+    )
     private String originalFileName;
 
-    @Column(name = "stored_file_name", unique = true, length = 100, nullable = false)
+    @Column(
+            name = "stored_file_name",
+            unique = true,
+            length = 100,
+            nullable = false
+    )
     private String storedFileName;
 
-    @Column(name = "content_type", nullable = false, length = 100)
+    @Column(
+            name = "content_type",
+            nullable = false,
+            length = 100
+    )
     private String contentType;
 
-    @Column(name = "file_size", nullable = false)
+    @Column(
+            name = "file_size",
+            nullable = false
+    )
     private long fileSize;
 
-    @Column(name = "storage_path", unique = true, length = 500, nullable = false)
+    @Column(
+            name = "storage_path",
+            unique = true,
+            length = 500,
+            nullable = false
+    )
     private String storagePath;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "document_type", nullable = false, length = 50)
+    @Column(
+            name = "document_type",
+            nullable = false,
+            length = 50
+    )
     private DocumentType documentType;
 
-    @Column(name = "processing_failure_reason", length = 500)
+    @Column(
+            name = "processing_failure_reason",
+            length = 500
+    )
     private String processingFailureReason;
 }

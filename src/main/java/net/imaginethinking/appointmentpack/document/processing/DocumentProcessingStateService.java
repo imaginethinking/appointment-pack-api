@@ -38,6 +38,7 @@ public class DocumentProcessingStateService {
     private final DocumentProcessingResultMapper processingResultMapper;
     private final EntityManager entityManager;
     private final AppEventPublisher appEventPublisher;
+    private final DocumentProcessingLifecyclePolicy lifecyclePolicy;
 
     @Transactional(readOnly = true)
     public DocumentProcessingResultResponse getProcessing(UUID authenticatedUserId, UUID documentId) {
@@ -62,9 +63,12 @@ public class DocumentProcessingStateService {
                 document.getPatientRecord(),
                 DocumentPermission.EDIT);
 
+        recoverStaleProcessingState(document);
         validateExtractionCanBegin(document);
 
-        RedactionContext redactionContext = redactionContextFactory.create(document);
+        RedactionContext redactionContext = document.getDocumentType() == DocumentType.CONSULTATION_OUTCOME_LETTER
+                ? redactionContextFactory.create(document)
+                : RedactionContext.empty();
 
         document.setStatus(DocumentStatus.EXTRACTING);
         document.setProcessingFailureReason(null);
@@ -123,6 +127,8 @@ public class DocumentProcessingStateService {
                     HttpStatus.CONFLICT,
                     "Only consultation outcome letters require external summarisation");
         }
+
+        recoverStaleProcessingState(document);
 
         DocumentProcessingResult result = processingRecordService.requireProcessingResult(documentId);
 
@@ -288,6 +294,25 @@ public class DocumentProcessingStateService {
         result.setAppointmentCounty(null);
         result.setAppointmentPostcode(null);
         result.setAppointmentCountry(null);
+    }
+
+    private void recoverStaleProcessingState(Document document) {
+        Instant now = Instant.now();
+
+        if (!lifecyclePolicy.isStale(document, now)) {
+            return;
+        }
+
+        if (document.getStatus() == DocumentStatus.EXTRACTING) {
+            document.setStatus(DocumentStatus.EXTRACTION_FAILED);
+            document.setProcessingFailureReason(DocumentProcessingLifecyclePolicy.STALE_EXTRACTION_FAILURE_REASON);
+            return;
+        }
+
+        if (document.getStatus() == DocumentStatus.SUMMARISING) {
+            document.setStatus(DocumentStatus.SUMMARISATION_FAILED);
+            document.setProcessingFailureReason(DocumentProcessingLifecyclePolicy.STALE_SUMMARISATION_FAILURE_REASON);
+        }
     }
 
     private void validateExtractionCanBegin(Document document) {

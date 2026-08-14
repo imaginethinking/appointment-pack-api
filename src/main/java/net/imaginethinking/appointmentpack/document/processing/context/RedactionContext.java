@@ -11,4 +11,8 @@ public record RedactionContext(
                 ? List.of()
                 : List.copyOf(knownValues);
     }
+
+    public static RedactionContext empty() {
+        return new RedactionContext(List.of());
+    }
 }
