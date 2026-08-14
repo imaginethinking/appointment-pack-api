@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public interface PatientRecordRepository extends JpaRepository<PatientRecord, UUID> {
 
-    Optional<PatientRecord> findByProfileId(UUID profileId);
     Optional<PatientRecord> findByProfileUserId(UUID userId);
     boolean existsByProfileId(UUID profileId);
 
