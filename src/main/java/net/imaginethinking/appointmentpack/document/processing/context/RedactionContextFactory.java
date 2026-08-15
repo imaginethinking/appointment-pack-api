@@ -41,12 +41,15 @@ public class RedactionContextFactory {
     }
 
     private void addFullNameValues(Set<String> values, String firstName, String lastName) {
-        if (firstName == null || firstName.isBlank() || lastName == null || lastName.isBlank()) {
+        String normalisedFirstName = TextNormalizer.stripToNull(firstName);
+        String normalisedLastName = TextNormalizer.stripToNull(lastName);
+
+        if (normalisedFirstName == null || normalisedLastName == null) {
             return;
         }
 
-        addValue(values, firstName + " " + lastName);
-        addValue(values, lastName + ", " + firstName);
+        addValue(values, normalisedFirstName + " " + normalisedLastName);
+        addValue(values, normalisedLastName + ", " + normalisedFirstName);
     }
 
     private void addDateValues(Set<String> values, LocalDate date) {
