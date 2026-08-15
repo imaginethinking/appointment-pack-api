@@ -111,18 +111,12 @@ class PatientCarerAccessIntegrationTest {
     private UUID register(String email, String firstName, String lastName, String dateOfBirth) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of(
-                                "email",
-                                email,
-                                "password",
-                                TEST_PASSWORD,
-                                "confirmPassword",
-                                TEST_PASSWORD,
-                                "firstName",
-                                firstName,
-                                "lastName",
-                                lastName,
-                                "dateOfBirth",
-                                dateOfBirth))))
+                                "email", email,
+                                "password", TEST_PASSWORD,
+                                "confirmPassword", TEST_PASSWORD,
+                                "firstName", firstName,
+                                "lastName", lastName,
+                                "dateOfBirth", dateOfBirth))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.emailVerificationRequired").value(true))
                 .andReturn();
