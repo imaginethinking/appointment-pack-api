@@ -1,7 +1,9 @@
 package net.imaginethinking.appointmentpack.event.analytics;
 
 public enum ApplicationPage {
+    LANDING,
     DASHBOARD,
+    PATIENT_RECORD,
     DOCUMENTS,
     APPOINTMENTS,
     MEDICATIONS,
@@ -9,6 +11,7 @@ public enum ApplicationPage {
     BLOOD_RESULTS,
     CONTACTS,
     APPOINTMENT_PACKS,
+    ACTIVITY_HISTORY,
     CARER_NETWORK,
     PROFILE
 }

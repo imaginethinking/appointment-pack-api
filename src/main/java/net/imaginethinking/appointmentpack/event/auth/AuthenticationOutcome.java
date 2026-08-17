@@ -9,5 +9,6 @@ public enum AuthenticationOutcome {
     FAILED,
     BLOCKED,
     ENABLED,
+    DISABLED,
     MFA_REQUIRED
 }

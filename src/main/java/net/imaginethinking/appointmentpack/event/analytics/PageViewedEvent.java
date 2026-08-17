@@ -16,7 +16,6 @@ public record PageViewedEvent(
     public PageViewedEvent {
         Objects.requireNonNull(eventId, "Event ID must not be null");
         Objects.requireNonNull(occurredAt, "Event timestamp must not be null");
-        Objects.requireNonNull(actorUserId, "Actor user ID must not be null");
         Objects.requireNonNull(page, "Application page must not be null");
     }
 
