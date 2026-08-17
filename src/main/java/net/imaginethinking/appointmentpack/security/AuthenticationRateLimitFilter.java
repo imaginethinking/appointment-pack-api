@@ -19,24 +19,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthenticationRateLimitFilter extends OncePerRequestFilter {
 
-    private static final Map<String, RateLimitPolicy> POLICIES = Map.of(
-            "/api/v1/auth/register", new RateLimitPolicy(5, Duration.ofHours(1)),
-
-            "/api/v1/auth/login", new RateLimitPolicy(20, Duration.ofMinutes(5)),
-
-            "/api/v1/auth/login/mfa", new RateLimitPolicy(20, Duration.ofMinutes(5)),
-
-            "/api/v1/auth/email-verification/resend", new RateLimitPolicy(5, Duration.ofMinutes(15)),
-
-            "/api/v1/auth/email-verification/confirm", new RateLimitPolicy(10, Duration.ofMinutes(15)),
-
-            "/api/v1/auth/password-reset/request", new RateLimitPolicy(5, Duration.ofMinutes(15)),
-
-            "/api/v1/auth/password-reset/confirm", new RateLimitPolicy(10, Duration.ofMinutes(15)),
-
-            "/api/v1/auth/mfa/setup", new RateLimitPolicy(10, Duration.ofMinutes(5)),
-
-            "/api/v1/auth/mfa/confirm", new RateLimitPolicy(10, Duration.ofMinutes(5)));
+    private static final Map<String, RateLimitPolicy> POLICIES = Map.ofEntries(
+            Map.entry("/api/v1/auth/register", new RateLimitPolicy(5, Duration.ofHours(1))),
+            Map.entry("/api/v1/auth/login", new RateLimitPolicy(20, Duration.ofMinutes(5))),
+            Map.entry("/api/v1/auth/login/mfa", new RateLimitPolicy(20, Duration.ofMinutes(5))),
+            Map.entry("/api/v1/auth/email-verification/resend", new RateLimitPolicy(5, Duration.ofMinutes(15))),
+            Map.entry("/api/v1/auth/email-verification/confirm", new RateLimitPolicy(10, Duration.ofMinutes(15))),
+            Map.entry("/api/v1/auth/password-reset/request", new RateLimitPolicy(5, Duration.ofMinutes(15))),
+            Map.entry("/api/v1/auth/password-reset/confirm", new RateLimitPolicy(10, Duration.ofMinutes(15))),
+            Map.entry("/api/v1/auth/password/change", new RateLimitPolicy(10, Duration.ofMinutes(5))),
+            Map.entry("/api/v1/auth/mfa/setup", new RateLimitPolicy(10, Duration.ofMinutes(5))),
+            Map.entry("/api/v1/auth/mfa/confirm", new RateLimitPolicy(10, Duration.ofMinutes(5))),
+            Map.entry("/api/v1/auth/mfa/disable", new RateLimitPolicy(10, Duration.ofMinutes(5)))
+    );
 
     private final AuthenticationRateLimiter authenticationRateLimiter;
 

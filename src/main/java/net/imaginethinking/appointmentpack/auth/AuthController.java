@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -76,6 +77,24 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/security")
+    public ResponseEntity<AccountSecurityResponse> getAccountSecurity(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+
+        return ResponseEntity.ok(authService.getAccountSecurity(userId));
+    }
+
+    @PostMapping("/password/change")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid PasswordChangeRequest request
+    ) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+        passwordResetService.changePassword(userId, request);
+
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/mfa/setup")
     public ResponseEntity<MfaSetupResponse> setupMfa(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
@@ -85,9 +104,23 @@ public class AuthController {
     }
 
     @PostMapping("/mfa/confirm")
-    public ResponseEntity<Void> confirmMfa(@AuthenticationPrincipal Jwt jwt, @RequestBody @Valid MfaConfirmRequest request) {
+    public ResponseEntity<Void> confirmMfa(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid MfaConfirmRequest request
+    ) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
         authService.confirmMfa(userId, request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/mfa/disable")
+    public ResponseEntity<Void> disableMfa(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid MfaConfirmRequest request
+    ) {
+        UUID userId = authenticatedUserIdResolver.resolve(jwt);
+        authService.disableMfa(userId, request);
 
         return ResponseEntity.noContent().build();
     }

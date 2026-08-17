@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +63,46 @@ public class PasswordResetService {
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
+    public void changePassword(UUID userId, PasswordChangeRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!Objects.equals(request.newPassword(), request.confirmPassword())) {
+            publishPasswordChangeEvent(user, AuthenticationOutcome.FAILED);
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Passwords do not match"
+            );
+        }
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            publishPasswordChangeEvent(user, AuthenticationOutcome.FAILED);
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Current password is incorrect"
+            );
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            publishPasswordChangeEvent(user, AuthenticationOutcome.FAILED);
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "New password must be different from the current password"
+            );
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+
+        accountTokenService.invalidateActiveTokens(user, AccountTokenPurpose.PASSWORD_RESET);
+        mfaChallengeRepository.invalidateUnusedChallenges(user.getId());
+
+        publishPasswordChangeEvent(user, AuthenticationOutcome.SUCCEEDED);
+    }
+
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public void confirmReset(PasswordResetConfirmRequest request) {
         if (!Objects.equals(request.newPassword(), request.confirmPassword())) {
             appEventPublisher.publish(AuthenticationEvent.create(
@@ -99,5 +140,12 @@ public class PasswordResetService {
                 user.getId(),
                 AuthenticationAction.PASSWORD_RESET,
                 AuthenticationOutcome.SUCCEEDED));
+    }
+
+    private void publishPasswordChangeEvent(User user, AuthenticationOutcome outcome) {
+        appEventPublisher.publish(AuthenticationEvent.create(
+                user.getId(),
+                AuthenticationAction.PASSWORD_CHANGE,
+                outcome));
     }
 }

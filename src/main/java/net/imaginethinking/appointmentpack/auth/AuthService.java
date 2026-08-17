@@ -136,6 +136,13 @@ public class AuthService {
         return LoginResponse.pendingMfa(savedChallenge.getId());
     }
 
+    @Transactional(readOnly = true)
+    public AccountSecurityResponse getAccountSecurity(UUID userId) {
+        User user = findUser(userId);
+
+        return new AccountSecurityResponse(user.isMfaEnabled());
+    }
+
     @Transactional
     public MfaSetupResponse setupMfa(UUID userId) {
         User user = findUser(userId);
@@ -182,6 +189,30 @@ public class AuthService {
         user.setMfaEnabled(true);
 
         publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_SETUP, AuthenticationOutcome.ENABLED);
+    }
+
+    @Transactional(noRollbackFor = ResponseStatusException.class)
+    public void disableMfa(UUID userId, MfaConfirmRequest request) {
+        User user = findUser(userId);
+
+        if (!user.isMfaEnabled() || user.getMfaSecret() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "MFA is not enabled");
+        }
+
+        boolean valid = mfaTotpService.isValidCode(user.getMfaSecret(), request.code());
+
+        if (!valid) {
+            publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_DISABLE, AuthenticationOutcome.FAILED);
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid MFA code");
+        }
+
+        user.setMfaEnabled(false);
+        user.setMfaSecret(null);
+
+        mfaChallengeRepository.invalidateUnusedChallenges(user.getId());
+
+        publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_DISABLE, AuthenticationOutcome.DISABLED);
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)

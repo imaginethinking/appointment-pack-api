@@ -54,6 +54,11 @@ public class SecurityConfig {
                                 "/api/v1/auth/password-reset/confirm")
                         .permitAll()
 
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/analytics/page-views")
+                        .permitAll()
+
                         .requestMatchers("/api/v1/admin/**")
                         .hasRole("ADMIN")
 
