@@ -1,8 +1,12 @@
 package net.imaginethinking.appointmentpack.common.error;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingException;
 import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingTimeoutException;
 import net.imaginethinking.appointmentpack.document.processing.client.DocumentProcessingUnavailableException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -17,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -30,24 +35,39 @@ public class GlobalExceptionHandler {
                     error.getDefaultMessage() == null ? "Invalid value" : error.getDefaultMessage());
         }
 
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request validation failed");
+        return validationProblem(fieldErrors);
+    }
 
-        problem.setTitle("Validation failed");
-        problem.setProperty("fieldErrors", fieldErrors);
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(
+            ConstraintViolationException exception) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
 
-        return problem;
+        for (ConstraintViolation<?> violation : exception.getConstraintViolations()) {
+            fieldErrors.putIfAbsent(
+                    resolveConstraintField(violation),
+                    violation.getMessage() == null ? "Invalid value" : violation.getMessage());
+        }
+
+        return validationProblem(fieldErrors);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ProblemDetail handleMaximumUploadSize(
             MaxUploadSizeExceededException exception) {
-        return createProblem(HttpStatus.PAYLOAD_TOO_LARGE, "File too large", "Document file exceeds the maximum size");
+        return createProblem(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "File too large",
+                "Document file exceeds the maximum size");
     }
 
     @ExceptionHandler(DocumentProcessingTimeoutException.class)
     public ProblemDetail handleProcessingTimeout(
             DocumentProcessingTimeoutException exception) {
-        return createProblem(HttpStatus.GATEWAY_TIMEOUT, "Processing timed out", "Document processing timed out");
+        return createProblem(
+                HttpStatus.GATEWAY_TIMEOUT,
+                "Processing timed out",
+                "Document processing timed out");
     }
 
     @ExceptionHandler(DocumentProcessingUnavailableException.class)
@@ -86,15 +106,47 @@ public class GlobalExceptionHandler {
             detail = "The request could not be completed";
         }
 
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(exception.getStatusCode(), detail);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                exception.getStatusCode(),
+                detail);
 
         problem.setTitle(resolveTitle(exception.getStatusCode().value()));
 
         return problem;
     }
 
-    private ProblemDetail createProblem(HttpStatus status, String title, String detail) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+    private ProblemDetail validationProblem(
+            Map<String, String> fieldErrors) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Request validation failed");
+
+        problem.setTitle("Validation failed");
+        problem.setProperty("fieldErrors", fieldErrors);
+
+        return problem;
+    }
+
+    private String resolveConstraintField(
+            ConstraintViolation<?> violation) {
+        String path = violation.getPropertyPath().toString();
+
+        int separatorIndex = path.lastIndexOf('.');
+
+        if (separatorIndex >= 0 && separatorIndex < path.length() - 1) {
+            return path.substring(separatorIndex + 1);
+        }
+
+        return path;
+    }
+
+    private ProblemDetail createProblem(
+            HttpStatus status,
+            String title,
+            String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                status,
+                detail);
 
         problem.setTitle(title);
 
