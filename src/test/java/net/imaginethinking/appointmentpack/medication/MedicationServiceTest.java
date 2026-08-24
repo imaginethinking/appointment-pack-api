@@ -43,10 +43,9 @@ class MedicationServiceTest {
     void shouldCreateMedicationAndNormaliseText() {
         UUID userId = UUID.randomUUID();
         UUID patientRecordId = UUID.randomUUID();
-        PatientRecord patientRecord = patientRecord(patientRecordId);
 
         when(patientRecordAccessService.requireAccess(userId, patientRecordId, MedicationPermission.EDIT)).thenReturn(
-                patientRecord);
+                patientRecord(patientRecordId));
 
         when(medicationRepository.save(any(Medication.class))).thenAnswer(invocation -> {
             Medication medication = invocation.getArgument(0);
@@ -58,25 +57,50 @@ class MedicationServiceTest {
 
         MedicationResponse response = service.createMedication(
                 userId, patientRecordId, new CreateMedicationRequest(
-                        " Amitriptyline ",
+                        " Example Medication ",
                         " 10 mg ",
                         " Tablet ",
-                        " Take at night ",
+                        " Take once daily ",
                         LocalDate.of(2026, 1, 1),
                         null,
                         "   "));
 
-        assertEquals("Amitriptyline", response.name());
-
+        assertEquals("Example Medication", response.name());
         assertEquals("10 mg", response.dose());
-
         assertEquals("Tablet", response.form());
-
-        assertEquals("Take at night", response.instructions());
-
-        assertEquals(null, response.notes());
+        assertEquals("Take once daily", response.instructions());
+        assertNull(response.notes());
 
         verify(appEventPublisher).publish(any());
+    }
+
+    @Test
+    void shouldAcceptMedicationWhenEndDateEqualsStartDate() {
+        UUID userId = UUID.randomUUID();
+        UUID patientRecordId = UUID.randomUUID();
+
+        when(patientRecordAccessService.requireAccess(userId, patientRecordId, MedicationPermission.EDIT)).thenReturn(
+                patientRecord(patientRecordId));
+
+        when(medicationRepository.save(any(Medication.class))).thenAnswer(invocation -> {
+            Medication medication = invocation.getArgument(0);
+
+            ReflectionTestUtils.setField(medication, "id", UUID.randomUUID());
+
+            return medication;
+        });
+
+        LocalDate date = LocalDate.of(2026, 6, 10);
+
+        MedicationResponse response = service.createMedication(
+                userId,
+                patientRecordId,
+                new CreateMedicationRequest("Example Medication", null, null, null, date, date, null));
+
+        assertEquals(date, response.startDate());
+        assertEquals(date, response.endDate());
+
+        verify(medicationRepository).save(any(Medication.class));
     }
 
     @Test
@@ -90,7 +114,7 @@ class MedicationServiceTest {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class, () -> service.createMedication(
                         userId, patientRecordId, new CreateMedicationRequest(
-                                "Medication",
+                                "Example Medication",
                                 null,
                                 null,
                                 null,
@@ -123,9 +147,7 @@ class MedicationServiceTest {
                         null));
 
         assertEquals("Updated medication", response.name());
-
         assertEquals("20 mg", response.dose());
-
         assertEquals(LocalDate.of(2026, 3, 1), response.endDate());
 
         verify(appEventPublisher).publish(any());
@@ -145,7 +167,6 @@ class MedicationServiceTest {
         MedicationResponse second = service.archiveMedication(userId, medicationId);
 
         assertNotNull(first.archivedAt());
-
         assertEquals(first.archivedAt(), second.archivedAt());
 
         verify(appEventPublisher, times(1)).publish(any());
@@ -157,7 +178,6 @@ class MedicationServiceTest {
         UUID medicationId = UUID.randomUUID();
 
         Medication medication = medication(medicationId);
-
         medication.archive();
 
         when(medicationRepository.findById(medicationId)).thenReturn(Optional.of(medication));
@@ -175,7 +195,6 @@ class MedicationServiceTest {
         ReflectionTestUtils.setField(medication, "id", id);
 
         medication.setPatientRecord(patientRecord(UUID.randomUUID()));
-
         medication.setName("Medication");
 
         return medication;

@@ -45,10 +45,9 @@ class AppointmentServiceTest {
     void shouldCreateAppointmentAndNormaliseOptionalText() {
         UUID userId = UUID.randomUUID();
         UUID patientRecordId = UUID.randomUUID();
-        PatientRecord patientRecord = patientRecord(patientRecordId);
 
         when(patientRecordAccessService.requireAccess(userId, patientRecordId, AppointmentPermission.EDIT)).thenReturn(
-                patientRecord);
+                patientRecord(patientRecordId));
 
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
             Appointment appointment = invocation.getArgument(0);
@@ -63,32 +62,67 @@ class AppointmentServiceTest {
                         LocalDate.of(2026, 9, 1),
                         LocalTime.of(10, 0),
                         LocalTime.of(10, 30),
-                        " Neurology ",
+                        " Example Service ",
                         " Follow-up ",
-                        " Dr Smith ",
-                        " Clinic A ",
+                        " Clinical Team ",
+                        " Example Clinic ",
                         new PartialAddressRequest(
-                                " 1 Hospital Road ",
+                                " 1 Example Road ",
                                 null,
-                                " Glasgow ",
+                                " Exampletown ",
                                 null,
-                                " G1 1AA ",
-                                " Scotland "),
+                                " AB1 2CD ",
+                                " United Kingdom "),
                         " Bring medication list "));
 
         assertNotNull(response.id());
-        assertEquals("Neurology", response.service());
+        assertEquals("Example Service", response.service());
         assertEquals("Follow-up", response.appointmentType());
-        assertEquals("Dr Smith", response.clinicianOrTeam());
-        assertEquals("Clinic A", response.locationName());
-        assertEquals("1 Hospital Road", response.address().addressLine1());
+        assertEquals("Clinical Team", response.clinicianOrTeam());
+        assertEquals("Example Clinic", response.locationName());
+        assertEquals("1 Example Road", response.address().addressLine1());
         assertEquals("Bring medication list", response.notes());
 
         verify(appEventPublisher).publish(any());
     }
 
     @Test
-    void shouldRejectAppointmentWhenEndTimeIsNotAfterStartTime() {
+    void shouldCreateAppointmentWithoutOptionalEndTime() {
+        UUID userId = UUID.randomUUID();
+        UUID patientRecordId = UUID.randomUUID();
+
+        when(patientRecordAccessService.requireAccess(userId, patientRecordId, AppointmentPermission.EDIT)).thenReturn(
+                patientRecord(patientRecordId));
+
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
+            Appointment appointment = invocation.getArgument(0);
+
+            ReflectionTestUtils.setField(appointment, "id", UUID.randomUUID());
+
+            return appointment;
+        });
+
+        AppointmentResponse response = service.createAppointment(
+                userId,
+                patientRecordId,
+                new CreateAppointmentRequest(
+                        LocalDate.of(2026, 9, 1),
+                        LocalTime.of(10, 0),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null));
+
+        assertNull(response.endTime());
+
+        verify(appointmentRepository).save(any(Appointment.class));
+    }
+
+    @Test
+    void shouldRejectAppointmentWhenEndTimeEqualsStartTime() {
         UUID userId = UUID.randomUUID();
         UUID patientRecordId = UUID.randomUUID();
 
@@ -114,9 +148,36 @@ class AppointmentServiceTest {
     }
 
     @Test
+    void shouldRejectAppointmentWhenEndTimeIsBeforeStartTime() {
+        UUID userId = UUID.randomUUID();
+        UUID patientRecordId = UUID.randomUUID();
+
+        when(patientRecordAccessService.requireAccess(userId, patientRecordId, AppointmentPermission.EDIT)).thenReturn(
+                patientRecord(patientRecordId));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class, () -> service.createAppointment(
+                        userId, patientRecordId, new CreateAppointmentRequest(
+                                LocalDate.of(2026, 9, 1),
+                                LocalTime.of(10, 0),
+                                LocalTime.of(9, 59),
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+
+        verify(appointmentRepository, never()).save(any());
+    }
+
+    @Test
     void shouldUpdateExistingAppointment() {
         UUID userId = UUID.randomUUID();
         UUID appointmentId = UUID.randomUUID();
+
         Appointment appointment = appointment(appointmentId);
 
         when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(appointment));
@@ -126,7 +187,7 @@ class AppointmentServiceTest {
                         LocalDate.of(2026, 10, 2),
                         LocalTime.of(14, 0),
                         LocalTime.of(14, 45),
-                        " Cardiology ",
+                        " Example Service ",
                         null,
                         null,
                         null,
@@ -134,11 +195,8 @@ class AppointmentServiceTest {
                         " Updated notes "));
 
         assertEquals(LocalDate.of(2026, 10, 2), response.date());
-
         assertEquals(LocalTime.of(14, 0), response.startTime());
-
-        assertEquals("Cardiology", response.service());
-
+        assertEquals("Example Service", response.service());
         assertEquals("Updated notes", response.notes());
 
         verify(patientRecordAccessService).requireAccess(
@@ -153,6 +211,7 @@ class AppointmentServiceTest {
     void shouldArchiveAppointmentIdempotently() {
         UUID userId = UUID.randomUUID();
         UUID appointmentId = UUID.randomUUID();
+
         Appointment appointment = appointment(appointmentId);
 
         when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(appointment));
@@ -171,8 +230,8 @@ class AppointmentServiceTest {
     void shouldHideArchivedAppointmentFromNormalRetrieval() {
         UUID userId = UUID.randomUUID();
         UUID appointmentId = UUID.randomUUID();
-        Appointment appointment = appointment(appointmentId);
 
+        Appointment appointment = appointment(appointmentId);
         appointment.archive();
 
         when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(appointment));
@@ -192,9 +251,7 @@ class AppointmentServiceTest {
         ReflectionTestUtils.setField(appointment, "id", id);
 
         appointment.setPatientRecord(patientRecord(UUID.randomUUID()));
-
         appointment.setDate(LocalDate.of(2026, 8, 20));
-
         appointment.setStartTime(LocalTime.of(9, 0));
 
         return appointment;
