@@ -3,15 +3,22 @@ package net.imaginethinking.appointmentpack.document;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DocumentFileValidatorTest {
 
+    private static final long MAXIMUM_FILE_SIZE = 8;
+
     private final DocumentFileValidator validator =
-            new DocumentFileValidator(10_000);
+            new DocumentFileValidator(MAXIMUM_FILE_SIZE);
 
     @Test
     void shouldAcceptPdfSignature() {
@@ -73,6 +80,54 @@ class DocumentFileValidatorTest {
     }
 
     @Test
+    void shouldAcceptDocumentImmediatelyBelowMaximumSize() {
+        MockMultipartFile file = pdfFileOfSize(7);
+
+        assertEquals(
+                "application/pdf",
+                validator.validateAndGetContentType(file)
+        );
+    }
+
+    @Test
+    void shouldAcceptDocumentAtMaximumSize() {
+        MockMultipartFile file = pdfFileOfSize(8);
+
+        assertEquals(
+                "application/pdf",
+                validator.validateAndGetContentType(file)
+        );
+    }
+
+    @Test
+    void shouldRejectDocumentImmediatelyAboveMaximumSize() {
+        MockMultipartFile file = pdfFileOfSize(9);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> validator.validateAndGetContentType(file)
+        );
+
+        assertEquals(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                exception.getStatusCode()
+        );
+    }
+
+    @Test
+    void shouldRejectNullDocument() {
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> validator.validateAndGetContentType(null)
+        );
+
+        assertEquals(
+                HttpStatus.BAD_REQUEST,
+                exception.getStatusCode()
+        );
+    }
+
+    @Test
     void shouldRejectEmptyDocument() {
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -93,35 +148,12 @@ class DocumentFileValidatorTest {
     }
 
     @Test
-    void shouldRejectDocumentAboveMaximumSize() {
-        DocumentFileValidator smallValidator =
-                new DocumentFileValidator(4);
-
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "letter.pdf",
-                "application/pdf",
-                new byte[]{0x25, 0x50, 0x44, 0x46, 0x2D}
-        );
-
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> smallValidator.validateAndGetContentType(file)
-        );
-
-        assertEquals(
-                HttpStatus.PAYLOAD_TOO_LARGE,
-                exception.getStatusCode()
-        );
-    }
-
-    @Test
     void shouldRejectUnsupportedFileSignature() {
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "document.txt",
                 "text/plain",
-                "not a supported document".getBytes()
+                new byte[]{0x01, 0x02, 0x03, 0x04, 0x05}
         );
 
         ResponseStatusException exception = assertThrows(
@@ -132,6 +164,47 @@ class DocumentFileValidatorTest {
         assertEquals(
                 HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                 exception.getStatusCode()
+        );
+    }
+
+    @Test
+    void shouldReturnUnprocessableContentWhenFileCannotBeRead() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getSize()).thenReturn(5L);
+        when(file.getInputStream()).thenThrow(new IOException("read failure"));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> validator.validateAndGetContentType(file)
+        );
+
+        assertEquals(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                exception.getStatusCode()
+        );
+    }
+
+    private MockMultipartFile pdfFileOfSize(int size) {
+        if (size < 5) {
+            throw new IllegalArgumentException(
+                    "PDF test data must include the full signature"
+            );
+        }
+
+        byte[] content = new byte[size];
+        content[0] = 0x25;
+        content[1] = 0x50;
+        content[2] = 0x44;
+        content[3] = 0x46;
+        content[4] = 0x2D;
+
+        return new MockMultipartFile(
+                "file",
+                "letter.pdf",
+                "application/octet-stream",
+                content
         );
     }
 }

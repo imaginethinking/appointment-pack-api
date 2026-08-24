@@ -93,9 +93,7 @@ class DocumentProcessingStateServiceTest {
         DocumentProcessingResultResponse response = service.getProcessing(userId, document.getId());
 
         assertEquals(document.getId(), response.documentId());
-
         assertEquals(DocumentStatus.UPLOADED, response.status());
-
         assertNull(response.extractedText());
     }
 
@@ -112,7 +110,6 @@ class DocumentProcessingStateServiceTest {
         DocumentExtractionContext context = service.beginExtraction(userId, document.getId());
 
         assertEquals(DocumentStatus.EXTRACTING, document.getStatus());
-
         assertTrue(context.redactionContext().knownValues().isEmpty());
 
         verify(redactionContextFactory, never()).create(any());
@@ -126,7 +123,7 @@ class DocumentProcessingStateServiceTest {
 
         Document document = document(DocumentType.CONSULTATION_OUTCOME_LETTER, DocumentStatus.UPLOADED);
 
-        RedactionContext redactionContext = new RedactionContext(List.of("Jane Patient"));
+        RedactionContext redactionContext = new RedactionContext(List.of("Example Patient"));
 
         when(processingRecordService.requireAvailableDocument(document.getId())).thenReturn(document);
 
@@ -136,7 +133,7 @@ class DocumentProcessingStateServiceTest {
 
         DocumentExtractionContext context = service.beginExtraction(userId, document.getId());
 
-        assertEquals(List.of("Jane Patient"), context.redactionContext().knownValues());
+        assertEquals(List.of("Example Patient"), context.redactionContext().knownValues());
 
         assertEquals(DocumentStatus.EXTRACTING, document.getStatus());
     }
@@ -149,10 +146,10 @@ class DocumentProcessingStateServiceTest {
                 LocalDate.of(2026, 9, 10),
                 LocalTime.of(10, 0),
                 LocalTime.of(10, 30),
-                "Neurology",
+                "Example Service",
                 "Follow-up",
-                "Dr Smith",
-                "Clinic A",
+                "Example Clinical Team",
+                "Example Clinic",
                 null);
 
         DocumentExtractionResponse extractionResponse = new DocumentExtractionResponse(
@@ -176,7 +173,7 @@ class DocumentProcessingStateServiceTest {
 
         assertEquals(DocumentStatus.READY_FOR_APPOINTMENT_REVIEW, response.status());
 
-        assertEquals("Neurology", response.appointmentDetails().service());
+        assertEquals("Example Service", response.appointmentDetails().service());
 
         assertNull(response.machineDeidentifiedText());
     }
@@ -266,6 +263,101 @@ class DocumentProcessingStateServiceTest {
         PatientActivityEvent event = (PatientActivityEvent) eventCaptor.getValue();
 
         assertEquals(PatientActivityAction.DEIDENTIFICATION_APPROVED, event.action());
+    }
+
+    @Test
+    void shouldRetrySummarisationWithExactApprovedTextSnapshot() {
+        UUID userId = UUID.randomUUID();
+
+        Document document = document(DocumentType.CONSULTATION_OUTCOME_LETTER, DocumentStatus.SUMMARISATION_FAILED);
+
+        document.setProcessingFailureReason("previous failure");
+
+        DocumentProcessingResult result = processingResult(document);
+
+        result.setApprovedDeidentifiedText("Previously approved text");
+
+        when(processingRecordService.requireAvailableDocument(document.getId())).thenReturn(document);
+
+        when(lifecyclePolicy.isStale(any(Document.class), any())).thenReturn(false);
+
+        when(processingRecordService.requireProcessingResult(document.getId())).thenReturn(result);
+
+        DocumentSummarisationContext context = service.beginSummarisation(
+                userId,
+                document.getId(),
+                "Previously approved text");
+
+        assertEquals(DocumentStatus.SUMMARISING, document.getStatus());
+
+        assertNull(document.getProcessingFailureReason());
+
+        assertEquals("Previously approved text", context.approvedDeidentifiedText());
+
+        verify(appEventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void shouldRejectSummarisationForAppointmentLetter() {
+        UUID userId = UUID.randomUUID();
+
+        Document document = document(DocumentType.APPOINTMENT_LETTER, DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW);
+
+        when(processingRecordService.requireAvailableDocument(document.getId())).thenReturn(document);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.beginSummarisation(userId, document.getId(), "Approved text"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+
+        verify(processingRecordService, never()).requireProcessingResult(any());
+    }
+
+    @Test
+    void shouldRejectSummarisationFromInvalidDocumentState() {
+        UUID userId = UUID.randomUUID();
+
+        Document document = document(DocumentType.CONSULTATION_OUTCOME_LETTER, DocumentStatus.ACCEPTED);
+
+        DocumentProcessingResult result = processingResult(document);
+
+        when(processingRecordService.requireAvailableDocument(document.getId())).thenReturn(document);
+
+        when(lifecyclePolicy.isStale(any(Document.class), any())).thenReturn(false);
+
+        when(processingRecordService.requireProcessingResult(document.getId())).thenReturn(result);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.beginSummarisation(userId, document.getId(), "Approved text"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+    }
+
+    @Test
+    void shouldRejectBlankApprovedTextAtServiceBoundary() {
+        UUID userId = UUID.randomUUID();
+
+        Document document = document(
+                DocumentType.CONSULTATION_OUTCOME_LETTER,
+                DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW);
+
+        DocumentProcessingResult result = processingResult(document);
+
+        when(processingRecordService.requireAvailableDocument(document.getId())).thenReturn(document);
+
+        when(lifecyclePolicy.isStale(any(Document.class), any())).thenReturn(false);
+
+        when(processingRecordService.requireProcessingResult(document.getId())).thenReturn(result);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.beginSummarisation(userId, document.getId(), "   "));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+
+        verify(appEventPublisher, never()).publish(any());
     }
 
     @Test
