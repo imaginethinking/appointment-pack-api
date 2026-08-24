@@ -16,8 +16,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -56,7 +55,6 @@ class PatientRecordServiceTest {
         ReflectionTestUtils.setField(profile, "id", UUID.randomUUID());
 
         when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-
         when(patientRecordRepository.existsByProfileId(profile.getId())).thenReturn(false);
 
         when(patientRecordRepository.save(any(PatientRecord.class))).thenAnswer(invocation -> {
@@ -86,6 +84,34 @@ class PatientRecordServiceTest {
     }
 
     @Test
+    void shouldCreatePatientRecordWithoutOptionalMeasurements() {
+        UUID userId = UUID.randomUUID();
+
+        Profile profile = new Profile();
+
+        ReflectionTestUtils.setField(profile, "id", UUID.randomUUID());
+
+        when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(patientRecordRepository.existsByProfileId(profile.getId())).thenReturn(false);
+
+        when(patientRecordRepository.save(any(PatientRecord.class))).thenAnswer(invocation -> {
+            PatientRecord record = invocation.getArgument(0);
+
+            ReflectionTestUtils.setField(record, "id", UUID.randomUUID());
+
+            return record;
+        });
+
+        PatientRecordResponse response = service.createCurrentPatientRecord(userId, emptyCreateRequest());
+
+        assertNull(response.height());
+        assertNull(response.heightUnit());
+        assertNull(response.weight());
+        assertNull(response.weightUnit());
+        assertNull(response.bmi());
+    }
+
+    @Test
     void shouldRejectDuplicatePatientRecord() {
         UUID userId = UUID.randomUUID();
 
@@ -94,7 +120,6 @@ class PatientRecordServiceTest {
         ReflectionTestUtils.setField(profile, "id", UUID.randomUUID());
 
         when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-
         when(patientRecordRepository.existsByProfileId(profile.getId())).thenReturn(true);
 
         ResponseStatusException exception = assertThrows(
@@ -107,16 +132,9 @@ class PatientRecordServiceTest {
     }
 
     @Test
-    void shouldRejectMeasurementWithoutUnit() {
+    void shouldRejectHeightValueWithoutUnit() {
         UUID userId = UUID.randomUUID();
-
-        Profile profile = new Profile();
-
-        ReflectionTestUtils.setField(profile, "id", UUID.randomUUID());
-
-        when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-
-        when(patientRecordRepository.existsByProfileId(profile.getId())).thenReturn(false);
+        Profile profile = availableProfile(userId);
 
         CreatePatientRecordRequest request = new CreatePatientRecordRequest(
                 null,
@@ -133,6 +151,80 @@ class PatientRecordServiceTest {
                 () -> service.createCurrentPatientRecord(userId, request));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+
+        verify(patientRecordRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectHeightUnitWithoutValue() {
+        UUID userId = UUID.randomUUID();
+        Profile profile = availableProfile(userId);
+
+        CreatePatientRecordRequest request = new CreatePatientRecordRequest(
+                null,
+                null,
+                null,
+                null,
+                HeightUnit.CENTIMETERS,
+                null,
+                null,
+                null);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.createCurrentPatientRecord(userId, request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+
+        verify(patientRecordRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectWeightValueWithoutUnit() {
+        UUID userId = UUID.randomUUID();
+        Profile profile = availableProfile(userId);
+
+        CreatePatientRecordRequest request = new CreatePatientRecordRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                new BigDecimal("75"),
+                null,
+                null);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.createCurrentPatientRecord(userId, request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+
+        verify(patientRecordRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectWeightUnitWithoutValue() {
+        UUID userId = UUID.randomUUID();
+        Profile profile = availableProfile(userId);
+
+        CreatePatientRecordRequest request = new CreatePatientRecordRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                WeightUnit.KILOGRAMS,
+                null);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.createCurrentPatientRecord(userId, request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+
+        verify(patientRecordRepository, never()).save(any());
     }
 
     @Test
@@ -175,6 +267,17 @@ class PatientRecordServiceTest {
         assertEquals(patientRecordId, response.id());
 
         verify(patientRecordAccessService).requireAccess(userId, patientRecordId, PatientRecordPermission.VIEW);
+    }
+
+    private Profile availableProfile(UUID userId) {
+        Profile profile = new Profile();
+
+        ReflectionTestUtils.setField(profile, "id", UUID.randomUUID());
+
+        when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(patientRecordRepository.existsByProfileId(profile.getId())).thenReturn(false);
+
+        return profile;
     }
 
     private CreatePatientRecordRequest emptyCreateRequest() {

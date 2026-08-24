@@ -25,6 +25,12 @@ public final class ValidationTestSupport {
                 () -> "Expected request to be valid but found violations: " + describe(violations));
     }
 
+    public static <T> void assertInvalid(T value) {
+        Set<ConstraintViolation<T>> violations = VALIDATOR.validate(value);
+
+        assertFalse(violations.isEmpty(), "Expected request to be invalid but no validation violations were found");
+    }
+
     public static <T> void assertInvalidField(T value, String field) {
         Set<ConstraintViolation<T>> violations = VALIDATOR.validate(value);
 
