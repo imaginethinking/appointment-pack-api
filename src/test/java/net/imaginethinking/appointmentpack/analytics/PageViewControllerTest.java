@@ -14,12 +14,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PageViewControllerTest {
@@ -60,5 +60,35 @@ class PageViewControllerTest {
 
         assertEquals(userId, event.actorUserId());
         assertEquals(ApplicationPage.APPOINTMENT_PACKS, event.page());
+    }
+
+    @Test
+    void shouldAllowAnonymousLandingPageView() {
+        ResponseEntity<Void> response = controller.recordPageView(null, new PageViewRequest(ApplicationPage.LANDING));
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+
+        ArgumentCaptor<AppEvent> eventCaptor = ArgumentCaptor.forClass(AppEvent.class);
+
+        verify(appEventPublisher).publish(eventCaptor.capture());
+
+        PageViewedEvent event = (PageViewedEvent) eventCaptor.getValue();
+
+        assertNull(event.actorUserId());
+
+        assertEquals(ApplicationPage.LANDING, event.page());
+
+        verifyNoInteractions(authenticatedUserIdResolver);
+    }
+
+    @Test
+    void shouldRejectAnonymousProtectedPageView() {
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> controller.recordPageView(null, new PageViewRequest(ApplicationPage.DASHBOARD)));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
+
+        verifyNoInteractions(appEventPublisher, authenticatedUserIdResolver);
     }
 }

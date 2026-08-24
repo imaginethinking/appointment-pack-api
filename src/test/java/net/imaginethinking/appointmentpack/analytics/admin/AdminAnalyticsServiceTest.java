@@ -14,6 +14,7 @@ import net.imaginethinking.appointmentpack.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -21,13 +22,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -165,7 +168,6 @@ class AdminAnalyticsServiceTest {
         assertEquals(10L, response.users().totalUsers());
         assertEquals(3L, response.users().registeredInPeriod());
         assertEquals(6L, response.users().activeUsersInPeriod());
-
         assertEquals(9L, response.authentication().loginAttempts());
         assertEquals(6L, response.authentication().authenticatedSessions());
         assertEquals(4L, response.authentication().passwordLoginSucceeded());
@@ -187,17 +189,125 @@ class AdminAnalyticsServiceTest {
     }
 
     @Test
-    void shouldRejectInvalidAnalyticsRange() {
-        Instant from = Instant.parse("2026-08-14T00:00:00Z");
+    void shouldAcceptAnalyticsRangeImmediatelyBeforeTo() {
         Instant to = Instant.parse("2026-08-14T00:00:00Z");
+        Instant from = to.minusNanos(1);
+
+        PageRequest pageRequest = PageRequest.of(0, 1);
+
+        when(operationalEventRepository.findEventsInRange(from, to, pageRequest)).thenReturn(new PageImpl<>(
+                List.of(),
+                pageRequest,
+                0));
+
+        OperationalEventPageResponse response = service.getEvents(from, to, null, 0, 1);
+
+        assertEquals(0, response.page());
+        assertEquals(1, response.size());
+
+        verify(operationalEventRepository).findEventsInRange(from, to, pageRequest);
+    }
+
+    @Test
+    void shouldRejectAnalyticsRangeWhenFromEqualsTo() {
+        Instant boundary = Instant.parse("2026-08-14T00:00:00Z");
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.getSummary(from, to));
+                () -> service.getSummary(boundary, boundary));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
 
-        verify(operationalEventRepository, never()).countInRange(from, to);
+        verifyNoInteractions(operationalEventRepository, userRepository);
+    }
+
+    @Test
+    void shouldRejectAnalyticsRangeWhenFromIsAfterTo() {
+        Instant to = Instant.parse("2026-08-14T00:00:00Z");
+        Instant from = to.plusNanos(1);
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.getEvents(from, to, null, 0, 20));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+
+        verifyNoInteractions(operationalEventRepository);
+    }
+
+    @Test
+    void shouldUseThirtyDayDefaultWhenFromIsOmitted() {
+        Instant to = Instant.parse("2026-08-14T00:00:00Z");
+
+        Instant expectedFrom = to.minus(Duration.ofDays(30));
+
+        PageRequest pageRequest = PageRequest.of(0, 20);
+
+        when(operationalEventRepository.findEventsInRange(
+                expectedFrom,
+                to,
+                pageRequest)).thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
+
+        service.getEvents(null, to, null, 0, 20);
+
+        verify(operationalEventRepository).findEventsInRange(expectedFrom, to, pageRequest);
+    }
+
+    @Test
+    void shouldUseCurrentTimeWhenToIsOmitted() {
+        Instant from = Instant.now().minus(Duration.ofDays(1));
+
+        PageRequest pageRequest = PageRequest.of(0, 20);
+
+        when(operationalEventRepository.findEventsInRange(
+                eq(from),
+                any(Instant.class),
+                eq(pageRequest))).thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
+
+        Instant before = Instant.now();
+
+        service.getEvents(from, null, null, 0, 20);
+
+        Instant after = Instant.now();
+
+        ArgumentCaptor<Instant> toCaptor = ArgumentCaptor.forClass(Instant.class);
+
+        verify(operationalEventRepository).findEventsInRange(eq(from), toCaptor.capture(), eq(pageRequest));
+
+        Instant resolvedTo = toCaptor.getValue();
+
+        assertFalse(resolvedTo.isBefore(before));
+        assertFalse(resolvedTo.isAfter(after));
+        assertFalse(resolvedTo.isBefore(from));
+    }
+
+    @Test
+    void shouldUseThirtyDayDefaultRangeWhenBothBoundsAreOmitted() {
+        PageRequest pageRequest = PageRequest.of(0, 20);
+
+        when(operationalEventRepository.findEventsInRange(
+                any(Instant.class),
+                any(Instant.class),
+                eq(pageRequest))).thenReturn(new PageImpl<>(List.of(), pageRequest, 0));
+
+        Instant before = Instant.now();
+
+        service.getEvents(null, null, null, 0, 20);
+
+        Instant after = Instant.now();
+
+        ArgumentCaptor<Instant> fromCaptor = ArgumentCaptor.forClass(Instant.class);
+
+        ArgumentCaptor<Instant> toCaptor = ArgumentCaptor.forClass(Instant.class);
+
+        verify(operationalEventRepository).findEventsInRange(fromCaptor.capture(), toCaptor.capture(), eq(pageRequest));
+
+        Instant resolvedFrom = fromCaptor.getValue();
+        Instant resolvedTo = toCaptor.getValue();
+
+        assertEquals(Duration.ofDays(30), Duration.between(resolvedFrom, resolvedTo));
+
+        assertFalse(resolvedTo.isBefore(before));
+        assertFalse(resolvedTo.isAfter(after));
     }
 
     @Test
@@ -213,8 +323,7 @@ class AdminAnalyticsServiceTest {
                 ApplicationPage.DOCUMENTS));
 
         when(operationalEventRepository.findEventsInRange(from, to, pageRequest)).thenReturn(new PageImpl<>(
-                List.of(
-                        event), pageRequest, 1));
+                List.of(event), pageRequest, 1));
 
         OperationalEventPageResponse response = service.getEvents(from, to, null, 0, 20);
 
