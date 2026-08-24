@@ -174,7 +174,7 @@ class AppointmentPackServiceTest {
 
         when(appointmentPackStorageService.load(pack.getStoragePath())).thenReturn(resource);
 
-        AppointmentPackDownload download = service.downloadAppointmentPack(userId, pack.getId());
+        AppointmentPackFile download = service.downloadAppointmentPack(userId, pack.getId());
 
         assertSame(resource, download.resource());
 
@@ -192,6 +192,33 @@ class AppointmentPackServiceTest {
         PatientActivityEvent event = capturedActivityEvent();
 
         assertEquals(PatientActivityAction.DOWNLOADED, event.action());
+    }
+
+    @Test
+    void shouldPreviewAvailablePackWithoutPublishingDownloadActivity() {
+        UUID userId = UUID.randomUUID();
+
+        AppointmentPack pack = pack(false);
+
+        when(appointmentPackRepository.findById(pack.getId())).thenReturn(Optional.of(pack));
+
+        ByteArrayResource resource = new ByteArrayResource(new byte[]{1, 2, 3});
+
+        when(appointmentPackStorageService.load(pack.getStoragePath())).thenReturn(resource);
+
+        AppointmentPackFile file = service.previewAppointmentPack(userId, pack.getId());
+
+        assertSame(resource, file.resource());
+        assertEquals(pack.getFileName(), file.fileName());
+        assertEquals(pack.getContentType(), file.contentType());
+        assertEquals(pack.getFileSize(), file.fileSize());
+
+        verify(patientRecordAccessService).requireAccess(
+                userId,
+                pack.getPatientRecord(),
+                AppointmentPackPermission.VIEW);
+
+        verifyNoInteractions(appEventPublisher);
     }
 
     @Test

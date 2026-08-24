@@ -58,25 +58,38 @@ public class AppointmentPackController {
         return ResponseEntity.ok(appointmentPackService.getAppointmentPack(authenticatedUserId, appointmentPackId));
     }
 
+    @GetMapping("/appointment-packs/{appointmentPackId}/preview")
+    public ResponseEntity<Resource> previewAppointmentPack(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID appointmentPackId) {
+        UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
+
+        AppointmentPackFile file = appointmentPackService.previewAppointmentPack(
+                authenticatedUserId,
+                appointmentPackId);
+
+        ContentDisposition disposition = ContentDisposition.inline()
+                .filename(file.fileName(), StandardCharsets.UTF_8)
+                .build();
+
+        return fileResponse(file, disposition);
+    }
+
     @GetMapping("/appointment-packs/{appointmentPackId}/file")
     public ResponseEntity<Resource> downloadAppointmentPack(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID appointmentPackId) {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
-        AppointmentPackDownload download = appointmentPackService.downloadAppointmentPack(
+        AppointmentPackFile file = appointmentPackService.downloadAppointmentPack(
                 authenticatedUserId,
                 appointmentPackId);
 
         ContentDisposition disposition = ContentDisposition.attachment()
-                .filename(download.fileName(), StandardCharsets.UTF_8)
+                .filename(file.fileName(), StandardCharsets.UTF_8)
                 .build();
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(download.contentType()))
-                .contentLength(download.fileSize())
-                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
-                .body(download.resource());
+        return fileResponse(file, disposition);
     }
 
     @PatchMapping("/appointment-packs/{appointmentPackId}/archive")
@@ -86,5 +99,15 @@ public class AppointmentPackController {
         UUID authenticatedUserId = authenticatedUserIdResolver.resolve(jwt);
 
         return ResponseEntity.ok(appointmentPackService.archiveAppointmentPack(authenticatedUserId, appointmentPackId));
+    }
+
+    private ResponseEntity<Resource> fileResponse(
+            AppointmentPackFile file,
+            ContentDisposition disposition) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .contentLength(file.fileSize())
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .body(file.resource());
     }
 }

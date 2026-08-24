@@ -73,34 +73,33 @@ public class AppointmentPackService {
 
     @Transactional(readOnly = true)
     public AppointmentPackResponse getAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
-        AppointmentPack appointmentPack = findAvailableAppointmentPack(appointmentPackId);
-
-        patientRecordAccessService.requireAccess(
+        AppointmentPack appointmentPack = requireAvailableAppointmentPackAccess(
                 authenticatedUserId,
-                appointmentPack.getPatientRecord(),
-                AppointmentPackPermission.VIEW);
+                appointmentPackId);
 
         return AppointmentPackResponse.from(appointmentPack);
     }
 
-    @Transactional
-    public AppointmentPackDownload downloadAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
-        AppointmentPack appointmentPack = findAvailableAppointmentPack(appointmentPackId);
-
-        patientRecordAccessService.requireAccess(
+    @Transactional(readOnly = true)
+    public AppointmentPackFile previewAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
+        AppointmentPack appointmentPack = requireAvailableAppointmentPackAccess(
                 authenticatedUserId,
-                appointmentPack.getPatientRecord(),
-                AppointmentPackPermission.VIEW);
+                appointmentPackId);
 
-        AppointmentPackDownload download = new AppointmentPackDownload(
-                appointmentPackStorageService.load(appointmentPack.getStoragePath()),
-                appointmentPack.getFileName(),
-                appointmentPack.getContentType(),
-                appointmentPack.getFileSize());
+        return loadFile(appointmentPack);
+    }
+
+    @Transactional
+    public AppointmentPackFile downloadAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
+        AppointmentPack appointmentPack = requireAvailableAppointmentPackAccess(
+                authenticatedUserId,
+                appointmentPackId);
+
+        AppointmentPackFile file = loadFile(appointmentPack);
 
         publishActivity(authenticatedUserId, appointmentPack, PatientActivityAction.DOWNLOADED);
 
-        return download;
+        return file;
     }
 
     @Transactional
@@ -119,6 +118,27 @@ public class AppointmentPackService {
         }
 
         return AppointmentPackResponse.from(appointmentPack);
+    }
+
+    private AppointmentPack requireAvailableAppointmentPackAccess(
+            UUID authenticatedUserId,
+            UUID appointmentPackId) {
+        AppointmentPack appointmentPack = findAvailableAppointmentPack(appointmentPackId);
+
+        patientRecordAccessService.requireAccess(
+                authenticatedUserId,
+                appointmentPack.getPatientRecord(),
+                AppointmentPackPermission.VIEW);
+
+        return appointmentPack;
+    }
+
+    private AppointmentPackFile loadFile(AppointmentPack appointmentPack) {
+        return new AppointmentPackFile(
+                appointmentPackStorageService.load(appointmentPack.getStoragePath()),
+                appointmentPack.getFileName(),
+                appointmentPack.getContentType(),
+                appointmentPack.getFileSize());
     }
 
     private void publishActivity(
