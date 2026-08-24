@@ -33,11 +33,10 @@ public record CreateBloodTestRequest(
         )
         String notes,
 
-        @Valid
         @NotEmpty(message = "At least one blood test result is required")
         @Size(
                 max = 100,
                 message = "A blood test cannot contain more than 100 results"
         )
-        List<BloodTestResultRequest> results) {
+        List<@Valid BloodTestResultRequest> results) {
 }

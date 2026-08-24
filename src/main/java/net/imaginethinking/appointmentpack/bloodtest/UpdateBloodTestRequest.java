@@ -14,7 +14,8 @@ public record UpdateBloodTestRequest(
         @Size(
                 max = 200,
                 message = "Blood test title must not exceed 200 characters"
-        ) String title,
+        )
+        String title,
 
         @NotNull(message = "Blood test date is required")
         @PastOrPresent(message = "Blood test date must not be in the future")
@@ -32,11 +33,10 @@ public record UpdateBloodTestRequest(
         )
         String notes,
 
-        @Valid
         @NotEmpty(message = "At least one blood test result is required")
         @Size(
                 max = 100,
                 message = "A blood test cannot contain more than 100 results"
         )
-        List<BloodTestResultRequest> results) {
+        List<@Valid BloodTestResultRequest> results) {
 }
