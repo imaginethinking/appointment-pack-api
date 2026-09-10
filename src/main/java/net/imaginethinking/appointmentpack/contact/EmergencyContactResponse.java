@@ -3,6 +3,9 @@ package net.imaginethinking.appointmentpack.contact;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents emergency contact information returned by the API.
+ */
 public record EmergencyContactResponse(
         UUID id,
         UUID patientRecordId,
@@ -17,6 +20,9 @@ public record EmergencyContactResponse(
         Instant updatedAt
 ) {
 
+    /**
+     * Builds the emergency contact response from the supplied emergency contact.
+     */
     public static EmergencyContactResponse from(EmergencyContact contact) {
         return new EmergencyContactResponse(
                 contact.getId(),

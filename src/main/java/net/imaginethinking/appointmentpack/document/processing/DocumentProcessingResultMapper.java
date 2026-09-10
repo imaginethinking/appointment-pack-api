@@ -8,9 +8,15 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * Maps saved processing results into the response used by document review pages.
+ */
 @Component
 public class DocumentProcessingResultMapper {
 
+    /**
+     * Builds the response from the supplied document.
+     */
     public DocumentProcessingResultResponse toResponse(Document document) {
         return new DocumentProcessingResultResponse(
                 document.getId(),
@@ -35,6 +41,9 @@ public class DocumentProcessingResultMapper {
         );
     }
 
+    /**
+     * Builds the response from the supplied document.
+     */
     public DocumentProcessingResultResponse toResponse(
             Document document,
             DocumentProcessingResult result) {
@@ -80,6 +89,9 @@ public class DocumentProcessingResultMapper {
         );
     }
 
+    /**
+     * Builds the appointment details from the supplied document.
+     */
     private AppointmentDetailsResponse toAppointmentDetails(
             Document document,
             DocumentProcessingResult result) {
@@ -100,6 +112,9 @@ public class DocumentProcessingResultMapper {
         );
     }
 
+    /**
+     * Builds the appointment address from the supplied document processing result.
+     */
     private AppointmentDetailsResponse.AddressDetails
     toAppointmentAddress(
             DocumentProcessingResult result) {
@@ -124,6 +139,9 @@ public class DocumentProcessingResultMapper {
         );
     }
 
+    /**
+     * Checks whether a text value is null or contains only whitespace.
+     */
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }

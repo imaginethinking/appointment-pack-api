@@ -16,11 +16,17 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Creates the JWT encoder and decoder from the configured signing secret.
+ */
 @Configuration
 public class JwtConfig {
     @Value("${app.jwt.secret}")
     private String jwtSecret;
 
+    /**
+     * Checks that the configured JWT secret is present and long enough for HS256 signing.
+     */
     @PostConstruct
     void validateJwtSecret() {
         if (jwtSecret == null || jwtSecret.isBlank()) {
@@ -32,11 +38,17 @@ public class JwtConfig {
         }
     }
 
+    /**
+     * Creates the JWT encoder using the configured HMAC signing key.
+     */
     @Bean
     public JwtEncoder jwtEncoder() {
         return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSecret.getBytes(StandardCharsets.UTF_8)));
     }
 
+    /**
+     * Creates the JWT decoder and applies the expected issuer and access purpose checks.
+     */
     @Bean
     public JwtDecoder jwtDecoder(AccessTokenPurposeValidator accessTokenPurposeValidator) {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(getSigningKey())
@@ -52,6 +64,9 @@ public class JwtConfig {
         return jwtDecoder;
     }
 
+    /**
+     * Builds the HMAC signing key from the configured JWT secret.
+     */
     private SecretKey getSigningKey() {
         return new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }

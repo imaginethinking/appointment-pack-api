@@ -19,6 +19,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Creates and updates Medical History entries after checking access to the selected patient record.
+ */
 @Service
 @RequiredArgsConstructor
 public class MedicalHistoryService {
@@ -28,6 +31,9 @@ public class MedicalHistoryService {
     private final EntityManager entityManager;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks edit access before saving a new Medical History entry using the submitted values.
+     */
     @Transactional
     public MedicalHistoryEntryResponse createMedicalHistoryEntry(
             UUID authenticatedUserId,
@@ -58,6 +64,9 @@ public class MedicalHistoryService {
         return toResponse(savedEntry);
     }
 
+    /**
+     * Checks view access before returning the active Medical History entries with the newest entry first.
+     */
     @Transactional(readOnly = true)
     public List<MedicalHistoryEntryResponse> getMedicalHistoryEntries(
             UUID authenticatedUserId,
@@ -74,6 +83,9 @@ public class MedicalHistoryService {
                 .toList();
     }
 
+    /**
+     * Loads the requested Medical History entry and checks that the current user can view its patient record.
+     */
     @Transactional(readOnly = true)
     public MedicalHistoryEntryResponse getMedicalHistoryEntry(UUID authenticatedUserId, UUID entryId) {
         MedicalHistoryEntry entry = findAvailableEntry(entryId);
@@ -86,6 +98,9 @@ public class MedicalHistoryService {
         return toResponse(entry);
     }
 
+    /**
+     * Loads the current Medical History entry, checks edit access and applies the submitted changes.
+     */
     @Transactional
     public MedicalHistoryEntryResponse updateMedicalHistoryEntry(
             UUID authenticatedUserId,
@@ -110,6 +125,9 @@ public class MedicalHistoryService {
         return toResponse(entry);
     }
 
+    /**
+     * Checks access and archives the Medical History entry only when it is still active.
+     */
     @Transactional
     public MedicalHistoryEntryResponse archiveMedicalHistoryEntry(UUID authenticatedUserId, UUID entryId) {
         MedicalHistoryEntry entry = findEntry(entryId);
@@ -131,6 +149,9 @@ public class MedicalHistoryService {
         return toResponse(entry);
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(
             UUID authenticatedUserId,
             MedicalHistoryEntry entry,
@@ -143,6 +164,9 @@ public class MedicalHistoryService {
                 action));
     }
 
+    /**
+     * Loads the entry or returns not found when it does not exist.
+     */
     private MedicalHistoryEntry findEntry(UUID entryId) {
         return medicalHistoryEntryRepository.findById(entryId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -150,6 +174,9 @@ public class MedicalHistoryService {
                         "Medical history entry not found"));
     }
 
+    /**
+     * Loads the entry and treats an archived record as not found.
+     */
     private MedicalHistoryEntry findAvailableEntry(UUID entryId) {
         MedicalHistoryEntry entry = findEntry(entryId);
 
@@ -162,6 +189,9 @@ public class MedicalHistoryService {
         return entry;
     }
 
+    /**
+     * Builds the response returned for a Medical History entry.
+     */
     private MedicalHistoryEntryResponse toResponse(MedicalHistoryEntry entry) {
         Document sourceDocument = entry.getSourceDocument();
 

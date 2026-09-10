@@ -1,3 +1,4 @@
+/* Set the generated PDF to A4 with enough space for the footer on every page. */
 @page {
     size: A4;
     margin: 16mm 16mm 18mm 16mm;
@@ -104,6 +105,7 @@ h1 {
 
 .card,
 .history-card,
+    /* Allow longer blood tests to continue onto another page when there is not enough space. */
 .blood-test {
     margin-bottom: 10px;
     padding: 13px 14px;
@@ -120,6 +122,7 @@ h1 {
     border-left: 4px solid #6ad7ae;
 }
 
+/* Keep smaller pack items together where possible instead of splitting them across pages. */
 .item-card {
     page-break-inside: avoid;
 }
@@ -237,6 +240,7 @@ h3 {
     word-wrap: break-word;
 }
 
+/* Keep each individual blood result on one page so a row is not split in two. */
 .results-table tr {
     page-break-inside: avoid;
 }

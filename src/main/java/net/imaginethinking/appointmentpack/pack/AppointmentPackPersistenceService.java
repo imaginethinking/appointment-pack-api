@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Path;
 import java.util.UUID;
 
+/**
+ * Saves a generated Appointment Pack and records the items that were included in the PDF.
+ */
 @Service
 @RequiredArgsConstructor
 public class AppointmentPackPersistenceService {
@@ -25,6 +28,9 @@ public class AppointmentPackPersistenceService {
     private final EntityManager entityManager;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Saves the generated pack and records the type and ID of every item included in the PDF.
+     */
     @Transactional
     public AppointmentPackResponse persist(
             UUID authenticatedUserId,
@@ -46,6 +52,7 @@ public class AppointmentPackPersistenceService {
         appointmentPack.setContentType(MediaType.APPLICATION_PDF_VALUE);
         appointmentPack.setFileSize(fileSize);
 
+        // Keep the selected resource IDs with the pack so its contents can still be traced after source records change.
         for (AppointmentPackGenerationData.SelectedItem selectedItem : generationData.selectedItems()) {
 
             AppointmentPackItem item = new AppointmentPackItem();

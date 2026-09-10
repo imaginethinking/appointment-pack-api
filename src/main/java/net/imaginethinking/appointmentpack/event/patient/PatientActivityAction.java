@@ -1,5 +1,8 @@
 package net.imaginethinking.appointmentpack.event.patient;
 
+/**
+ * Lists the supported values for patient activity action.
+ */
 public enum PatientActivityAction {
     CREATED,
     UPDATED,

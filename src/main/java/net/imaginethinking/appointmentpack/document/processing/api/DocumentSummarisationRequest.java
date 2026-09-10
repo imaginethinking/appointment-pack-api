@@ -3,6 +3,9 @@ package net.imaginethinking.appointmentpack.document.processing.api;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Carries the exact deidentified consultation text approved for summarisation.
+ */
 public record DocumentSummarisationRequest(
         @NotBlank(message = "Approved de-identified text is required")
         @Size(

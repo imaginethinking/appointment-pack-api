@@ -4,6 +4,9 @@ import net.imaginethinking.appointmentpack.document.DocumentType;
 
 import java.util.UUID;
 
+/**
+ * Keeps the values needed while document extraction is being processed.
+ */
 public record DocumentExtractionContext(
         UUID documentId,
         DocumentType documentType,

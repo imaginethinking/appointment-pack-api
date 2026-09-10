@@ -25,6 +25,9 @@ import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
+/**
+ * Calls the private document processing service and turns its responses into the errors used by this application.
+ */
 @Component
 public class DocumentProcessingClient {
 
@@ -34,6 +37,9 @@ public class DocumentProcessingClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Creates the document processing client client and applies the configured connection and response timeouts.
+     */
     public DocumentProcessingClient(
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
@@ -61,6 +67,10 @@ public class DocumentProcessingClient {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Builds the multipart extraction request, sends the stored document for processing and checks the returned
+     * document ID.
+     */
     public DocumentExtractionResponse extract(DocumentExtractionContext context, Resource documentResource) {
         try {
             MultiValueMap<String, Object> requestParts = createExtractionRequestParts(context, documentResource);
@@ -86,6 +96,9 @@ public class DocumentProcessingClient {
         }
     }
 
+    /**
+     * Sends the approved deidentified text for summarisation and checks the returned summary before using it.
+     */
     public DocumentSummaryResponse summarise(DocumentSummarisationContext context) {
         DocumentSummaryClientRequest request = new DocumentSummaryClientRequest(
                 context.documentId(),
@@ -111,6 +124,9 @@ public class DocumentProcessingClient {
         }
     }
 
+    /**
+     * Maps extraction HTTP errors to the application errors shown for document processing failures.
+     */
     private RuntimeException mapExtractionHttpFailure(
             RestClientResponseException exception) {
         return switch (exception.getStatusCode().value()) {
@@ -134,6 +150,9 @@ public class DocumentProcessingClient {
         };
     }
 
+    /**
+     * Maps summarisation HTTP errors to the application errors used by the consultation workflow.
+     */
     private RuntimeException mapSummarisationHttpFailure(
             RestClientResponseException exception) {
         return switch (exception.getStatusCode().value()) {
@@ -150,6 +169,9 @@ public class DocumentProcessingClient {
         };
     }
 
+    /**
+     * Separates processing timeouts from other connection failures when the processing service cannot be reached.
+     */
     private RuntimeException mapResourceAccessFailure(
             ResourceAccessException exception) {
         if (hasCause(exception, HttpConnectTimeoutException.class)) {
@@ -163,6 +185,9 @@ public class DocumentProcessingClient {
         return new DocumentProcessingUnavailableException(exception);
     }
 
+    /**
+     * Checks an exception and its causes for the requested failure type.
+     */
     private boolean hasCause(Throwable throwable, Class<? extends Throwable> causeType) {
         Throwable current = throwable;
 
@@ -177,6 +202,9 @@ public class DocumentProcessingClient {
         return false;
     }
 
+    /**
+     * Builds the multipart fields expected by the document extraction endpoint.
+     */
     private MultiValueMap<String, Object> createExtractionRequestParts(
             DocumentExtractionContext context,
             Resource documentResource) throws JsonProcessingException {
@@ -193,6 +221,9 @@ public class DocumentProcessingClient {
         return requestParts;
     }
 
+    /**
+     * Serialises the known patient values included with a consultation extraction request.
+     */
     private HttpEntity<String> createRedactionContextPart(
             RedactionContext redactionContext) throws JsonProcessingException {
         HttpHeaders headers = new HttpHeaders();
@@ -206,6 +237,9 @@ public class DocumentProcessingClient {
         return new HttpEntity<>(json, headers);
     }
 
+    /**
+     * Creates the multipart file part using the stored document resource and original file name.
+     */
     private HttpEntity<Resource> createFilePart(DocumentExtractionContext context, Resource documentResource) {
         HttpHeaders headers = new HttpHeaders();
 
@@ -219,6 +253,9 @@ public class DocumentProcessingClient {
         return new HttpEntity<>(documentResource, headers);
     }
 
+    /**
+     * Checks that the extraction response belongs to the document that was sent for processing.
+     */
     private void validateResponse(DocumentExtractionContext context, DocumentExtractionResponse response) {
         if (response == null) {
             throw new DocumentProcessingException("Document extraction service returned an empty response");
@@ -229,6 +266,9 @@ public class DocumentProcessingClient {
         }
     }
 
+    /**
+     * Checks that the summary response belongs to the requested document and contains summary text.
+     */
     private void validateSummaryResponse(DocumentSummarisationContext context, DocumentSummaryResponse response) {
         if (response == null) {
             throw new DocumentProcessingException("Document summarisation service returned an empty response");
@@ -239,6 +279,9 @@ public class DocumentProcessingClient {
         }
     }
 
+    /**
+     * Rejects zero or negative processing timeout settings during application startup.
+     */
     private void validateTimeout(String name, long timeoutSeconds) {
         if (timeoutSeconds <= 0) {
             throw new IllegalArgumentException(name + " must be greater than zero");

@@ -6,6 +6,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Records a significant action performed against a patient resource.
+ */
 public record PatientActivityEvent(
         UUID eventId,
         Instant occurredAt,
@@ -16,6 +19,9 @@ public record PatientActivityEvent(
         PatientActivityAction action
 ) implements AppEvent {
 
+    /**
+     * Checks the patient activity values and keeps the event unchanged after creation.
+     */
     public PatientActivityEvent {
         Objects.requireNonNull(eventId, "Event ID must not be null");
         Objects.requireNonNull(occurredAt, "Event timestamp must not be null");
@@ -26,6 +32,9 @@ public record PatientActivityEvent(
         Objects.requireNonNull(action, "Action must not be null");
     }
 
+    /**
+     * Creates a new patient activity event from the submitted values.
+     */
     public static PatientActivityEvent create(
             UUID actorUserId,
             UUID patientRecordId,

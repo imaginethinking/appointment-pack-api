@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * Represents medication information returned by the API.
+ */
 public record MedicationResponse(
         UUID id,
         UUID patientRecordId,
@@ -19,6 +22,9 @@ public record MedicationResponse(
         Instant updatedAt
 ) {
 
+    /**
+     * Builds the medication response from the supplied medication.
+     */
     public static MedicationResponse from(Medication medication) {
         return new MedicationResponse(
                 medication.getId(),

@@ -4,6 +4,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Carries the changes submitted when updating emergency contact.
+ */
 public record UpdateEmergencyContactRequest(
 
         @NotBlank

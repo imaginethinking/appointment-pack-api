@@ -17,6 +17,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Creates and updates medications while checking patient access and medication date ranges.
+ */
 @Service
 @RequiredArgsConstructor
 public class MedicationService {
@@ -25,6 +28,9 @@ public class MedicationService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks edit access and validates the submitted values before saving the new medication.
+     */
     @Transactional
     public MedicationResponse createMedication(
             UUID authenticatedUserId,
@@ -61,6 +67,9 @@ public class MedicationService {
         return MedicationResponse.from(savedMedication);
     }
 
+    /**
+     * Checks view access before returning the active medications with the most recent start date first.
+     */
     @Transactional(readOnly = true)
     public List<MedicationResponse> getMedications(UUID authenticatedUserId, UUID patientRecordId) {
         patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, MedicationPermission.VIEW);
@@ -69,6 +78,9 @@ public class MedicationService {
                 patientRecordId).stream().map(MedicationResponse::from).toList();
     }
 
+    /**
+     * Loads the requested medication and checks that the current user can view its patient record.
+     */
     @Transactional(readOnly = true)
     public MedicationResponse getMedication(UUID authenticatedUserId, UUID medicationId) {
         Medication medication = findAvailableMedication(medicationId);
@@ -81,6 +93,9 @@ public class MedicationService {
         return MedicationResponse.from(medication);
     }
 
+    /**
+     * Loads the current medication, checks edit access and applies the submitted changes.
+     */
     @Transactional
     public MedicationResponse updateMedication(
             UUID authenticatedUserId,
@@ -113,6 +128,9 @@ public class MedicationService {
         return MedicationResponse.from(medication);
     }
 
+    /**
+     * Checks access and archives the medication only when it is still active.
+     */
     @Transactional
     public MedicationResponse archiveMedication(UUID authenticatedUserId, UUID medicationId) {
         Medication medication = findMedication(medicationId);
@@ -134,11 +152,17 @@ public class MedicationService {
         return MedicationResponse.from(medication);
     }
 
+    /**
+     * Loads the medication or returns not found when it does not exist.
+     */
     private Medication findMedication(UUID medicationId) {
         return medicationRepository.findById(medicationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medication not found"));
     }
 
+    /**
+     * Loads the medication and treats an archived record as not found.
+     */
     private Medication findAvailableMedication(UUID medicationId) {
         Medication medication = findMedication(medicationId);
 
@@ -149,6 +173,9 @@ public class MedicationService {
         return medication;
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(
             UUID authenticatedUserId,
             Medication medication,
@@ -161,6 +188,9 @@ public class MedicationService {
                 action));
     }
 
+    /**
+     * Checks that the medication end date is not earlier than its start date.
+     */
     private void validateDates(LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new ResponseStatusException(
@@ -169,6 +199,9 @@ public class MedicationService {
         }
     }
 
+    /**
+     * Copies the submitted medication details onto the current medication and trims optional text.
+     */
     private void applyValues(
             Medication medication,
             String name,

@@ -1,5 +1,8 @@
 package net.imaginethinking.appointmentpack.event.auth;
 
+/**
+ * Lists the supported values for authentication action.
+ */
 public enum AuthenticationAction {
     REGISTRATION,
     EMAIL_VERIFICATION,

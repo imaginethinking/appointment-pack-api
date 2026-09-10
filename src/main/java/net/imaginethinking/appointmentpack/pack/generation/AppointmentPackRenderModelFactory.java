@@ -25,6 +25,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Converts selected patient information into the values displayed in the Appointment Pack PDF.
+ */
 @Component
 public class AppointmentPackRenderModelFactory {
 
@@ -32,6 +35,9 @@ public class AppointmentPackRenderModelFactory {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm", Locale.UK);
     private static final ZoneId APPLICATION_ZONE = ZoneId.of("Europe/London");
 
+    /**
+     * Builds the complete model used by the PDF template from the selected patient resources.
+     */
     public AppointmentPackRenderModel create(
             AppointmentPackSelection selection,
             String title,
@@ -50,6 +56,9 @@ public class AppointmentPackRenderModelFactory {
                 selection.bloodTests().stream().map(this::toBloodTestInformation).toList());
     }
 
+    /**
+     * Builds the patient details displayed at the start of the Appointment Pack.
+     */
     private AppointmentPackRenderModel.PatientInformation toPatientInformation(PatientRecord patientRecord) {
         Profile profile = patientRecord.getProfile();
 
@@ -63,6 +72,9 @@ public class AppointmentPackRenderModelFactory {
                 toAddressLines(profile.getAddress()));
     }
 
+    /**
+     * Builds the appointment details displayed in the Appointment Pack.
+     */
     private AppointmentPackRenderModel.AppointmentInformation toAppointmentInformation(Appointment appointment) {
         return new AppointmentPackRenderModel.AppointmentInformation(
                 formatDate(appointment.getDate()),
@@ -76,6 +88,9 @@ public class AppointmentPackRenderModelFactory {
                 TextNormalizer.stripToNull(appointment.getNotes()));
     }
 
+    /**
+     * Builds the medication details displayed in the Appointment Pack.
+     */
     private AppointmentPackRenderModel.MedicationInformation toMedicationInformation(Medication medication) {
         return new AppointmentPackRenderModel.MedicationInformation(
                 medication.getName(),
@@ -87,6 +102,9 @@ public class AppointmentPackRenderModelFactory {
                 medication.getNotes());
     }
 
+    /**
+     * Builds the healthcare contact details displayed in the Appointment Pack.
+     */
     private AppointmentPackRenderModel.HealthcareContactInformation toHealthcareContactInformation(HealthcareContact contact) {
         return new AppointmentPackRenderModel.HealthcareContactInformation(
                 contact.getName(),
@@ -98,6 +116,9 @@ public class AppointmentPackRenderModelFactory {
                 contact.getNotes());
     }
 
+    /**
+     * Builds the emergency contact details displayed in the Appointment Pack.
+     */
     private AppointmentPackRenderModel.EmergencyContactInformation toEmergencyContactInformation(EmergencyContact contact) {
         return new AppointmentPackRenderModel.EmergencyContactInformation(
                 contact.getName(),
@@ -108,6 +129,9 @@ public class AppointmentPackRenderModelFactory {
                 contact.getNotes());
     }
 
+    /**
+     * Builds the Medical History details displayed in the Appointment Pack.
+     */
     private AppointmentPackRenderModel.MedicalHistoryInformation toMedicalHistoryInformation(MedicalHistoryEntry entry) {
         return new AppointmentPackRenderModel.MedicalHistoryInformation(
                 entry.getTitle(),
@@ -115,6 +139,9 @@ public class AppointmentPackRenderModelFactory {
                 entry.getSummary());
     }
 
+    /**
+     * Builds a blood test and its result rows for the Appointment Pack.
+     */
     private AppointmentPackRenderModel.BloodTestInformation toBloodTestInformation(BloodTest bloodTest) {
         List<AppointmentPackRenderModel.BloodResultInformation> results = bloodTest.getResults()
                 .stream()
@@ -136,6 +163,9 @@ public class AppointmentPackRenderModelFactory {
                 results);
     }
 
+    /**
+     * Builds one blood result row for the Appointment Pack.
+     */
     private AppointmentPackRenderModel.BloodResultInformation toBloodResultInformation(BloodTestResult result) {
         return new AppointmentPackRenderModel.BloodResultInformation(
                 result.getAnalyteName(),
@@ -145,6 +175,9 @@ public class AppointmentPackRenderModelFactory {
                 formatFlag(result.getFlag()));
     }
 
+    /**
+     * Collects the non blank parts of an address in the order they should appear in the PDF.
+     */
     private List<String> toAddressLines(Address address) {
         if (address == null) {
             return List.of();
@@ -162,6 +195,9 @@ public class AppointmentPackRenderModelFactory {
         return List.copyOf(lines);
     }
 
+    /**
+     * Adds a trimmed display value when it is not null or blank.
+     */
     private void addIfPresent(List<String> values, String value) {
         String normalisedValue = TextNormalizer.stripToNull(value);
 
@@ -170,10 +206,16 @@ public class AppointmentPackRenderModelFactory {
         }
     }
 
+    /**
+     * Formats the pack generation time using the date format shown in the PDF.
+     */
     private String formatGeneratedDate(Instant generatedAt) {
         return DATE_FORMATTER.format(generatedAt.atZone(APPLICATION_ZONE).toLocalDate());
     }
 
+    /**
+     * Formats an optional date for the PDF or returns an empty value when no date is available.
+     */
     private String formatDate(LocalDate date) {
         if (date == null) {
             return null;
@@ -182,6 +224,9 @@ public class AppointmentPackRenderModelFactory {
         return DATE_FORMATTER.format(date);
     }
 
+    /**
+     * Formats an optional time for the PDF using hours and minutes.
+     */
     private String formatTime(LocalTime time) {
         if (time == null) {
             return null;
@@ -190,6 +235,9 @@ public class AppointmentPackRenderModelFactory {
         return TIME_FORMATTER.format(time);
     }
 
+    /**
+     * Formats a blood type enum into the label shown in the PDF.
+     */
     private String formatBloodType(BloodType bloodType) {
         if (bloodType == null) {
             return null;
@@ -207,6 +255,9 @@ public class AppointmentPackRenderModelFactory {
         };
     }
 
+    /**
+     * Formats an optional blood result flag into the label shown in the PDF.
+     */
     private String formatFlag(BloodTestResultFlag flag) {
         if (flag == null) {
             return null;

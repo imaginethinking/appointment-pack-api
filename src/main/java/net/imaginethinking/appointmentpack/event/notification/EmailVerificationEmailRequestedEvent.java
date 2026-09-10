@@ -6,6 +6,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Carries the values needed to send a verification email without exposing them in its string output.
+ */
 public final class EmailVerificationEmailRequestedEvent implements AppEvent {
 
     private final UUID eventId;
@@ -15,6 +18,9 @@ public final class EmailVerificationEmailRequestedEvent implements AppEvent {
     private final String token;
     private final Instant expiresAt;
 
+    /**
+     * Checks the verification email values before storing the immutable event details.
+     */
     private EmailVerificationEmailRequestedEvent(
             UUID eventId,
             Instant occurredAt,
@@ -30,6 +36,9 @@ public final class EmailVerificationEmailRequestedEvent implements AppEvent {
         this.expiresAt = Objects.requireNonNull(expiresAt, "Token expiry must not be null");
     }
 
+    /**
+     * Creates a new email verification email requested event from the submitted values.
+     */
     public static EmailVerificationEmailRequestedEvent create(
             UUID userId,
             String recipientEmail,
@@ -44,32 +53,53 @@ public final class EmailVerificationEmailRequestedEvent implements AppEvent {
                 expiresAt);
     }
 
+    /**
+     * Returns the unique ID carried by the event.
+     */
     @Override
     public UUID eventId() {
         return eventId;
     }
 
+    /**
+     * Returns when the event was created.
+     */
     @Override
     public Instant occurredAt() {
         return occurredAt;
     }
 
+    /**
+     * Returns the user ID carried by the event.
+     */
     public UUID userId() {
         return userId;
     }
 
+    /**
+     * Returns the email address that should receive the notification.
+     */
     public String recipientEmail() {
         return recipientEmail;
     }
 
+    /**
+     * Returns the account token included in the notification request.
+     */
     public String token() {
         return token;
     }
 
+    /**
+     * Returns when the account token expires.
+     */
     public Instant expiresAt() {
         return expiresAt;
     }
 
+    /**
+     * Returns a safe event description that leaves the verification token out of log output.
+     */
     @Override
     public String toString() {
         return "EmailVerificationEmailRequestedEvent["

@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Manages carer invitations, relationship states and the permissions granted for each patient record.
+ */
 @Service
 @RequiredArgsConstructor
 public class PatientCarerAccessService {
@@ -31,6 +34,10 @@ public class PatientCarerAccessService {
     private final PermissionValidator permissionValidator;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Loads the owned patient record, validates the carer and permissions, then creates or reopens the
+     * relationship as pending.
+     */
     @Transactional
     public PatientCarerAccessResponse createInvitation(UUID patientUserId, CreateCarerInvitationRequest request) {
         PatientRecord patientRecord = requireOwnedPatientRecord(patientUserId);
@@ -61,6 +68,9 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(savedAccess);
     }
 
+    /**
+     * Loads a patient and carer relationship and returns it only when the current user is one of its participants.
+     */
     @Transactional(readOnly = true)
     public PatientCarerAccessResponse getRelationship(UUID authenticatedUserId, UUID accessId) {
         PatientCarerAccess access = findAccess(accessId);
@@ -70,6 +80,10 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
+    /**
+     * Loads the relationship history for the patient record owned by the current user with the newest invitations
+     * first.
+     */
     @Transactional(readOnly = true)
     public List<PatientCarerAccessResponse> getRelationshipsAsPatient(UUID patientUserId) {
         PatientRecord patientRecord = requireOwnedPatientRecord(patientUserId);
@@ -80,6 +94,9 @@ public class PatientCarerAccessService {
                 .toList();
     }
 
+    /**
+     * Loads the relationship history where the current user is the carer with the newest invitations first.
+     */
     @Transactional(readOnly = true)
     public List<PatientCarerAccessResponse> getRelationshipsAsCarer(UUID carerUserId) {
         return patientCarerAccessRepository.findAllByCarer_IdOrderByInvitedAtDesc(carerUserId)
@@ -88,6 +105,9 @@ public class PatientCarerAccessService {
                 .toList();
     }
 
+    /**
+     * Checks that the current user is the invited carer and moves a pending relationship to active.
+     */
     @Transactional
     public PatientCarerAccessResponse acceptInvitation(UUID carerUserId, UUID accessId) {
         PatientCarerAccess access = findAccess(accessId);
@@ -102,6 +122,9 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
+    /**
+     * Checks that the current user is the invited carer and moves a pending relationship to declined.
+     */
     @Transactional
     public PatientCarerAccessResponse declineInvitation(UUID carerUserId, UUID accessId) {
         PatientCarerAccess access = findAccess(accessId);
@@ -116,6 +139,9 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
+    /**
+     * Checks that the current user owns the patient record and cancels a pending invitation.
+     */
     @Transactional
     public PatientCarerAccessResponse cancelInvitation(UUID patientUserId, UUID accessId) {
         PatientCarerAccess access = findAccess(accessId);
@@ -130,6 +156,9 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
+    /**
+     * Checks that the current user owns the patient record and revokes an active carer relationship.
+     */
     @Transactional
     public PatientCarerAccessResponse revokeAccess(UUID patientUserId, UUID accessId) {
         PatientCarerAccess access = findAccess(accessId);
@@ -144,6 +173,10 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
+    /**
+     * Checks patient ownership, validates the new permission set and saves it when the relationship is pending or
+     * active.
+     */
     @Transactional
     public PatientCarerAccessResponse updatePermissions(
             UUID patientUserId,
@@ -170,6 +203,9 @@ public class PatientCarerAccessService {
         return PatientCarerAccessResponse.from(access);
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(UUID authenticatedUserId, PatientCarerAccess access, PatientActivityAction action) {
         appEventPublisher.publish(PatientActivityEvent.create(
                 authenticatedUserId,
@@ -179,6 +215,9 @@ public class PatientCarerAccessService {
                 action));
     }
 
+    /**
+     * Creates a new pending relationship with the selected carer and permissions.
+     */
     private PatientCarerAccess createNewInvitation(PatientRecord patientRecord, User carer, Set<String> permissions) {
         Instant now = Instant.now();
 
@@ -194,6 +233,9 @@ public class PatientCarerAccessService {
         return access;
     }
 
+    /**
+     * Reopens a declined, revoked or cancelled relationship as a new pending invitation with updated permissions.
+     */
     private PatientCarerAccess prepareExistingInvitation(PatientCarerAccess access, Set<String> permissions) {
         if (access.getStatus() == PatientCarerAccessStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A pending invitation already exists");
@@ -213,11 +255,17 @@ public class PatientCarerAccessService {
         return access;
     }
 
+    /**
+     * Loads the patient record owned by the current user or returns not found when they have not created one.
+     */
     private PatientRecord requireOwnedPatientRecord(UUID patientUserId) {
         return patientRecordRepository.findByProfileUserId(patientUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient record not found"));
     }
 
+    /**
+     * Loads the patient and carer relationship or returns not found when it does not exist.
+     */
     private PatientCarerAccess findAccess(UUID accessId) {
         return patientCarerAccessRepository.findById(accessId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -225,6 +273,9 @@ public class PatientCarerAccessService {
                         "Patient-carer relationship not found"));
     }
 
+    /**
+     * Allows the relationship to be viewed only by the patient owner or the assigned carer.
+     */
     private void requireParticipant(PatientCarerAccess access, UUID authenticatedUserId) {
         if (isCarer(access, authenticatedUserId) || isPatientOwner(access, authenticatedUserId)) {
             return;
@@ -233,34 +284,52 @@ public class PatientCarerAccessService {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot view this carer relationship");
     }
 
+    /**
+     * Checks that the current user is the carer assigned to the relationship.
+     */
     private void requireCarer(PatientCarerAccess access, UUID authenticatedUserId) {
         if (!isCarer(access, authenticatedUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot respond to this invitation");
         }
     }
 
+    /**
+     * Checks that the current user owns the patient record linked to the relationship.
+     */
     private void requirePatientOwner(PatientCarerAccess access, UUID authenticatedUserId) {
         if (!isPatientOwner(access, authenticatedUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot manage this carer relationship");
         }
     }
 
+    /**
+     * Checks whether the current user is the carer assigned to the relationship.
+     */
     private boolean isCarer(PatientCarerAccess access, UUID authenticatedUserId) {
         return access.getCarer().getId().equals(authenticatedUserId);
     }
 
+    /**
+     * Checks whether the current user owns the patient record linked to the relationship.
+     */
     private boolean isPatientOwner(PatientCarerAccess access, UUID authenticatedUserId) {
         UUID patientOwnerId = access.getPatientRecord().getProfile().getUser().getId();
 
         return patientOwnerId.equals(authenticatedUserId);
     }
 
+    /**
+     * Checks that the relationship is in the state required for the requested change.
+     */
     private void requireStatus(PatientCarerAccess access, PatientCarerAccessStatus expectedStatus) {
         if (access.getStatus() != expectedStatus) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "The relationship is not in the required state");
         }
     }
 
+    /**
+     * Changes the relationship state and records when the state changed.
+     */
     private void changeStatus(PatientCarerAccess access, PatientCarerAccessStatus status) {
         access.setStatus(status);
         access.setStatusChangedAt(Instant.now());

@@ -13,6 +13,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * Prepares the selected patient data, title, file name and PDF content needed to save an Appointment Pack.
+ */
 @Service
 @RequiredArgsConstructor
 public class AppointmentPackGenerationDataService {
@@ -22,6 +25,10 @@ public class AppointmentPackGenerationDataService {
     private final AppointmentPackSelectionService selectionService;
     private final AppointmentPackRenderModelFactory renderModelFactory;
 
+    /**
+     * Loads the selected patient information, builds the render model and PDF, then returns everything needed to
+     * persist the pack.
+     */
     @Transactional(readOnly = true)
     public AppointmentPackGenerationData prepare(
             UUID authenticatedUserId,
@@ -48,6 +55,9 @@ public class AppointmentPackGenerationDataService {
                 selection.selectedItems());
     }
 
+    /**
+     * Uses the entered title when present or creates one from the selected appointment when it is blank.
+     */
     private String resolveTitle(String requestedTitle, Appointment appointment) {
         String title = TextNormalizer.stripToNull(requestedTitle);
 
@@ -68,6 +78,9 @@ public class AppointmentPackGenerationDataService {
         return defaultTitle;
     }
 
+    /**
+     * Creates a safe PDF file name from the pack title and a random suffix.
+     */
     private String createFileName(String title) {
         String normalisedTitle = Normalizer.normalize(title, Normalizer.Form.NFKD)
                 .replaceAll("\\p{M}+", "")

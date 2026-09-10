@@ -9,6 +9,9 @@ import net.imaginethinking.appointmentpack.address.AddressRequest;
 
 import java.time.LocalDate;
 
+/**
+ * Carries the changes submitted when updating profile.
+ */
 public record UpdateProfileRequest(
         @NotBlank
         @Size(max = 100)

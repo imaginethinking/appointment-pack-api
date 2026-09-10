@@ -11,6 +11,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+/**
+ * Builds the known patient values supplied for local consultation deidentification.
+ */
 @Component
 public class RedactionContextFactory {
 
@@ -20,6 +23,10 @@ public class RedactionContextFactory {
     private static final DateTimeFormatter LONG_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu", Locale.UK);
     private static final DateTimeFormatter SHORT_MONTH_DATE = DateTimeFormatter.ofPattern("d MMM uuuu", Locale.UK);
 
+    /**
+     * Collects known names, dates, identifiers and address values from the patient record for consultation
+     * deidentification.
+     */
     public RedactionContext create(Document document) {
         PatientRecord patientRecord = document.getPatientRecord();
 
@@ -40,6 +47,9 @@ public class RedactionContextFactory {
         return new RedactionContext(new ArrayList<>(knownValues));
     }
 
+    /**
+     * Adds the full name and individual name parts when they are available.
+     */
     private void addFullNameValues(Set<String> values, String firstName, String lastName) {
         String normalisedFirstName = TextNormalizer.stripToNull(firstName);
         String normalisedLastName = TextNormalizer.stripToNull(lastName);
@@ -52,6 +62,9 @@ public class RedactionContextFactory {
         addValue(values, normalisedLastName + ", " + normalisedFirstName);
     }
 
+    /**
+     * Adds the date in the formats recognised by the deterministic redaction rules.
+     */
     private void addDateValues(Set<String> values, LocalDate date) {
         if (date == null) {
             return;
@@ -70,6 +83,9 @@ public class RedactionContextFactory {
         }
     }
 
+    /**
+     * Adds an identifier in its stored form and a compact form without spaces when useful.
+     */
     private void addIdentifierValues(Set<String> values, String identifier) {
         if (identifier == null || identifier.isBlank()) {
             return;
@@ -92,6 +108,9 @@ public class RedactionContextFactory {
         }
     }
 
+    /**
+     * Adds the full address and individual address parts that may appear in the consultation text.
+     */
     private void addAddressValues(Set<String> values, Address address) {
         if (address == null) {
             return;
@@ -118,6 +137,9 @@ public class RedactionContextFactory {
         }
     }
 
+    /**
+     * Adds the postcode with normal and compact spacing so either form can be redacted.
+     */
     private void addPostcodeValues(Set<String> values, String postcode) {
         if (postcode == null || postcode.isBlank()) {
             return;
@@ -127,6 +149,9 @@ public class RedactionContextFactory {
         addValue(values, postcode.replaceAll("\\s+", ""));
     }
 
+    /**
+     * Adds a non blank address value to the parts used to build the full address.
+     */
     private void addAddressPart(List<String> parts, String value) {
         if (value == null || value.isBlank()) {
             return;
@@ -135,6 +160,9 @@ public class RedactionContextFactory {
         parts.add(TextNormalizer.strip(value));
     }
 
+    /**
+     * Trims a known value before adding it to the redaction set and ignores empty values.
+     */
     private void addValue(Set<String> values, String value) {
         if (value == null) {
             return;

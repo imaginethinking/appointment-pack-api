@@ -5,6 +5,9 @@ import net.imaginethinking.appointmentpack.address.AddressResponse;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents healthcare contact information returned by the API.
+ */
 public record HealthcareContactResponse(
         UUID id,
         UUID patientRecordId,
@@ -20,6 +23,9 @@ public record HealthcareContactResponse(
         Instant updatedAt
 ) {
 
+    /**
+     * Builds the healthcare contact response from the supplied healthcare contact.
+     */
     public static HealthcareContactResponse from(HealthcareContact contact) {
         return new HealthcareContactResponse(
                 contact.getId(),

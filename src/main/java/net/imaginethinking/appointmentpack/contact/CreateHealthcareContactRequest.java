@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import net.imaginethinking.appointmentpack.address.AddressRequest;
 
+/**
+ * Carries the values submitted when creating healthcare contact.
+ */
 public record CreateHealthcareContactRequest(
 
         @NotBlank

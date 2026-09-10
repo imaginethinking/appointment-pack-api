@@ -8,6 +8,9 @@ import net.imaginethinking.appointmentpack.profile.Profile;
 
 import java.time.Instant;
 
+/**
+ * Stores account credentials, roles and account security state for an application user.
+ */
 @Getter
 @Setter
 @Entity
@@ -66,6 +69,9 @@ public class User extends BaseEntity {
     )
     private Profile profile;
 
+    /**
+     * Checks whether the account has an email verification time recorded.
+     */
     public boolean isEmailVerified() {
         return emailVerifiedAt != null;
     }

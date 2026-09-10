@@ -8,6 +8,9 @@ import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
 import java.time.LocalDate;
 
+/**
+ * Stores a medication recorded against a patient.
+ */
 @Getter
 @Setter
 @Entity

@@ -7,6 +7,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Records the outcome, duration and failure reason for one document processing operation.
+ */
 public record DocumentProcessingEvent(
         UUID eventId,
         Instant occurredAt,
@@ -22,6 +25,9 @@ public record DocumentProcessingEvent(
         String promptVersion
 ) implements AppEvent {
 
+    /**
+     * Checks the processing event values and keeps the recorded event unchanged after creation.
+     */
     public DocumentProcessingEvent {
         Objects.requireNonNull(eventId, "Event ID must not be null");
         Objects.requireNonNull(occurredAt, "Event timestamp must not be null");
@@ -41,6 +47,9 @@ public record DocumentProcessingEvent(
         }
     }
 
+    /**
+     * Creates a successful processing event with the operation, duration and document details.
+     */
     public static DocumentProcessingEvent succeeded(
             UUID actorUserId,
             UUID documentId,
@@ -67,6 +76,9 @@ public record DocumentProcessingEvent(
         );
     }
 
+    /**
+     * Creates a failed processing event with the operation, duration and failure reason.
+     */
     public static DocumentProcessingEvent failed(
             UUID actorUserId,
             UUID documentId,

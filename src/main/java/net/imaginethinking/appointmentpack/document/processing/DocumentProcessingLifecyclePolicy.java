@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.Instant;
 
+/**
+ * Calculates when a document processing state is old enough to be treated as stale.
+ */
 @Component
 public class DocumentProcessingLifecyclePolicy {
 
@@ -15,6 +18,9 @@ public class DocumentProcessingLifecyclePolicy {
 
     private final Duration staleAfter;
 
+    /**
+     * Prevents the utility class from being instantiated.
+     */
     public DocumentProcessingLifecyclePolicy(
             @Value("${appointment-pack.document-processing.lifecycle.stale-after:PT5M}")
             Duration staleAfter) {
@@ -25,10 +31,16 @@ public class DocumentProcessingLifecyclePolicy {
         this.staleAfter = staleAfter;
     }
 
+    /**
+     * Subtracts the configured stale duration from the supplied time to produce the recovery cutoff.
+     */
     public Instant staleCutoff(Instant now) {
         return now.minus(staleAfter);
     }
 
+    /**
+     * Checks whether a processing document was last updated before the current stale cutoff.
+     */
     public boolean isStale(Document document, Instant now) {
         if (document.getUpdatedAt() == null) {
             return false;

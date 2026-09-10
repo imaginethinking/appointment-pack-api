@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Tracks authentication requests in memory and decides when a client must wait before trying again.
+ */
 @Component
 public class AuthenticationRateLimiter {
 
@@ -17,6 +20,10 @@ public class AuthenticationRateLimiter {
 
     private final AtomicLong checks = new AtomicLong();
 
+    /**
+     * Uses the client and operation as a key, counts requests within the current window and returns a retry delay
+     * when the limit is reached.
+     */
     public RateLimitDecision check(String clientKey, String operation, int maximumRequests, Duration windowDuration) {
         if (maximumRequests <= 0) {
             throw new IllegalArgumentException("Maximum requests must be positive");
@@ -39,6 +46,7 @@ public class AuthenticationRateLimiter {
                     return new Window(existing.count() + 1, existing.expiresAt());
                 });
 
+        // Clear expired windows occasionally instead of scanning the map on every authentication request.
         if (checks.incrementAndGet() % CLEANUP_INTERVAL == 0) {
             removeExpiredWindows(now);
         }
@@ -52,22 +60,40 @@ public class AuthenticationRateLimiter {
         return RateLimitDecision.rejected(retryAfterSeconds);
     }
 
+    /**
+     * Removes rate limit windows that have already expired.
+     */
     private void removeExpiredWindows(Instant now) {
         windows.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
     }
 
+    /**
+     * Identifies a rate limit window by client and authentication operation.
+     */
     private record RateLimitKey(String clientKey, String operation) {
     }
 
+    /**
+     * Stores the start, expiry and request count for one rate limit window.
+     */
     private record Window(int count, Instant expiresAt) {
     }
 
+    /**
+     * Reports whether a request is allowed and how long a rejected caller should wait.
+     */
     public record RateLimitDecision(boolean allowed, long retryAfterSeconds) {
 
+        /**
+         * Creates an allowed rate limit decision with no retry delay.
+         */
         public static RateLimitDecision permit() {
             return new RateLimitDecision(true, 0);
         }
 
+        /**
+         * Creates a rejected rate limit decision with the retry delay for the caller.
+         */
         public static RateLimitDecision rejected(
                 long retryAfterSeconds) {
             return new RateLimitDecision(false, retryAfterSeconds);

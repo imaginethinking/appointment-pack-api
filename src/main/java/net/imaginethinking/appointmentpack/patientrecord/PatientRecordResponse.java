@@ -3,6 +3,9 @@ package net.imaginethinking.appointmentpack.patientrecord;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Represents patient record information returned by the API.
+ */
 public record PatientRecordResponse(
         UUID id,
         UUID profileId,

@@ -1,5 +1,8 @@
 package net.imaginethinking.appointmentpack.patientrecord;
 
+/**
+ * Lists the supported values for blood type.
+ */
 public enum BloodType {
     A_POSITIVE,
     A_NEGATIVE,

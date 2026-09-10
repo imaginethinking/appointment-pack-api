@@ -7,6 +7,9 @@ import net.imaginethinking.appointmentpack.document.processing.SummarySource;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents document processing result information returned by the API.
+ */
 public record DocumentProcessingResultResponse(
         UUID documentId,
         DocumentType documentType,
@@ -29,6 +32,9 @@ public record DocumentProcessingResultResponse(
         Instant summaryReviewedAt
 ) {
 
+    /**
+     * Keeps the processor, model and prompt details returned with a generated summary.
+     */
     public record ModelMetadata(
             String name,
             String promptVersion

@@ -20,6 +20,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+/**
+ * Stores extracted text, review data and summary information produced while a document is processed.
+ */
 @Getter
 @Setter
 @Entity

@@ -17,6 +17,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
 
+/**
+ * Creates and updates patient records, including measurement checks and BMI calculation.
+ */
 @Service
 @RequiredArgsConstructor
 public class PatientRecordService {
@@ -32,6 +35,10 @@ public class PatientRecordService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Loads the current profile, checks that it does not already own a patient record and saves the submitted
+     * patient details.
+     */
     @Transactional
     public PatientRecordResponse createCurrentPatientRecord(UUID userId, CreatePatientRecordRequest request) {
         Profile profile = profileRepository.findByUserId(userId)
@@ -69,6 +76,9 @@ public class PatientRecordService {
         return toResponse(savedPatientRecord);
     }
 
+    /**
+     * Checks edit access, validates measurement pairs and applies the submitted patient record changes.
+     */
     @Transactional
     public PatientRecordResponse updatePatientRecord(
             UUID authenticatedUserId,
@@ -101,6 +111,9 @@ public class PatientRecordService {
         return toResponse(patientRecord);
     }
 
+    /**
+     * Loads the patient record owned by the current user or returns not found when one has not been created.
+     */
     @Transactional(readOnly = true)
     public PatientRecordResponse getCurrentPatientRecord(UUID userId) {
         PatientRecord patientRecord = patientRecordRepository.findByProfileUserId(userId)
@@ -109,6 +122,9 @@ public class PatientRecordService {
         return toResponse(patientRecord);
     }
 
+    /**
+     * Loads the selected patient record after checking that the current user can view it.
+     */
     @Transactional(readOnly = true)
     public PatientRecordResponse getPatientRecord(UUID authenticatedUserId, UUID patientRecordId) {
         PatientRecord patientRecord = patientRecordAccessService.requireAccess(
@@ -119,6 +135,9 @@ public class PatientRecordService {
         return toResponse(patientRecord);
     }
 
+    /**
+     * Builds the patient record response and calculates BMI from the stored measurements when possible.
+     */
     private PatientRecordResponse toResponse(PatientRecord patientRecord) {
         return new PatientRecordResponse(
                 patientRecord.getId(),
@@ -134,6 +153,10 @@ public class PatientRecordService {
                 patientRecord.getBloodType());
     }
 
+    /**
+     * Converts the stored height and weight to metric units and calculates BMI when both measurements are
+     * complete.
+     */
     private BigDecimal calculateBmi(PatientRecord patientRecord) {
         if (patientRecord.getHeight() == null
                 || patientRecord.getHeightUnit() == null
@@ -153,6 +176,9 @@ public class PatientRecordService {
         return weightInKilograms.divide(heightSquared, 2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Converts a height from the selected unit into metres for the BMI calculation.
+     */
     private BigDecimal convertHeightToMeters(BigDecimal height, HeightUnit unit) {
         return switch (unit) {
             case METERS -> height;
@@ -162,6 +188,9 @@ public class PatientRecordService {
         };
     }
 
+    /**
+     * Converts a weight from the selected unit into kilograms for the BMI calculation.
+     */
     private BigDecimal convertWeightToKilograms(BigDecimal weight, WeightUnit unit) {
         return switch (unit) {
             case KILOGRAMS -> weight;
@@ -171,6 +200,9 @@ public class PatientRecordService {
         };
     }
 
+    /**
+     * Requires a measurement value and its unit to be supplied together.
+     */
     private void validateMeasurement(String measurementName, BigDecimal value, Enum<?> unit) {
         if ((value == null) != (unit == null)) {
             throw new ResponseStatusException(

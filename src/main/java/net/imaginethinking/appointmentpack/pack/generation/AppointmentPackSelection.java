@@ -12,6 +12,9 @@ import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Keeps the appointment and patient resources selected for a new Appointment Pack.
+ */
 public record AppointmentPackSelection(
         PatientRecord patientRecord,
         Appointment appointment,
@@ -22,6 +25,9 @@ public record AppointmentPackSelection(
         List<BloodTest> bloodTests
 ) {
 
+    /**
+     * Copies the selected resource lists so the pack selection stays unchanged during generation.
+     */
     public AppointmentPackSelection {
         medications = List.copyOf(medications);
         healthcareContacts = List.copyOf(healthcareContacts);
@@ -30,6 +36,9 @@ public record AppointmentPackSelection(
         bloodTests = List.copyOf(bloodTests);
     }
 
+    /**
+     * Builds the item type and ID list stored as provenance for the generated Appointment Pack.
+     */
     public List<AppointmentPackGenerationData.SelectedItem> selectedItems() {
         List<AppointmentPackGenerationData.SelectedItem> items = new ArrayList<>();
 

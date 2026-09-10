@@ -10,6 +10,9 @@ import net.imaginethinking.appointmentpack.user.User;
 
 import java.time.LocalDate;
 
+/**
+ * Stores a manual or document based entry in a patient's Medical History.
+ */
 @Getter
 @Setter
 @Entity

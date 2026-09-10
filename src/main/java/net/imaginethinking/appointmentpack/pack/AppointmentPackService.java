@@ -18,6 +18,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Generates, loads, previews, downloads and archives Appointment Packs for patients the current user can access.
+ */
 @Service
 @RequiredArgsConstructor
 public class AppointmentPackService {
@@ -30,6 +33,14 @@ public class AppointmentPackService {
     private final AppointmentPackPersistenceService persistenceService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks pack creation access, prepares and stores the PDF, then saves the pack and its selected item details.
+     *
+     * @param authenticatedUserId user creating the Appointment Pack
+     * @param patientRecordId patient record the pack is being created for
+     * @param request appointment and patient information selected for the pack
+     * @return the saved Appointment Pack details
+     */
     public AppointmentPackResponse generateAppointmentPack(
             UUID authenticatedUserId,
             UUID patientRecordId,
@@ -47,6 +58,7 @@ public class AppointmentPackService {
 
         String storagePath = appointmentPackStorageService.store(pdfBytes);
 
+        // Delete the PDF again if its database record cannot be saved so an unused pack file is not left behind.
         try {
             return persistenceService.persist(authenticatedUserId, generationData, storagePath, pdfBytes.length);
         } catch (RuntimeException exception) {
@@ -60,6 +72,9 @@ public class AppointmentPackService {
         }
     }
 
+    /**
+     * Checks view access and returns the active Appointment Packs for the selected patient.
+     */
     @Transactional(readOnly = true)
     public List<AppointmentPackResponse> getAppointmentPacks(UUID authenticatedUserId, UUID patientRecordId) {
         patientRecordAccessService.requireAccess(
@@ -71,6 +86,9 @@ public class AppointmentPackService {
                 patientRecordId).stream().map(AppointmentPackResponse::from).toList();
     }
 
+    /**
+     * Loads an active Appointment Pack and checks that the current user can view its patient record.
+     */
     @Transactional(readOnly = true)
     public AppointmentPackResponse getAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
         AppointmentPack appointmentPack = requireAvailableAppointmentPackAccess(
@@ -80,6 +98,9 @@ public class AppointmentPackService {
         return AppointmentPackResponse.from(appointmentPack);
     }
 
+    /**
+     * Checks view access and returns the stored PDF for inline preview without recording a download event.
+     */
     @Transactional(readOnly = true)
     public AppointmentPackFile previewAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
         AppointmentPack appointmentPack = requireAvailableAppointmentPackAccess(
@@ -89,6 +110,9 @@ public class AppointmentPackService {
         return loadFile(appointmentPack);
     }
 
+    /**
+     * Checks view access, loads the stored PDF and records the patient activity for the download.
+     */
     @Transactional
     public AppointmentPackFile downloadAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
         AppointmentPack appointmentPack = requireAvailableAppointmentPackAccess(
@@ -102,6 +126,9 @@ public class AppointmentPackService {
         return file;
     }
 
+    /**
+     * Checks pack creation access and archives the pack if it is still active.
+     */
     @Transactional
     public AppointmentPackResponse archiveAppointmentPack(UUID authenticatedUserId, UUID appointmentPackId) {
         AppointmentPack appointmentPack = findAppointmentPack(appointmentPackId);
@@ -120,6 +147,9 @@ public class AppointmentPackService {
         return AppointmentPackResponse.from(appointmentPack);
     }
 
+    /**
+     * Loads an active Appointment Pack and checks the requested patient permission before returning it.
+     */
     private AppointmentPack requireAvailableAppointmentPackAccess(
             UUID authenticatedUserId,
             UUID appointmentPackId) {
@@ -133,6 +163,9 @@ public class AppointmentPackService {
         return appointmentPack;
     }
 
+    /**
+     * Loads the stored PDF and keeps its saved file information together for the response.
+     */
     private AppointmentPackFile loadFile(AppointmentPack appointmentPack) {
         return new AppointmentPackFile(
                 appointmentPackStorageService.load(appointmentPack.getStoragePath()),
@@ -141,6 +174,9 @@ public class AppointmentPackService {
                 appointmentPack.getFileSize());
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(
             UUID authenticatedUserId,
             AppointmentPack appointmentPack,
@@ -153,11 +189,17 @@ public class AppointmentPackService {
                 action));
     }
 
+    /**
+     * Loads an Appointment Pack by ID or returns not found when it does not exist.
+     */
     private AppointmentPack findAppointmentPack(UUID appointmentPackId) {
         return appointmentPackRepository.findById(appointmentPackId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment pack not found"));
     }
 
+    /**
+     * Loads an Appointment Pack and treats archived packs as not found.
+     */
     private AppointmentPack findAvailableAppointmentPack(UUID appointmentPackId) {
         AppointmentPack appointmentPack = findAppointmentPack(appointmentPackId);
 

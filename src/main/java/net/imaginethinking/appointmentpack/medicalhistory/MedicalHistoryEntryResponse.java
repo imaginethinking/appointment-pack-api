@@ -6,6 +6,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * Represents Medical History entry information returned by the API.
+ */
 public record MedicalHistoryEntryResponse(
         UUID id,
         UUID patientRecordId,

@@ -1,5 +1,8 @@
 package net.imaginethinking.appointmentpack.event.patient;
 
+/**
+ * Lists the supported values for patient resource type.
+ */
 public enum PatientResourceType {
     PATIENT_RECORD,
     PROFILE,

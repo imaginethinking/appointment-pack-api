@@ -12,6 +12,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+/**
+ * Renders the prepared Appointment Pack model into PDF bytes using the pack template and stylesheet.
+ */
 @Service
 public class AppointmentPackPdfRenderer {
 
@@ -21,11 +24,17 @@ public class AppointmentPackPdfRenderer {
     private final SpringTemplateEngine templateEngine;
     private final String stylesheet;
 
+    /**
+     * Creates the PDF renderer using the shared Thymeleaf template engine.
+     */
     public AppointmentPackPdfRenderer(SpringTemplateEngine templateEngine) {
         this.templateEngine = templateEngine;
         this.stylesheet = loadStylesheet();
     }
 
+    /**
+     * Renders the pack template with the prepared values and converts the resulting HTML into PDF bytes.
+     */
     public byte[] render(AppointmentPackRenderModel renderModel) {
         Context context = new Context(Locale.UK);
 
@@ -50,6 +59,9 @@ public class AppointmentPackPdfRenderer {
         }
     }
 
+    /**
+     * Loads the Appointment Pack stylesheet from the application resources.
+     */
     private String loadStylesheet() {
         ClassPathResource resource = new ClassPathResource(STYLESHEET_PATH);
 

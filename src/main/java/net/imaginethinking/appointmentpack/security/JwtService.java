@@ -14,12 +14,18 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+/**
+ * Creates signed access tokens containing the user ID, token purpose and application roles.
+ */
 @Service
 @AllArgsConstructor
 public class JwtService {
 
     private final JwtEncoder jwtEncoder;
 
+    /**
+     * Creates a one hour signed access token containing the user ID, access purpose and application roles.
+     */
     public String generateAccessToken(User user) {
         Instant now = Instant.now();
 
@@ -39,6 +45,9 @@ public class JwtService {
                 .getTokenValue();
     }
 
+    /**
+     * Returns the roles placed in an access token, including the normal user role for administrators.
+     */
     private List<String> rolesFor(User user) {
         if (user.getRole() == UserRole.ADMIN) {
             return List.of(

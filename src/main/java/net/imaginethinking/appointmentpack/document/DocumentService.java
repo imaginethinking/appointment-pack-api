@@ -22,6 +22,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Stores uploaded documents, keeps their metadata and applies patient access checks when they are viewed or
+ * archived.
+ */
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
@@ -43,6 +47,10 @@ public class DocumentService {
     private final DocumentStorageService documentStorageService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks upload permission and the file contents, stores the file, then saves the document metadata for the
+     * patient.
+     */
     @Transactional
     public DocumentResponse upload(
             UUID authenticatedUserId,
@@ -70,6 +78,7 @@ public class DocumentService {
         String originalFileName = resolveOriginalFileName(file);
         String storagePath = null;
 
+        // Remove the stored file again if saving its database record fails so an unused upload is not left behind.
         try {
             storagePath = documentStorageService.store(file, contentType);
 
@@ -95,6 +104,9 @@ public class DocumentService {
         }
     }
 
+    /**
+     * Checks view access and returns the active documents for the patient with the newest uploads first.
+     */
     @Transactional(readOnly = true)
     public List<DocumentResponse> getDocuments(UUID authenticatedUserId, UUID patientRecordId) {
         patientRecordAccessService.requireAccess(
@@ -107,6 +119,9 @@ public class DocumentService {
                 DocumentStatus.ARCHIVED).stream().map(this::toResponse).toList();
     }
 
+    /**
+     * Loads an active document and checks that the current user can view its patient record.
+     */
     @Transactional(readOnly = true)
     public DocumentResponse getDocument(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
@@ -119,6 +134,9 @@ public class DocumentService {
         return toResponse(document);
     }
 
+    /**
+     * Loads an active document, checks view access and returns the stored original file for download.
+     */
     @Transactional
     public DocumentDownload download(UUID authenticatedUserId, UUID documentId) {
         Document document = findAvailableDocument(documentId);
@@ -139,6 +157,9 @@ public class DocumentService {
         return download;
     }
 
+    /**
+     * Checks edit access and archives the document if it is still active.
+     */
     @Transactional
     public DocumentResponse archive(UUID authenticatedUserId, UUID documentId) {
         Document document = findDocument(documentId);
@@ -166,6 +187,9 @@ public class DocumentService {
         return toResponse(document);
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(UUID authenticatedUserId, Document document, PatientActivityAction action) {
         appEventPublisher.publish(PatientActivityEvent.create(
                 authenticatedUserId,
@@ -175,6 +199,9 @@ public class DocumentService {
                 action));
     }
 
+    /**
+     * Loads a document by ID or returns not found when it does not exist.
+     */
     private Document findDocument(UUID documentId) {
         return documentRepository.findById(documentId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -183,6 +210,9 @@ public class DocumentService {
                 );
     }
 
+    /**
+     * Loads a document and treats archived documents as not found.
+     */
     private Document findAvailableDocument(UUID documentId) {
         Document document = findDocument(documentId);
 
@@ -196,6 +226,9 @@ public class DocumentService {
         return document;
     }
 
+    /**
+     * Builds the response from the supplied document.
+     */
     private DocumentResponse toResponse(Document document) {
         return new DocumentResponse(
                 document.getId(),
@@ -208,6 +241,9 @@ public class DocumentService {
                 document.getCreatedAt());
     }
 
+    /**
+     * Keeps a usable original file name and falls back to a simple name when the upload does not provide one.
+     */
     private String resolveOriginalFileName(MultipartFile file) {
         String suppliedFileName = file.getOriginalFilename();
 
@@ -225,6 +261,10 @@ public class DocumentService {
         return fileName.length() <= 255 ? fileName : fileName.substring(0, 255);
     }
 
+    /**
+     * Removes a newly stored file when saving its document record fails and keeps any cleanup error with the
+     * original failure.
+     */
     private void deleteStoredFileAfterFailure(String storagePath, RuntimeException originalException) {
         if (storagePath == null) {
             return;

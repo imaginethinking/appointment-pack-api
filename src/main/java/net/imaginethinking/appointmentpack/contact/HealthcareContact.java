@@ -7,6 +7,9 @@ import net.imaginethinking.appointmentpack.address.Address;
 import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
+/**
+ * Stores a healthcare contact and optional address belonging to a patient record.
+ */
 @Getter
 @Setter
 @Entity

@@ -1,5 +1,8 @@
 package net.imaginethinking.appointmentpack.document;
 
+/**
+ * Lists the supported values for document status.
+ */
 public enum DocumentStatus {
     UPLOADED,
     EXTRACTING,

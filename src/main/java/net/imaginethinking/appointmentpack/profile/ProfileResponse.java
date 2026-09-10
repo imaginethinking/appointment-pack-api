@@ -5,6 +5,9 @@ import net.imaginethinking.appointmentpack.address.AddressResponse;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * Represents profile information returned by the API.
+ */
 public record ProfileResponse(
         UUID id,
         UUID userId,
@@ -15,6 +18,9 @@ public record ProfileResponse(
         AddressResponse address
 ) {
 
+    /**
+     * Builds the profile response from the supplied profile.
+     */
     public static ProfileResponse from(Profile profile) {
         return new ProfileResponse(
                 profile.getId(),

@@ -9,6 +9,9 @@ import net.imaginethinking.appointmentpack.profile.Profile;
 
 import java.math.BigDecimal;
 
+/**
+ * Stores the healthcare identifiers, measurements and blood type belonging to a profile.
+ */
 @Getter
 @Setter
 @Entity

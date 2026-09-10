@@ -1,5 +1,8 @@
 package net.imaginethinking.appointmentpack.event.analytics;
 
+/**
+ * Lists the supported values for frontend application pages.
+ */
 public enum ApplicationPage {
     LANDING,
     DASHBOARD,

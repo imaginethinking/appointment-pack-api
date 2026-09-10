@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
+/**
+ * Applies the configured request limits to the public authentication endpoints before they reach a controller.
+ */
 @Component
 @RequiredArgsConstructor
 public class AuthenticationRateLimitFilter extends OncePerRequestFilter {
@@ -35,6 +38,9 @@ public class AuthenticationRateLimitFilter extends OncePerRequestFilter {
 
     private final AuthenticationRateLimiter authenticationRateLimiter;
 
+    /**
+     * Limits only POST requests whose path has an authentication rate limit policy.
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if (!HttpMethod.POST.matches(request.getMethod())) {
@@ -44,6 +50,10 @@ public class AuthenticationRateLimitFilter extends OncePerRequestFilter {
         return !POLICIES.containsKey(request.getRequestURI());
     }
 
+    /**
+     * Checks the request against its rate limit and returns a Retry After response when the limit has been
+     * reached.
+     */
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -72,6 +82,9 @@ public class AuthenticationRateLimitFilter extends OncePerRequestFilter {
                 """);
     }
 
+    /**
+     * Defines how many requests an authentication endpoint allows within one time window.
+     */
     private record RateLimitPolicy(int maximumRequests, Duration windowDuration) {
     }
 }

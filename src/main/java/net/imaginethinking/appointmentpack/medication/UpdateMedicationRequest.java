@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
+/**
+ * Carries the changes submitted when updating medication.
+ */
 public record UpdateMedicationRequest(
         @NotBlank
         @Size(max = 200)

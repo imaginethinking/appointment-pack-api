@@ -26,6 +26,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Applies the document processing state changes before and after extraction, review and summarisation.
+ */
 @Service
 @RequiredArgsConstructor
 public class DocumentProcessingStateService {
@@ -40,6 +43,9 @@ public class DocumentProcessingStateService {
     private final AppEventPublisher appEventPublisher;
     private final DocumentProcessingLifecyclePolicy lifecyclePolicy;
 
+    /**
+     * Loads the current processing result after checking that the document can be viewed.
+     */
     @Transactional(readOnly = true)
     public DocumentProcessingResultResponse getProcessing(UUID authenticatedUserId, UUID documentId) {
         Document document = processingRecordService.requireAvailableDocument(documentId);
@@ -54,6 +60,10 @@ public class DocumentProcessingStateService {
                 .orElseGet(() -> processingResultMapper.toResponse(document));
     }
 
+    /**
+     * Checks that extraction can start, moves the document into the extracting state and returns the values needed
+     * for processing.
+     */
     @Transactional
     public DocumentExtractionContext beginExtraction(UUID authenticatedUserId, UUID documentId) {
         Document document = processingRecordService.requireAvailableDocument(documentId);
@@ -82,6 +92,9 @@ public class DocumentProcessingStateService {
                 redactionContext);
     }
 
+    /**
+     * Checks the extraction response, saves its result and moves the document to the correct review state.
+     */
     @Transactional
     public DocumentProcessingResultResponse completeExtraction(UUID documentId, DocumentExtractionResponse response) {
         Document document = processingRecordService.requireAvailableDocument(documentId);
@@ -100,6 +113,9 @@ public class DocumentProcessingStateService {
         return processingResultMapper.toResponse(document, result);
     }
 
+    /**
+     * Moves an extracting document into the failed state and stores the failure message.
+     */
     @Transactional
     public void failExtraction(UUID documentId, String failureReason) {
         documentRepository.findById(documentId)
@@ -110,6 +126,10 @@ public class DocumentProcessingStateService {
                 });
     }
 
+    /**
+     * Checks the consultation review state, stores the exact approved text and moves the document into
+     * summarisation.
+     */
     @Transactional
     public DocumentSummarisationContext beginSummarisation(
             UUID authenticatedUserId,
@@ -132,6 +152,7 @@ public class DocumentProcessingStateService {
 
         DocumentProcessingResult result = processingRecordService.requireProcessingResult(documentId);
 
+        // The first request records the reviewed text. A retry must keep using that exact approved version.
         if (document.getStatus() == DocumentStatus.READY_FOR_DEIDENTIFICATION_REVIEW) {
             approveDeidentifiedText(result, authenticatedUserId, approvedDeidentifiedText);
 
@@ -158,6 +179,9 @@ public class DocumentProcessingStateService {
                 result.getApprovedDeidentifiedText());
     }
 
+    /**
+     * Checks the summary response, saves the generated summary and moves the document to summary review.
+     */
     @Transactional
     public DocumentProcessingResultResponse completeSummarisation(UUID documentId, DocumentSummaryResponse response) {
         Document document = processingRecordService.requireAvailableDocument(documentId);
@@ -185,6 +209,9 @@ public class DocumentProcessingStateService {
         return processingResultMapper.toResponse(document, result);
     }
 
+    /**
+     * Moves a summarising document into the failed state while keeping its previously approved text for retry.
+     */
     @Transactional
     public void failSummarisation(UUID documentId, String failureReason) {
         documentRepository.findById(documentId)
@@ -195,6 +222,9 @@ public class DocumentProcessingStateService {
                 });
     }
 
+    /**
+     * Stores the exact deidentified text approved by the user together with the reviewer and approval time.
+     */
     private void approveDeidentifiedText(
             DocumentProcessingResult result,
             UUID authenticatedUserId,
@@ -208,6 +238,9 @@ public class DocumentProcessingStateService {
         result.setDeidentificationReviewedAt(Instant.now());
     }
 
+    /**
+     * Checks that a retry uses exactly the same deidentified text that was approved earlier.
+     */
     private void validateRetrySnapshot(DocumentProcessingResult result, String approvedDeidentifiedText) {
         if (result.getApprovedDeidentifiedText() == null || !result.getApprovedDeidentifiedText()
                 .equals(approvedDeidentifiedText)) {
@@ -217,6 +250,9 @@ public class DocumentProcessingStateService {
         }
     }
 
+    /**
+     * Stores the extracted text, deidentified text and processing details returned by extraction.
+     */
     private DocumentProcessingResult saveExtractionResult(Document document, DocumentExtractionResponse response) {
         DocumentProcessingResult result = processingResultRepository.findByDocumentId(document.getId())
                 .orElseGet(DocumentProcessingResult::new);
@@ -226,6 +262,8 @@ public class DocumentProcessingStateService {
         result.setProcessingWarning(response.processingWarning());
         result.setProcessorVersion(response.processorVersion());
 
+        // A fresh extraction replaces the previous review output so old approval or summary data does not carry
+        // into the new result.
         result.setApprovedDeidentifiedText(null);
         result.setGeneratedSummary(null);
         result.setReviewedSummary(null);
@@ -251,6 +289,9 @@ public class DocumentProcessingStateService {
         return processingResultRepository.save(result);
     }
 
+    /**
+     * Copies the extracted appointment suggestions into the saved processing result.
+     */
     private void applyAppointmentDetails(DocumentProcessingResult result, AppointmentDetailsResponse details) {
         result.setAppointmentDate(details.date());
         result.setAppointmentStartTime(details.startTime());
@@ -275,6 +316,9 @@ public class DocumentProcessingStateService {
         result.setAppointmentCountry(address.country());
     }
 
+    /**
+     * Clears appointment suggestions when the current processing result is not an appointment letter.
+     */
     private void clearAppointmentDetails(DocumentProcessingResult result) {
         result.setAppointmentDate(null);
         result.setAppointmentStartTime(null);
@@ -287,6 +331,9 @@ public class DocumentProcessingStateService {
         clearAppointmentAddress(result);
     }
 
+    /**
+     * Clears the saved appointment address before applying a new extracted address.
+     */
     private void clearAppointmentAddress(DocumentProcessingResult result) {
         result.setAppointmentAddressLine1(null);
         result.setAppointmentAddressLine2(null);
@@ -296,6 +343,9 @@ public class DocumentProcessingStateService {
         result.setAppointmentCountry(null);
     }
 
+    /**
+     * Moves a document out of a stale processing state and records the recovery reason.
+     */
     private void recoverStaleProcessingState(Document document) {
         Instant now = Instant.now();
 
@@ -315,6 +365,9 @@ public class DocumentProcessingStateService {
         }
     }
 
+    /**
+     * Checks the document type and current state before allowing extraction to start or be retried.
+     */
     private void validateExtractionCanBegin(Document document) {
         boolean extractable = document.getStatus() == DocumentStatus.UPLOADED || document.getStatus() == DocumentStatus.EXTRACTION_FAILED;
 
@@ -325,6 +378,10 @@ public class DocumentProcessingStateService {
         }
     }
 
+    /**
+     * Checks that the extraction response belongs to the requested document and contains the expected result for
+     * its type.
+     */
     private void validateExtractionResponse(Document document, DocumentExtractionResponse response) {
         if (response == null) {
             throw new DocumentProcessingException("Document extraction service returned an empty response");
@@ -351,6 +408,9 @@ public class DocumentProcessingStateService {
         }
     }
 
+    /**
+     * Checks that the summary response belongs to the document and contains a usable generated summary.
+     */
     private void validateSummaryResponse(Document document, DocumentSummaryResponse response) {
         if (response == null) {
             throw new DocumentProcessingException("Document summarisation service returned an empty response");
@@ -366,6 +426,9 @@ public class DocumentProcessingStateService {
         }
     }
 
+    /**
+     * Chooses the review state that follows extraction from the document type.
+     */
     private DocumentStatus determineReviewStatus(DocumentType documentType) {
         return switch (documentType) {
             case APPOINTMENT_LETTER -> DocumentStatus.READY_FOR_APPOINTMENT_REVIEW;
@@ -374,6 +437,9 @@ public class DocumentProcessingStateService {
         };
     }
 
+    /**
+     * Checks whether a text value is null or contains only whitespace.
+     */
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }

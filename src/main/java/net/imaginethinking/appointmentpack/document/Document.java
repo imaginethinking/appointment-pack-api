@@ -7,6 +7,9 @@ import net.imaginethinking.appointmentpack.common.BaseEntity;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.user.User;
 
+/**
+ * Stores an uploaded document together with its patient, file and processing state.
+ */
 @Getter
 @Setter
 @Entity

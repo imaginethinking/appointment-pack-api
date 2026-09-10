@@ -6,6 +6,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Keeps the prepared PDF, metadata and selected items needed to save a generated Appointment Pack.
+ */
 public record AppointmentPackGenerationData(
         UUID patientRecordId,
         UUID appointmentId,
@@ -17,10 +20,16 @@ public record AppointmentPackGenerationData(
         List<SelectedItem> selectedItems
 ) {
 
+    /**
+     * Copies the selected item list so the prepared generation data stays unchanged while the pack is saved.
+     */
     public AppointmentPackGenerationData {
         selectedItems = List.copyOf(selectedItems);
     }
 
+    /**
+     * Keeps the resource type and ID recorded for one item included in an Appointment Pack.
+     */
     public record SelectedItem(
             AppointmentPackItemType resourceType,
             UUID resourceId,

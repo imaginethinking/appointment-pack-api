@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
+/**
+ * Carries the values submitted when creating medication.
+ */
 public record CreateMedicationRequest(
         @NotBlank
         @Size(max = 200)

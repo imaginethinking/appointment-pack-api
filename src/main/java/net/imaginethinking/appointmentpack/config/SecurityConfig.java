@@ -16,9 +16,15 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Configures stateless JWT authentication, public routes and the password encoder used by the application.
+ */
 @Configuration
 public class SecurityConfig {
 
+    /**
+     * Configures stateless JWT security, public account routes and admin access rules for the API.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -83,6 +89,9 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Maps the roles stored in a JWT into Spring Security authorities.
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
@@ -98,6 +107,9 @@ public class SecurityConfig {
         return authenticationConverter;
     }
 
+    /**
+     * Creates the BCrypt password encoder used when account passwords are stored or checked.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

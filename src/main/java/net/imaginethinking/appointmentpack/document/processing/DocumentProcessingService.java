@@ -22,6 +22,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Runs document extraction and summarisation, then records the result or failure through the document workflow.
+ */
 @Service
 @RequiredArgsConstructor
 public class DocumentProcessingService {
@@ -36,11 +39,23 @@ public class DocumentProcessingService {
     private final DocumentProcessingClient documentProcessingClient;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Loads the current processing result after applying document access checks.
+     */
     public DocumentProcessingResultResponse getProcessing(UUID authenticatedUserId, UUID documentId) {
         return documentProcessingStateService.getProcessing(authenticatedUserId, documentId);
     }
 
+    /**
+     * Moves the document into extraction, processes the stored file, then saves the result or records a failed
+     * extraction.
+     *
+     * @param authenticatedUserId user starting the extraction
+     * @param documentId document to process
+     * @return the processing result after extraction completes
+     */
     public DocumentProcessingResultResponse extract(UUID authenticatedUserId, UUID documentId) {
+        // Save the extracting state before the slower file and processing work begins.
         DocumentExtractionContext context = documentProcessingStateService.beginExtraction(
                 authenticatedUserId,
                 documentId);
@@ -82,10 +97,20 @@ public class DocumentProcessingService {
         }
     }
 
+    /**
+     * Saves the approved deidentified text, requests a summary, then stores the result or records a failed
+     * summarisation.
+     *
+     * @param authenticatedUserId user starting the summarisation
+     * @param documentId consultation document being summarised
+     * @param approvedDeidentifiedText exact reviewed text approved for summarisation
+     * @return the processing result after summarisation completes
+     */
     public DocumentProcessingResultResponse summarise(
             UUID authenticatedUserId,
             UUID documentId,
             String approvedDeidentifiedText) {
+        // Save the approved text and summarising state before making the external processing request.
         DocumentSummarisationContext context = documentProcessingStateService.beginSummarisation(
                 authenticatedUserId,
                 documentId,
@@ -126,6 +151,9 @@ public class DocumentProcessingService {
         }
     }
 
+    /**
+     * Passes the reviewed appointment details into the appointment document review flow.
+     */
     public AppointmentResponse confirmAppointment(
             UUID authenticatedUserId,
             UUID documentId,
@@ -133,10 +161,16 @@ public class DocumentProcessingService {
         return appointmentDocumentReviewService.confirmAppointment(authenticatedUserId, documentId, request);
     }
 
+    /**
+     * Rejects the appointment suggestions through the appointment document review flow.
+     */
     public DocumentProcessingResultResponse rejectAppointment(UUID authenticatedUserId, UUID documentId) {
         return appointmentDocumentReviewService.rejectAppointment(authenticatedUserId, documentId);
     }
 
+    /**
+     * Passes the reviewed consultation summary into the final Medical History acceptance flow.
+     */
     public DocumentProcessingResultResponse acceptSummary(
             UUID authenticatedUserId,
             UUID documentId,
@@ -144,10 +178,17 @@ public class DocumentProcessingService {
         return consultationDocumentReviewService.acceptSummary(authenticatedUserId, documentId, request);
     }
 
+    /**
+     * Rejects the generated consultation summary through the consultation review flow.
+     */
     public DocumentProcessingResultResponse rejectSummary(UUID authenticatedUserId, UUID documentId) {
         return consultationDocumentReviewService.rejectSummary(authenticatedUserId, documentId);
     }
 
+    /**
+     * Records the failed extraction while keeping any persistence error attached to the original processing
+     * failure.
+     */
     private void recordExtractionFailure(UUID documentId, RuntimeException originalException) {
         try {
             documentProcessingStateService.failExtraction(documentId, EXTRACTION_FAILURE_MESSAGE);
@@ -156,6 +197,10 @@ public class DocumentProcessingService {
         }
     }
 
+    /**
+     * Records the failed summarisation while keeping any persistence error attached to the original processing
+     * failure.
+     */
     private void recordSummarisationFailure(UUID documentId, RuntimeException originalException) {
         try {
             documentProcessingStateService.failSummarisation(documentId, SUMMARISATION_FAILURE_MESSAGE);
@@ -164,6 +209,9 @@ public class DocumentProcessingService {
         }
     }
 
+    /**
+     * Groups processing exceptions into the failure reason recorded for operational analytics.
+     */
     private DocumentProcessingFailureReason classifyFailure(RuntimeException exception) {
         if (exception instanceof DocumentProcessingTimeoutException) {
             return DocumentProcessingFailureReason.TIMEOUT;
@@ -188,6 +236,9 @@ public class DocumentProcessingService {
         return DocumentProcessingFailureReason.UNKNOWN;
     }
 
+    /**
+     * Returns the elapsed processing time in milliseconds from the recorded start time.
+     */
     private long elapsedMilliseconds(long startedAtNanos) {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
     }

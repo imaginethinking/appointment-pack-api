@@ -16,6 +16,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Creates and updates emergency contacts after checking access to the selected patient record.
+ */
 @Service
 @RequiredArgsConstructor
 public class EmergencyContactService {
@@ -24,6 +27,9 @@ public class EmergencyContactService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks edit access before saving a new emergency contact using the submitted values.
+     */
     @Transactional
     public EmergencyContactResponse createEmergencyContact(
             UUID authenticatedUserId,
@@ -58,6 +64,9 @@ public class EmergencyContactService {
         return EmergencyContactResponse.from(savedContact);
     }
 
+    /**
+     * Checks view access before returning the active emergency contacts in name order.
+     */
     @Transactional(readOnly = true)
     public List<EmergencyContactResponse> getEmergencyContacts(UUID authenticatedUserId, UUID patientRecordId) {
         patientRecordAccessService.requireAccess(
@@ -72,6 +81,9 @@ public class EmergencyContactService {
                 .toList();
     }
 
+    /**
+     * Loads the requested emergency contact and checks that the current user can view its patient record.
+     */
     @Transactional(readOnly = true)
     public EmergencyContactResponse getEmergencyContact(UUID authenticatedUserId, UUID emergencyContactId) {
         EmergencyContact contact = findAvailableContact(emergencyContactId);
@@ -84,6 +96,9 @@ public class EmergencyContactService {
         return EmergencyContactResponse.from(contact);
     }
 
+    /**
+     * Loads the current emergency contact, checks edit access and applies the submitted changes.
+     */
     @Transactional
     public EmergencyContactResponse updateEmergencyContact(
             UUID authenticatedUserId,
@@ -113,6 +128,9 @@ public class EmergencyContactService {
         return EmergencyContactResponse.from(contact);
     }
 
+    /**
+     * Checks access and archives the emergency contact only when it is still active.
+     */
     @Transactional
     public EmergencyContactResponse archiveEmergencyContact(UUID authenticatedUserId, UUID emergencyContactId) {
         EmergencyContact contact = findContact(emergencyContactId);
@@ -134,11 +152,17 @@ public class EmergencyContactService {
         return EmergencyContactResponse.from(contact);
     }
 
+    /**
+     * Loads the contact or returns not found when it does not exist.
+     */
     private EmergencyContact findContact(UUID emergencyContactId) {
         return emergencyContactRepository.findById(emergencyContactId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Emergency contact not found"));
     }
 
+    /**
+     * Loads the contact and treats an archived record as not found.
+     */
     private EmergencyContact findAvailableContact(UUID emergencyContactId) {
         EmergencyContact contact = findContact(emergencyContactId);
 
@@ -149,6 +173,9 @@ public class EmergencyContactService {
         return contact;
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(
             UUID authenticatedUserId,
             EmergencyContact contact,
@@ -161,6 +188,9 @@ public class EmergencyContactService {
                 action));
     }
 
+    /**
+     * Copies the submitted contact details onto the emergency contact while trimming optional text.
+     */
     private void applyValues(
             EmergencyContact contact,
             String name,

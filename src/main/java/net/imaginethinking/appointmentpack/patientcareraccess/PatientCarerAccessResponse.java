@@ -6,6 +6,9 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Represents patient and carer relationship information returned by the API.
+ */
 public record PatientCarerAccessResponse(
         UUID id,
         PatientAccessSummaryResponse patient,
@@ -16,6 +19,9 @@ public record PatientCarerAccessResponse(
         Instant statusChangedAt
 ) {
 
+    /**
+     * Builds the relationship response from the saved patient, carer, status and permission details.
+     */
     public static PatientCarerAccessResponse from(PatientCarerAccess access) {
 
         return new PatientCarerAccessResponse(

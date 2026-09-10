@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Set;
 
+/**
+ * Carries the values submitted when creating carer invitation.
+ */
 public record CreateCarerInvitationRequest(
         @NotBlank(message = "Carer email address must be provided")
         @Email

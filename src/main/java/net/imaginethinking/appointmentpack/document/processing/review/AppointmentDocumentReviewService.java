@@ -27,6 +27,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Handles the final review of extracted appointment details before an appointment is created or rejected.
+ */
 @Service
 @RequiredArgsConstructor
 public class AppointmentDocumentReviewService {
@@ -38,6 +41,10 @@ public class AppointmentDocumentReviewService {
     private final EntityManager entityManager;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks document and appointment edit access, validates the reviewed times and creates the appointment from
+     * the submitted values.
+     */
     @Transactional
     public AppointmentResponse confirmAppointment(
             UUID authenticatedUserId,
@@ -69,6 +76,7 @@ public class AppointmentDocumentReviewService {
 
         User reviewingUser = entityManager.getReference(User.class, authenticatedUserId);
 
+        // Use the reviewed request for the appointment rather than treating the extracted suggestions as final values.
         result.setAppointmentReviewedBy(reviewingUser);
         result.setAppointmentReviewedAt(Instant.now());
 
@@ -99,6 +107,9 @@ public class AppointmentDocumentReviewService {
         return AppointmentResponse.from(savedAppointment);
     }
 
+    /**
+     * Checks document edit access and marks an appointment letter as rejected when it is waiting for review.
+     */
     @Transactional
     public DocumentProcessingResultResponse rejectAppointment(
             UUID authenticatedUserId,
@@ -133,6 +144,9 @@ public class AppointmentDocumentReviewService {
         return processingResultMapper.toResponse(document, result);
     }
 
+    /**
+     * Publishes the document activity event for the completed change.
+     */
     private void publishDocumentActivity(
             UUID authenticatedUserId,
             Document document,
@@ -145,6 +159,9 @@ public class AppointmentDocumentReviewService {
                 action));
     }
 
+    /**
+     * Checks that the document is an appointment letter currently waiting for appointment review.
+     */
     private void validateAppointmentCanBeConfirmed(Document document) {
         if (document.getDocumentType() != DocumentType.APPOINTMENT_LETTER || document.getStatus() != DocumentStatus.READY_FOR_APPOINTMENT_REVIEW) {
             throw new ResponseStatusException(
@@ -153,6 +170,9 @@ public class AppointmentDocumentReviewService {
         }
     }
 
+    /**
+     * Checks that an optional appointment end time comes after the start time.
+     */
     private void validateAppointmentTimes(AppointmentConfirmationRequest request) {
         if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
             throw new ResponseStatusException(

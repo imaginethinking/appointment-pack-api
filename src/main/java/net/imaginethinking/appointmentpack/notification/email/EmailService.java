@@ -6,6 +6,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/**
+ * Builds and sends the email verification and password reset messages used by account recovery.
+ */
 @Service
 public class EmailService {
 
@@ -13,6 +16,9 @@ public class EmailService {
     private final String fromAddress;
     private final String frontendBaseUrl;
 
+    /**
+     * Creates the email service using the configured sender address and frontend base URL.
+     */
     public EmailService(
             JavaMailSender mailSender,
             @Value("${appointment-pack.email.from}") String fromAddress,
@@ -31,6 +37,9 @@ public class EmailService {
         this.frontendBaseUrl = frontendBaseUrl.strip().replaceAll("/+$", "");
     }
 
+    /**
+     * Builds the verification link and sends the account verification email to the requested address.
+     */
     public void sendEmailVerification(String recipientEmail, String token) {
         String verificationUrl = buildFrontendUrl("/verify-email", token);
 
@@ -51,6 +60,9 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    /**
+     * Builds the reset link and sends the password reset email to the requested address.
+     */
     public void sendPasswordReset(String recipientEmail, String token) {
         String resetUrl = buildFrontendUrl("/reset-password", token);
 
@@ -71,6 +83,9 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    /**
+     * Builds an absolute frontend link and safely adds the supplied token as a query parameter.
+     */
     private String buildFrontendUrl(String path, String token) {
         return UriComponentsBuilder.fromUriString(frontendBaseUrl)
                 .path(path)

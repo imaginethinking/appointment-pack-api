@@ -10,9 +10,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
+/**
+ * Checks document size and file signatures before an upload is accepted.
+ */
 @Component
 public class DocumentFileValidator {
 
+    // [AI-ASSISTED: ChatGPT, 2026-08-08]
+    // AI was used to help generate the file signatures for PDF, PNG and JPEG files.
     private static final byte[] PDF_SIGNATURE = {0x25, 0x50, 0x44, 0x46, 0x2D};
 
     private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
@@ -21,11 +26,17 @@ public class DocumentFileValidator {
 
     private final long maximumFileSize;
 
+    /**
+     * Creates the validator using the maximum document size configured for uploads.
+     */
     public DocumentFileValidator(
             @Value("${appointment-pack.documents.maximum-file-size-bytes}") long maximumFileSize) {
         this.maximumFileSize = maximumFileSize;
     }
 
+    /**
+     * Checks that the upload is present, within the size limit and has a supported PDF or image file signature.
+     */
     public String validateAndGetContentType(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document file must not be empty");
@@ -61,6 +72,9 @@ public class DocumentFileValidator {
         }
     }
 
+    /**
+     * Checks whether the uploaded bytes begin with the expected file signature.
+     */
     private boolean startsWith(byte[] value, byte[] prefix) {
         return value.length >= prefix.length && Arrays.equals(value, 0, prefix.length, prefix, 0, prefix.length);
     }

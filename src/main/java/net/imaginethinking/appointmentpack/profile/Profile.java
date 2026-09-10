@@ -9,6 +9,9 @@ import net.imaginethinking.appointmentpack.user.User;
 
 import java.time.LocalDate;
 
+/**
+ * Stores the personal profile linked to a user account.
+ */
 @Getter
 @Setter
 @Entity

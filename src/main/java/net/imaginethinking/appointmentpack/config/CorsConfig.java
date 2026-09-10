@@ -10,11 +10,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Creates the CORS rules used for browser requests from the configured frontend origins.
+ */
 @Configuration
 public class CorsConfig {
 
     private final List<String> allowedOrigins;
 
+    /**
+     * Reads the configured frontend origins and keeps the non blank values used for CORS.
+     */
     public CorsConfig(
             @Value("${appointment-pack.cors.allowed-origins:http://localhost:4200}")
             String allowedOrigins) {
@@ -28,6 +34,9 @@ public class CorsConfig {
         }
     }
 
+    /**
+     * Allows the configured frontend origins to call the API with the supported methods and headers.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

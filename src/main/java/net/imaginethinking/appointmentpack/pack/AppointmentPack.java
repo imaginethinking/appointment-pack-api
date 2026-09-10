@@ -21,6 +21,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Stores the metadata and file information for an immutable generated Appointment Pack.
+ */
 @Getter
 @Setter
 @Entity

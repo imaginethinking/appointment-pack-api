@@ -4,6 +4,9 @@ import net.imaginethinking.appointmentpack.document.processing.api.AppointmentDe
 
 import java.util.UUID;
 
+/**
+ * Represents document extraction information returned by the API.
+ */
 public record DocumentExtractionResponse(
         UUID documentId,
         String extractedText,

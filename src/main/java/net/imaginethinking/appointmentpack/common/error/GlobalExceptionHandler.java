@@ -20,10 +20,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Turns validation, processing and application errors into consistent HTTP problem responses.
+ */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalExceptionHandler {
 
+    /**
+     * Collects field validation errors and returns them in a bad request problem response.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(
             MethodArgumentNotValidException exception) {
@@ -38,6 +44,9 @@ public class GlobalExceptionHandler {
         return validationProblem(fieldErrors);
     }
 
+    /**
+     * Collects constraint violations and returns them in a bad request problem response.
+     */
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail handleConstraintViolation(
             ConstraintViolationException exception) {
@@ -52,6 +61,9 @@ public class GlobalExceptionHandler {
         return validationProblem(fieldErrors);
     }
 
+    /**
+     * Returns a payload too large problem when multipart handling rejects an oversized upload.
+     */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ProblemDetail handleMaximumUploadSize(
             MaxUploadSizeExceededException exception) {
@@ -61,6 +73,9 @@ public class GlobalExceptionHandler {
                 "Document file exceeds the maximum size");
     }
 
+    /**
+     * Returns a gateway timeout problem when document processing exceeds its response timeout.
+     */
     @ExceptionHandler(DocumentProcessingTimeoutException.class)
     public ProblemDetail handleProcessingTimeout(
             DocumentProcessingTimeoutException exception) {
@@ -70,6 +85,9 @@ public class GlobalExceptionHandler {
                 "Document processing timed out");
     }
 
+    /**
+     * Returns a service unavailable problem when the document processing service cannot be reached.
+     */
     @ExceptionHandler(DocumentProcessingUnavailableException.class)
     public ProblemDetail handleProcessingUnavailable(
             DocumentProcessingUnavailableException exception) {
@@ -79,6 +97,9 @@ public class GlobalExceptionHandler {
                 "Document processing is currently unavailable");
     }
 
+    /**
+     * Returns a bad gateway problem when document processing fails after the request reaches the service.
+     */
     @ExceptionHandler(DocumentProcessingException.class)
     public ProblemDetail handleProcessingFailure(
             DocumentProcessingException exception) {
@@ -88,6 +109,9 @@ public class GlobalExceptionHandler {
                 "Document processing returned an invalid response");
     }
 
+    /**
+     * Returns a conflict problem when another update has changed the same record first.
+     */
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ProblemDetail handleOptimisticLockingFailure(
             ObjectOptimisticLockingFailureException exception) {
@@ -97,6 +121,9 @@ public class GlobalExceptionHandler {
                 "The resource was modified by another request. Refresh and try again");
     }
 
+    /**
+     * Keeps the status and reason from a ResponseStatusException in the problem response.
+     */
     @ExceptionHandler(ResponseStatusException.class)
     public ProblemDetail handleResponseStatus(
             ResponseStatusException exception) {
@@ -115,6 +142,9 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Builds the validation problem response and includes the collected field errors.
+     */
     private ProblemDetail validationProblem(
             Map<String, String> fieldErrors) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -127,6 +157,9 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Takes the final property name from a constraint violation path for use in the field error map.
+     */
     private String resolveConstraintField(
             ConstraintViolation<?> violation) {
         String path = violation.getPropertyPath().toString();
@@ -140,6 +173,9 @@ public class GlobalExceptionHandler {
         return path;
     }
 
+    /**
+     * Creates a problem response with the supplied status title and detail.
+     */
     private ProblemDetail createProblem(
             HttpStatus status,
             String title,
@@ -153,6 +189,9 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Uses the standard HTTP reason phrase as the problem title when one is available.
+     */
     private String resolveTitle(int status) {
         return switch (status) {
             case 400 -> "Bad request";

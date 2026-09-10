@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
+/**
+ * Carries the reviewed summary and Medical History details used when accepting a consultation document.
+ */
 public record DocumentSummaryAcceptanceRequest(
         @NotBlank(message = "Reviewed summary is required")
         @Size(

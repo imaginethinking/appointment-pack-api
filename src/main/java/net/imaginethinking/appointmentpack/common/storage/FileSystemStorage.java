@@ -12,10 +12,16 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.stream.StreamSupport;
 
+/**
+ * Stores and retrieves files underneath a configured root directory while keeping paths inside that directory.
+ */
 public final class FileSystemStorage {
 
     private final Path rootDirectory;
 
+    /**
+     * Creates the file storage helper using the configured storage directory.
+     */
     public FileSystemStorage(String storageDirectory) {
         if (storageDirectory == null || storageDirectory.isBlank()) {
             throw new IllegalArgumentException("Storage directory must not be blank");
@@ -26,6 +32,10 @@ public final class FileSystemStorage {
         initialiseRootDirectory();
     }
 
+    /**
+     * Writes the supplied content to a checked path underneath the storage root and returns the portable relative
+     * path.
+     */
     public String store(InputStream inputStream, String storagePath) {
         Objects.requireNonNull(inputStream, "Input stream must not be null");
 
@@ -41,6 +51,10 @@ public final class FileSystemStorage {
         }
     }
 
+    /**
+     * Writes the content to a checked path underneath the storage root and returns the portable relative
+     * path.
+     */
     public String store(byte[] bytes, String storagePath) {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("File content must not be empty");
@@ -59,6 +73,9 @@ public final class FileSystemStorage {
         }
     }
 
+    /**
+     * Resolves the requested storage path and returns it as a readable file resource.
+     */
     public Resource load(String storagePath) {
         Path filePath = resolve(storagePath);
 
@@ -75,6 +92,9 @@ public final class FileSystemStorage {
         }
     }
 
+    /**
+     * Deletes the stored file when it exists while keeping the requested path inside the storage root.
+     */
     public void delete(String storagePath) {
         Path filePath = resolve(storagePath);
 
@@ -85,6 +105,9 @@ public final class FileSystemStorage {
         }
     }
 
+    /**
+     * Normalises a storage path and rejects any value that would escape the configured storage directory.
+     */
     private Path resolve(String storagePath) {
         if (storagePath == null || storagePath.isBlank()) {
             throw new IllegalArgumentException("Storage path must not be blank");
@@ -98,6 +121,7 @@ public final class FileSystemStorage {
 
         Path resolvedPath = rootDirectory.resolve(relativePath).normalize();
 
+        // Reject paths that escape the configured storage directory after normalisation.
         if (!resolvedPath.startsWith(rootDirectory) || resolvedPath.equals(rootDirectory)) {
             throw new IllegalArgumentException("Invalid storage path");
         }
@@ -105,6 +129,9 @@ public final class FileSystemStorage {
         return resolvedPath;
     }
 
+    /**
+     * Converts a stored absolute path into a forward slash relative path that can be saved consistently.
+     */
     private String toPortableStoragePath(Path absolutePath) {
         Path relativePath = rootDirectory.relativize(absolutePath);
 
@@ -114,6 +141,9 @@ public final class FileSystemStorage {
                 .orElseThrow(() -> new IllegalStateException("Stored file path could not be resolved"));
     }
 
+    /**
+     * Creates the configured storage directory when it does not already exist.
+     */
     private void initialiseRootDirectory() {
         try {
             Files.createDirectories(rootDirectory);

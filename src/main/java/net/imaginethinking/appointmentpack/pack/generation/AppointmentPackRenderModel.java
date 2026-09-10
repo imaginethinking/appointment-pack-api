@@ -2,6 +2,9 @@ package net.imaginethinking.appointmentpack.pack.generation;
 
 import java.util.List;
 
+/**
+ * Keeps the values passed into the Appointment Pack PDF template.
+ */
 public record AppointmentPackRenderModel(
         String title,
         String generatedDate,
@@ -15,6 +18,10 @@ public record AppointmentPackRenderModel(
         List<BloodTestInformation> bloodTests
 ) {
 
+    /**
+     * Copies the resource lists used by the template so the render model stays unchanged while the PDF is
+     * generated.
+     */
     public AppointmentPackRenderModel {
         medications = List.copyOf(medications);
         healthcareContacts = List.copyOf(healthcareContacts);
@@ -23,6 +30,9 @@ public record AppointmentPackRenderModel(
         bloodTests = List.copyOf(bloodTests);
     }
 
+    /**
+     * Keeps the patient details displayed in an Appointment Pack.
+     */
     public record PatientInformation(
             String fullName,
             String dateOfBirth,
@@ -33,11 +43,17 @@ public record AppointmentPackRenderModel(
             List<String> addressLines
     ) {
 
+        /**
+         * Creates the patient information with the supplied values.
+         */
         public PatientInformation {
             addressLines = List.copyOf(addressLines);
         }
     }
 
+    /**
+     * Keeps the appointment details displayed in an Appointment Pack.
+     */
     public record AppointmentInformation(
             String date,
             String startTime,
@@ -50,11 +66,17 @@ public record AppointmentPackRenderModel(
             String notes
     ) {
 
+        /**
+         * Creates the appointment information with the supplied values.
+         */
         public AppointmentInformation {
             addressLines = List.copyOf(addressLines);
         }
     }
 
+    /**
+     * Keeps one medication displayed in an Appointment Pack.
+     */
     public record MedicationInformation(
             String name,
             String dose,
@@ -66,6 +88,9 @@ public record AppointmentPackRenderModel(
     ) {
     }
 
+    /**
+     * Keeps one healthcare contact displayed in an Appointment Pack.
+     */
     public record HealthcareContactInformation(
             String name,
             String role,
@@ -76,11 +101,17 @@ public record AppointmentPackRenderModel(
             String notes
     ) {
 
+        /**
+         * Creates the healthcare contact information with the supplied values.
+         */
         public HealthcareContactInformation {
             addressLines = List.copyOf(addressLines);
         }
     }
 
+    /**
+     * Keeps one emergency contact displayed in an Appointment Pack.
+     */
     public record EmergencyContactInformation(
             String name,
             String relationship,
@@ -91,6 +122,9 @@ public record AppointmentPackRenderModel(
     ) {
     }
 
+    /**
+     * Keeps one Medical History entry displayed in an Appointment Pack.
+     */
     public record MedicalHistoryInformation(
             String title,
             String entryDate,
@@ -98,6 +132,9 @@ public record AppointmentPackRenderModel(
     ) {
     }
 
+    /**
+     * Keeps one blood test and its result rows displayed in an Appointment Pack.
+     */
     public record BloodTestInformation(
             String title,
             String testDate,
@@ -106,11 +143,17 @@ public record AppointmentPackRenderModel(
             List<BloodResultInformation> results
     ) {
 
+        /**
+         * Creates the blood test information with the supplied values.
+         */
         public BloodTestInformation {
             results = List.copyOf(results);
         }
     }
 
+    /**
+     * Keeps one blood result row displayed in an Appointment Pack.
+     */
     public record BloodResultInformation(
             String analyteName,
             String resultValue,

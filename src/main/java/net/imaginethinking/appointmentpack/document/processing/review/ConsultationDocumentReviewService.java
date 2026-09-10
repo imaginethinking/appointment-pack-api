@@ -32,6 +32,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Handles the final review of consultation summaries before they are accepted into Medical History or rejected.
+ */
 @Service
 @RequiredArgsConstructor
 public class ConsultationDocumentReviewService {
@@ -43,6 +46,10 @@ public class ConsultationDocumentReviewService {
     private final EntityManager entityManager;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks document and Medical History edit access, validates the reviewed summary and saves it as a Medical
+     * History entry.
+     */
     @Transactional
     public DocumentProcessingResultResponse acceptSummary(
             UUID authenticatedUserId,
@@ -70,6 +77,8 @@ public class ConsultationDocumentReviewService {
 
         DocumentProcessingResult result = processingRecordService.requireProcessingResult(documentId);
 
+        // A failed generated summary can still be replaced with reviewed manual text before it is added
+        // to Medical History.
         if (document.getStatus() == DocumentStatus.READY_FOR_SUMMARY_REVIEW) {
             validateGeneratedSummary(result);
         } else {
@@ -107,6 +116,9 @@ public class ConsultationDocumentReviewService {
         return processingResultMapper.toResponse(document, result);
     }
 
+    /**
+     * Checks document edit access and marks a consultation summary as rejected when it is waiting for review.
+     */
     @Transactional
     public DocumentProcessingResultResponse rejectSummary(
             UUID authenticatedUserId,
@@ -141,6 +153,9 @@ public class ConsultationDocumentReviewService {
         return processingResultMapper.toResponse(document, result);
     }
 
+    /**
+     * Publishes the document activity event for the completed change.
+     */
     private void publishDocumentActivity(
             UUID authenticatedUserId,
             Document document,
@@ -153,6 +168,9 @@ public class ConsultationDocumentReviewService {
                 action));
     }
 
+    /**
+     * Checks that the consultation document is in a state where a reviewed summary can be accepted.
+     */
     private void validateSummaryCanBeAccepted(Document document) {
         if (document.getDocumentType() != DocumentType.CONSULTATION_OUTCOME_LETTER) {
             throw new ResponseStatusException(
@@ -169,12 +187,18 @@ public class ConsultationDocumentReviewService {
         }
     }
 
+    /**
+     * Checks that a generated summary and its source information are present before acceptance.
+     */
     private void validateGeneratedSummary(DocumentProcessingResult result) {
         if (isBlank(result.getGeneratedSummary()) || result.getSummarySource() == null) {
             throw new DocumentProcessingException("Document processing result contains no generated summary");
         }
     }
 
+    /**
+     * Marks the review as a manual summary and clears model details that no longer apply.
+     */
     private void applyManualSummary(DocumentProcessingResult result) {
         result.setGeneratedSummary(null);
         result.setSummarySource(SummarySource.MANUAL);
@@ -182,6 +206,9 @@ public class ConsultationDocumentReviewService {
         result.setPromptVersion(null);
     }
 
+    /**
+     * Checks whether a text value is null or contains only whitespace.
+     */
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }

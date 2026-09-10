@@ -16,11 +16,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Provides the supported patient permissions and their required permissions in one place.
+ */
 @Component
 public class PermissionRegistry {
 
     private final Map<String, Permission> permissions;
 
+    /**
+     * Registers each permission type and keeps an immutable lookup by permission value.
+     */
     public PermissionRegistry() {
         Map<String, Permission> registeredPermissions = new HashMap<>();
 
@@ -37,14 +43,23 @@ public class PermissionRegistry {
         permissions= Map.copyOf(registeredPermissions);
     }
 
+    /**
+     * Looks up a supported permission using its stored string value.
+     */
     public Optional<Permission> findByValue(String value) {
         return Optional.ofNullable(permissions.get(value));
     }
 
+    /**
+     * Returns all permission strings supported by the application.
+     */
     public Set<String> supportedValues() {
         return permissions.keySet();
     }
 
+    /**
+     * Adds one permission type to the lookup and fails fast if two permissions use the same value.
+     */
     private void register(
             Map<String, Permission> registeredPermissions,
             Permission[] permissionsToRegister

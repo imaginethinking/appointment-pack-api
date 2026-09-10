@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
+/**
+ * Carries the values submitted when creating patient record.
+ */
 public record CreatePatientRecordRequest(
         @Size(max = 10)
         String nhsNumber,

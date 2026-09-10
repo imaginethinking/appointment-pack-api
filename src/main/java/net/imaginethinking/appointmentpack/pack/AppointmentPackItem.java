@@ -16,6 +16,9 @@ import net.imaginethinking.appointmentpack.common.BaseEntity;
 
 import java.util.UUID;
 
+/**
+ * Records the type and source ID of an item included in a generated Appointment Pack.
+ */
 @Getter
 @Setter
 @Entity

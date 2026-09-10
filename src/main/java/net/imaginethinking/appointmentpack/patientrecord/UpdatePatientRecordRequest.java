@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
+/**
+ * Carries the changes submitted when updating patient record.
+ */
 public record UpdatePatientRecordRequest(
         @Size(max = 10)
         String nhsNumber,

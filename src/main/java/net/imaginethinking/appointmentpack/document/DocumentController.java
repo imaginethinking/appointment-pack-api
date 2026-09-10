@@ -24,6 +24,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Handles document upload, processing, review, download and archive requests.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
@@ -32,6 +35,9 @@ public class DocumentController {
     private final DocumentProcessingService documentProcessingService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
+    /**
+     * Uploads a document for the selected patient and returns the newly created document record.
+     */
     @PostMapping(
             path = "/patient-records/{patientRecordId}/documents",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -48,6 +54,9 @@ public class DocumentController {
         return ResponseEntity.created(URI.create("/api/v1/documents/" + response.id())).body(response);
     }
 
+    /**
+     * Returns the active documents for the selected patient.
+     */
     @GetMapping("/patient-records/{patientRecordId}/documents")
     public ResponseEntity<List<DocumentResponse>> getDocuments(
             @AuthenticationPrincipal Jwt jwt,
@@ -59,6 +68,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Returns the requested document when the signed in user can view it.
+     */
     @GetMapping("/documents/{documentId}")
     public ResponseEntity<DocumentResponse> getDocument(
             @AuthenticationPrincipal Jwt jwt,
@@ -70,6 +82,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Returns the current extraction, review and summary information for the requested document.
+     */
     @GetMapping("/documents/{documentId}/processing")
     public ResponseEntity<DocumentProcessingResultResponse> getDocumentProcessing(
             @AuthenticationPrincipal Jwt jwt,
@@ -81,6 +96,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Starts consultation summarisation using the exact deidentified text submitted after review.
+     */
     @PostMapping("/documents/{documentId}/summarise")
     public ResponseEntity<DocumentProcessingResultResponse> summariseDocument(
             @AuthenticationPrincipal Jwt jwt,
@@ -96,6 +114,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Accepts the reviewed consultation summary into Medical History.
+     */
     @PostMapping("/documents/{documentId}/summary/accept")
     public ResponseEntity<DocumentProcessingResultResponse> acceptDocumentSummary(
             @AuthenticationPrincipal Jwt jwt,
@@ -111,6 +132,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Rejects the generated consultation summary for the requested document.
+     */
     @PostMapping("/documents/{documentId}/summary/reject")
     public ResponseEntity<DocumentProcessingResultResponse> rejectDocumentSummary(
             @AuthenticationPrincipal Jwt jwt,
@@ -122,6 +146,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Returns the original uploaded document as an attachment with its saved content type and file name.
+     */
     @GetMapping("/documents/{documentId}/file")
     public ResponseEntity<Resource> downloadDocument(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID documentId) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
@@ -139,6 +166,9 @@ public class DocumentController {
                 .body(download.resource());
     }
 
+    /**
+     * Starts extraction for the requested document and returns its updated processing state.
+     */
     @PostMapping("/documents/{documentId}/extract")
     public ResponseEntity<DocumentProcessingResultResponse> extractDocument(
             @AuthenticationPrincipal Jwt jwt,
@@ -150,6 +180,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Confirms the reviewed appointment details and returns the appointment created from the document.
+     */
     @PostMapping("/documents/{documentId}/appointment/confirm")
     public ResponseEntity<AppointmentResponse> confirmAppointment(
             @AuthenticationPrincipal Jwt jwt,
@@ -162,6 +195,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Rejects the appointment suggestions produced from the requested document.
+     */
     @PostMapping("/documents/{documentId}/appointment/reject")
     public ResponseEntity<DocumentProcessingResultResponse> rejectAppointment(
             @AuthenticationPrincipal Jwt jwt,
@@ -173,6 +209,9 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Archives the requested document and returns its updated details.
+     */
     @PatchMapping("/documents/{documentId}/archive")
     public ResponseEntity<DocumentResponse> archiveDocument(
             @AuthenticationPrincipal Jwt jwt,

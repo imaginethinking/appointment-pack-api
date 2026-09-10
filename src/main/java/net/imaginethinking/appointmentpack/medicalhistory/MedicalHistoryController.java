@@ -12,6 +12,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Handles requests for creating and managing Medical History entries.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
@@ -20,6 +23,9 @@ public class MedicalHistoryController {
     private final MedicalHistoryService medicalHistoryService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
+    /**
+     * Creates a new Medical History entry using the submitted details.
+     */
     @PostMapping("/patient-records/{patientRecordId}/medical-history")
     public ResponseEntity<MedicalHistoryEntryResponse> createMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,
@@ -35,6 +41,9 @@ public class MedicalHistoryController {
         return ResponseEntity.created(URI.create("/api/v1/medical-history/" + response.id())).body(response);
     }
 
+    /**
+     * Returns the requested Medical History entries for the signed in user.
+     */
     @GetMapping("/patient-records/{patientRecordId}/medical-history")
     public ResponseEntity<List<MedicalHistoryEntryResponse>> getMedicalHistoryEntries(
             @AuthenticationPrincipal Jwt jwt,
@@ -44,6 +53,9 @@ public class MedicalHistoryController {
         return ResponseEntity.ok(medicalHistoryService.getMedicalHistoryEntries(authenticatedUserId, patientRecordId));
     }
 
+    /**
+     * Returns the requested Medical History entry for the signed in user.
+     */
     @GetMapping("/medical-history/{entryId}")
     public ResponseEntity<MedicalHistoryEntryResponse> getMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,
@@ -53,6 +65,9 @@ public class MedicalHistoryController {
         return ResponseEntity.ok(medicalHistoryService.getMedicalHistoryEntry(authenticatedUserId, entryId));
     }
 
+    /**
+     * Saves the submitted changes to the requested Medical History entry.
+     */
     @PutMapping("/medical-history/{entryId}")
     public ResponseEntity<MedicalHistoryEntryResponse> updateMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,
@@ -66,6 +81,9 @@ public class MedicalHistoryController {
                 request));
     }
 
+    /**
+     * Archives the requested Medical History entry.
+     */
     @PatchMapping("/medical-history/{entryId}/archive")
     public ResponseEntity<MedicalHistoryEntryResponse> archiveMedicalHistoryEntry(
             @AuthenticationPrincipal Jwt jwt,

@@ -28,6 +28,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+/**
+ * Checks the requested Appointment Pack items and loads only resources that belong to the selected patient.
+ */
 @Service
 @RequiredArgsConstructor
 public class AppointmentPackSelectionService {
@@ -40,6 +43,10 @@ public class AppointmentPackSelectionService {
     private final BloodTestRepository bloodTestRepository;
     private final PatientRecordAccessService patientRecordAccessService;
 
+    /**
+     * Checks pack creation access, loads the selected appointment and resources, then confirms every item belongs
+     * to the same patient.
+     */
     @Transactional(readOnly = true)
     public AppointmentPackSelection select(
             UUID authenticatedUserId,
@@ -101,6 +108,9 @@ public class AppointmentPackSelectionService {
                 bloodTests);
     }
 
+    /**
+     * Loads the selected active appointment and checks that it belongs to the patient used for the pack.
+     */
     private Appointment requireAppointment(UUID patientRecordId, UUID appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -118,6 +128,9 @@ public class AppointmentPackSelectionService {
         return appointment;
     }
 
+    /**
+     * Checks view permission for each type of patient information included in the pack request.
+     */
     private void requireSelectionPermissions(
             UUID authenticatedUserId,
             PatientRecord patientRecord,
@@ -141,6 +154,10 @@ public class AppointmentPackSelectionService {
         }
     }
 
+    /**
+     * Rejects duplicate or missing IDs, loads the requested resources and checks that every selected item is valid
+     * for the patient.
+     */
     private <T> List<T> resolveSelection(
             List<UUID> selectedIds,
             Function<Iterable<UUID>, List<T>> loader,
@@ -175,6 +192,9 @@ public class AppointmentPackSelectionService {
         return List.copyOf(resolvedValues);
     }
 
+    /**
+     * Rejects a pack selection when the same resource ID has been supplied more than once.
+     */
     private void ensureUniqueSelection(List<UUID> selectedIds, String resourceName) {
         Set<UUID> uniqueIds = new HashSet<>(selectedIds);
 
@@ -186,6 +206,9 @@ public class AppointmentPackSelectionService {
         }
     }
 
+    /**
+     * Checks that a selected resource belongs to the patient used to generate the pack.
+     */
     private boolean belongsToPatient(PatientRecord resourcePatientRecord, PatientRecord selectedPatientRecord) {
         return resourcePatientRecord.getId().equals(selectedPatientRecord.getId());
     }

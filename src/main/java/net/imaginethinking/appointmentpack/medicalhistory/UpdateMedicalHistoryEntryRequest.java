@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
+/**
+ * Carries the changes submitted when updating Medical History entry.
+ */
 public record UpdateMedicalHistoryEntryRequest(
 
         @NotBlank(message = "History title is required") @Size(

@@ -8,12 +8,22 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Checks that permission values are supported and include any permissions they depend on.
+ */
 @Component
 @RequiredArgsConstructor
 public class PermissionValidator {
 
     private final PermissionRegistry permissionRegistry;
 
+    /**
+     * Checks every requested permission and rejects unknown values or sets that are missing required permissions.
+     *
+     * @param requestedPermissions permissions selected for the relationship
+     * @return a validated copy of the requested permissions
+     * @throws ResponseStatusException when a permission is unknown or a required permission is missing
+     */
     public Set<String> validate(Set<String> requestedPermissions) {
         if (requestedPermissions == null) {
             throw new ResponseStatusException(

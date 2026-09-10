@@ -11,6 +11,9 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Stores the relationship between a patient record and a carer together with its current permissions.
+ */
 @Getter
 @Setter
 @Entity

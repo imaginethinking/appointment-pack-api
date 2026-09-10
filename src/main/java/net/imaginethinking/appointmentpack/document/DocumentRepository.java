@@ -9,13 +9,22 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Defines the database queries used for documents.
+ */
 public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
+    /**
+     * Loads the matching documents with the newest record first.
+     */
     List<Document> findAllByPatientRecordIdAndStatusNotOrderByCreatedAtDesc(
             UUID patientRecordId,
             DocumentStatus status
     );
 
+    /**
+     * Updates matching documents that have remained in the processing state past the supplied cutoff.
+     */
     @Modifying(
             clearAutomatically = true,
             flushAutomatically = true

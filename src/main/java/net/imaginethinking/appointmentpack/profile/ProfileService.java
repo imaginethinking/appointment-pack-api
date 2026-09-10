@@ -15,6 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
+/**
+ * Loads and updates the profile linked to the current account.
+ */
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
@@ -23,6 +26,9 @@ public class ProfileService {
     private final PatientRecordRepository patientRecordRepository;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Loads the profile for the signed in user and returns not found when no profile exists.
+     */
     @Transactional(readOnly = true)
     public ProfileResponse getCurrentProfile(UUID userId) {
         Profile profile = profileRepository.findByUserId(userId)
@@ -31,6 +37,9 @@ public class ProfileService {
         return ProfileResponse.from(profile);
     }
 
+    /**
+     * Loads the current profile, applies the submitted values and records the change when a patient record exists.
+     */
     @Transactional
     public ProfileResponse updateCurrentProfile(UUID userId, UpdateProfileRequest request) {
         Profile profile = findByUserId(userId);
@@ -53,6 +62,9 @@ public class ProfileService {
         return ProfileResponse.from(profile);
     }
 
+    /**
+     * Loads the profile linked to the user or returns not found when it does not exist.
+     */
     private Profile findByUserId(UUID userId) {
         return profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));

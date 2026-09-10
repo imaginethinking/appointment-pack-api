@@ -8,6 +8,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Carries the appointment and optional patient resources selected for a new Appointment Pack.
+ */
 public record AppointmentPackGenerationRequest(
 
         @NotNull(message = "Appointment is required")
@@ -41,6 +44,9 @@ public record AppointmentPackGenerationRequest(
         List<@NotNull UUID> bloodTestIds
 ) {
 
+    /**
+     * Copies each selected ID list so the request values cannot be changed after validation.
+     */
     public AppointmentPackGenerationRequest {
         medicationIds = immutableList(medicationIds);
         healthcareContactIds = immutableList(healthcareContactIds);
@@ -49,6 +55,9 @@ public record AppointmentPackGenerationRequest(
         bloodTestIds = immutableList(bloodTestIds);
     }
 
+    /**
+     * Returns an immutable copy of a selected ID list and uses an empty list when no values were supplied.
+     */
     private static List<UUID> immutableList(List<UUID> values) {
         if (values == null) {
             return List.of();

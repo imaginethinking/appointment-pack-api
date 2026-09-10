@@ -18,6 +18,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Creates and updates healthcare contacts after checking access to the selected patient record.
+ */
 @Service
 @RequiredArgsConstructor
 public class HealthcareContactService {
@@ -26,6 +29,9 @@ public class HealthcareContactService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks edit access before saving a new healthcare contact using the submitted values.
+     */
     @Transactional
     public HealthcareContactResponse createHealthcareContact(
             UUID authenticatedUserId,
@@ -60,6 +66,9 @@ public class HealthcareContactService {
         return HealthcareContactResponse.from(savedContact);
     }
 
+    /**
+     * Checks view access before returning the active healthcare contacts in name order.
+     */
     @Transactional(readOnly = true)
     public List<HealthcareContactResponse> getHealthcareContacts(UUID authenticatedUserId, UUID patientRecordId) {
         patientRecordAccessService.requireAccess(
@@ -73,6 +82,9 @@ public class HealthcareContactService {
                 .toList();
     }
 
+    /**
+     * Loads the requested healthcare contact and checks that the current user can view its patient record.
+     */
     @Transactional(readOnly = true)
     public HealthcareContactResponse getHealthcareContact(UUID authenticatedUserId, UUID healthcareContactId) {
         HealthcareContact contact = findAvailableContact(healthcareContactId);
@@ -85,6 +97,9 @@ public class HealthcareContactService {
         return HealthcareContactResponse.from(contact);
     }
 
+    /**
+     * Loads the current healthcare contact, checks edit access and applies the submitted changes.
+     */
     @Transactional
     public HealthcareContactResponse updateHealthcareContact(
             UUID authenticatedUserId,
@@ -115,6 +130,9 @@ public class HealthcareContactService {
         return HealthcareContactResponse.from(contact);
     }
 
+    /**
+     * Checks access and archives the healthcare contact only when it is still active.
+     */
     @Transactional
     public HealthcareContactResponse archiveHealthcareContact(UUID authenticatedUserId, UUID healthcareContactId) {
         HealthcareContact contact = findContact(healthcareContactId);
@@ -136,11 +154,17 @@ public class HealthcareContactService {
         return HealthcareContactResponse.from(contact);
     }
 
+    /**
+     * Loads the contact or returns not found when it does not exist.
+     */
     private HealthcareContact findContact(UUID healthcareContactId) {
         return healthcareContactRepository.findById(healthcareContactId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Healthcare contact not found"));
     }
 
+    /**
+     * Loads the contact and treats an archived record as not found.
+     */
     private HealthcareContact findAvailableContact(UUID healthcareContactId) {
         HealthcareContact contact = findContact(healthcareContactId);
 
@@ -151,6 +175,9 @@ public class HealthcareContactService {
         return contact;
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(
             UUID authenticatedUserId,
             HealthcareContact contact,
@@ -163,6 +190,9 @@ public class HealthcareContactService {
                 action));
     }
 
+    /**
+     * Copies the submitted contact and address details onto the healthcare contact while trimming optional text.
+     */
     private void applyValues(
             HealthcareContact contact,
             String name,

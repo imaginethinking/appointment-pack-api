@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import net.imaginethinking.appointmentpack.address.AddressRequest;
 
+/**
+ * Carries the changes submitted when updating healthcare contact.
+ */
 public record UpdateHealthcareContactRequest(
 
         @NotBlank

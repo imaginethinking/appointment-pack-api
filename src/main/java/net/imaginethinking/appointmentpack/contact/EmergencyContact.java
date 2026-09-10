@@ -6,6 +6,9 @@ import lombok.Setter;
 import net.imaginethinking.appointmentpack.common.ArchivableEntity;
 import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 
+/**
+ * Stores an emergency contact belonging to a patient record.
+ */
 @Getter
 @Setter
 @Entity

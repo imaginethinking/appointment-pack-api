@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+/**
+ * Sends account emails after the transaction that requested them has completed successfully.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -15,6 +18,9 @@ public class EmailNotificationListener {
 
     private final EmailService emailService;
 
+    /**
+     * Sends the verification email requested by a completed registration or resend action.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleEmailVerification(EmailVerificationEmailRequestedEvent event) {
         try {
@@ -24,6 +30,9 @@ public class EmailNotificationListener {
         }
     }
 
+    /**
+     * Sends the password reset email requested by an eligible account.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePasswordReset(PasswordResetEmailRequestedEvent event) {
         try {
