@@ -9,6 +9,9 @@ import java.util.Set;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for patient carer access request.
+ */
 class PatientCarerAccessRequestValidationTest {
 
     @Test
@@ -116,6 +119,9 @@ class PatientCarerAccessRequestValidationTest {
         assertValid(request);
     }
 
+    /**
+     * Creates an email address with the requested length for boundary validation tests.
+     */
     private static String emailOfLength(int length) {
         String prefix = "a@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(63) + ".";
 

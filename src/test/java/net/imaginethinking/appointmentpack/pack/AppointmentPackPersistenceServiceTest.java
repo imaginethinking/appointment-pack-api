@@ -27,6 +27,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks appointment pack persistence service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AppointmentPackPersistenceServiceTest {
 
@@ -41,6 +44,9 @@ class AppointmentPackPersistenceServiceTest {
 
     private AppointmentPackPersistenceService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AppointmentPackPersistenceService(appointmentPackRepository, entityManager, appEventPublisher);
@@ -165,6 +171,9 @@ class AppointmentPackPersistenceServiceTest {
         assertEquals(packId, event.resourceId());
     }
 
+    /**
+     * Creates test data for generation data using the supplied values.
+     */
     private AppointmentPackGenerationData generationData(
             UUID patientRecordId,
             UUID appointmentId,
@@ -180,6 +189,9 @@ class AppointmentPackPersistenceServiceTest {
                 selectedItems);
     }
 
+    /**
+     * Creates test data for render model using the supplied values.
+     */
     private AppointmentPackRenderModel renderModel() {
         return new AppointmentPackRenderModel(
                 "Neurology Pack",
@@ -210,6 +222,9 @@ class AppointmentPackPersistenceServiceTest {
                 List.of());
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(
             UUID id) {
         PatientRecord patientRecord = new PatientRecord();
@@ -219,6 +234,9 @@ class AppointmentPackPersistenceServiceTest {
         return patientRecord;
     }
 
+    /**
+     * Creates a test appointment with the supplied values.
+     */
     private Appointment appointment(
             UUID id) {
         Appointment appointment = new Appointment();
@@ -228,6 +246,9 @@ class AppointmentPackPersistenceServiceTest {
         return appointment;
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID id) {
         User user = new User();
 

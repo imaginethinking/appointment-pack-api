@@ -21,6 +21,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks request handling for page view endpoints.
+ */
 @ExtendWith(MockitoExtension.class)
 class PageViewControllerTest {
 
@@ -35,6 +38,9 @@ class PageViewControllerTest {
 
     private PageViewController controller;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         controller = new PageViewController(appEventPublisher, authenticatedUserIdResolver);

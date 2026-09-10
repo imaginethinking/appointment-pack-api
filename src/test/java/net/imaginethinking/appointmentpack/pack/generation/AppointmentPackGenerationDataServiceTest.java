@@ -22,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks appointment pack generation data service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AppointmentPackGenerationDataServiceTest {
 
@@ -33,6 +36,9 @@ class AppointmentPackGenerationDataServiceTest {
 
     private AppointmentPackGenerationDataService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AppointmentPackGenerationDataService(selectionService, renderModelFactory);
@@ -164,6 +170,9 @@ class AppointmentPackGenerationDataServiceTest {
         assertEquals(data.generatedAt(), generatedAtCaptor.getValue());
     }
 
+    /**
+     * Creates test data for empty request using the supplied values.
+     */
     private AppointmentPackGenerationRequest emptyRequest(
             UUID appointmentId) {
         return new AppointmentPackGenerationRequest(
@@ -177,6 +186,9 @@ class AppointmentPackGenerationDataServiceTest {
                 List.of());
     }
 
+    /**
+     * Creates test data for selection using the supplied values.
+     */
     private AppointmentPackSelection selection(
             Appointment appointment) {
         return new AppointmentPackSelection(
@@ -189,6 +201,9 @@ class AppointmentPackGenerationDataServiceTest {
                 List.of());
     }
 
+    /**
+     * Creates a test appointment with the supplied values.
+     */
     private Appointment appointment(PatientRecord patientRecord, String appointmentService) {
         Appointment appointment = new Appointment();
 
@@ -202,6 +217,9 @@ class AppointmentPackGenerationDataServiceTest {
         return appointment;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 
@@ -210,6 +228,9 @@ class AppointmentPackGenerationDataServiceTest {
         return patientRecord;
     }
 
+    /**
+     * Creates test data for render model using the supplied values.
+     */
     private AppointmentPackRenderModel renderModel() {
         return new AppointmentPackRenderModel(
                 "Pack",

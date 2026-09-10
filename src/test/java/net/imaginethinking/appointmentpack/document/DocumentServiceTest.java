@@ -28,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks document service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceTest {
 
@@ -51,6 +54,9 @@ class DocumentServiceTest {
 
     private DocumentService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new DocumentService(
@@ -228,6 +234,9 @@ class DocumentServiceTest {
         verify(appEventPublisher, never()).publish(any());
     }
 
+    /**
+     * Creates a test document with the supplied values.
+     */
     private Document document(UUID id, DocumentStatus status) {
         Document document = new Document();
 
@@ -249,6 +258,9 @@ class DocumentServiceTest {
         return document;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 
@@ -257,6 +269,9 @@ class DocumentServiceTest {
         return patientRecord;
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID id) {
         User user = new User();
 

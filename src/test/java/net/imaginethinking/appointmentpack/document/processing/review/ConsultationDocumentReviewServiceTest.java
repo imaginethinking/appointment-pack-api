@@ -39,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks consultation document review service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class ConsultationDocumentReviewServiceTest {
 
@@ -59,6 +62,9 @@ class ConsultationDocumentReviewServiceTest {
 
     private ConsultationDocumentReviewService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new ConsultationDocumentReviewService(
@@ -243,6 +249,9 @@ class ConsultationDocumentReviewServiceTest {
         assertEquals(PatientActivityAction.SUMMARY_REJECTED, event.action());
     }
 
+    /**
+     * Returns the patient activity event captured during the test.
+     */
     private PatientActivityEvent capturedActivityEvent() {
         ArgumentCaptor<AppEvent> eventCaptor = ArgumentCaptor.forClass(AppEvent.class);
 
@@ -251,6 +260,9 @@ class ConsultationDocumentReviewServiceTest {
         return (PatientActivityEvent) eventCaptor.getValue();
     }
 
+    /**
+     * Creates a test consultation document with the supplied values.
+     */
     private Document consultationDocument(
             DocumentStatus status) {
         Document document = new Document();
@@ -266,6 +278,9 @@ class ConsultationDocumentReviewServiceTest {
         return document;
     }
 
+    /**
+     * Creates a test processing result with the supplied values.
+     */
     private DocumentProcessingResult processingResult(
             Document document) {
         DocumentProcessingResult result = new DocumentProcessingResult();
@@ -279,6 +294,9 @@ class ConsultationDocumentReviewServiceTest {
         return result;
     }
 
+    /**
+     * Creates a test patient record with the standard values used by these tests.
+     */
     private PatientRecord patientRecord() {
         PatientRecord patientRecord = new PatientRecord();
 
@@ -287,6 +305,9 @@ class ConsultationDocumentReviewServiceTest {
         return patientRecord;
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID id) {
         User user = new User();
 

@@ -16,6 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+/**
+ * Checks request handling for patient audit validation endpoints.
+ */
 class PatientAuditControllerValidationTest {
 
     private static final Method GET_AUDIT_EVENTS = getAuditEventsMethod();
@@ -58,6 +61,9 @@ class PatientAuditControllerValidationTest {
         assertViolationMessages(validate(0, 101), Set.of("Page size must not exceed 100"));
     }
 
+    /**
+     * Checks that the supplied page and size values pass validation.
+     */
     private void assertValidPagination(int page, int size) {
         Set<ConstraintViolation<PatientAuditController>> violations = validate(page, size);
 
@@ -66,6 +72,9 @@ class PatientAuditControllerValidationTest {
                 () -> "Expected audit pagination to be valid but found: " + violationMessages(violations));
     }
 
+    /**
+     * Returns a valid ate that the tests can adjust as needed.
+     */
     private Set<ConstraintViolation<PatientAuditController>> validate(int page, int size) {
         return executableValidator.validateParameters(
                 controller,
@@ -73,17 +82,26 @@ class PatientAuditControllerValidationTest {
                 new Object[]{null, UUID.randomUUID(), page, size});
     }
 
+    /**
+     * Checks that the validation errors contain the expected messages.
+     */
     private void assertViolationMessages(
             Set<ConstraintViolation<PatientAuditController>> violations,
             Set<String> expectedMessages) {
         assertEquals(expectedMessages, violationMessages(violations));
     }
 
+    /**
+     * Returns the validation messages from the supplied violations.
+     */
     private Set<String> violationMessages(
             Set<ConstraintViolation<PatientAuditController>> violations) {
         return violations.stream().map(ConstraintViolation::getMessage).collect(Collectors.toSet());
     }
 
+    /**
+     * Returns the audit controller method used by the parameter validation tests.
+     */
     private static Method getAuditEventsMethod() {
         try {
             return PatientAuditController.class.getMethod(

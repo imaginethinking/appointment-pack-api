@@ -21,6 +21,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Checks the appointment pack render model factory behaviour covered by this test class.
+ */
 class AppointmentPackRenderModelFactoryTest {
 
     private final AppointmentPackRenderModelFactory factory = new AppointmentPackRenderModelFactory();
@@ -161,6 +164,9 @@ class AppointmentPackRenderModelFactoryTest {
         assertTrue(model.bloodTests().isEmpty());
     }
 
+    /**
+     * Creates a test blood result with the supplied values.
+     */
     private BloodTestResult bloodResult(
             BloodTest bloodTest,
             String analyteName,
@@ -181,6 +187,9 @@ class AppointmentPackRenderModelFactoryTest {
         return result;
     }
 
+    /**
+     * Creates a test patient record with the standard values used by these tests.
+     */
     private PatientRecord patientRecord() {
         Profile profile = new Profile();
 
@@ -200,6 +209,9 @@ class AppointmentPackRenderModelFactoryTest {
         return patientRecord;
     }
 
+    /**
+     * Creates a test appointment with the supplied values.
+     */
     private Appointment appointment(
             PatientRecord patientRecord) {
         Appointment appointment = new Appointment();
@@ -220,6 +232,9 @@ class AppointmentPackRenderModelFactoryTest {
         return appointment;
     }
 
+    /**
+     * Creates a test address with the standard values used by these tests.
+     */
     private Address address() {
         Address address = new Address();
 

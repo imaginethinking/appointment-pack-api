@@ -27,6 +27,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks patient carer access service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class PatientCarerAccessServiceTest {
 
@@ -47,6 +50,9 @@ class PatientCarerAccessServiceTest {
 
     private PatientCarerAccessService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new PatientCarerAccessService(
@@ -233,6 +239,9 @@ class PatientCarerAccessServiceTest {
         verify(appEventPublisher, never()).publish(any());
     }
 
+    /**
+     * Creates a test access with the supplied values.
+     */
     private PatientCarerAccess access(
             User owner,
             User carer,
@@ -256,6 +265,9 @@ class PatientCarerAccessServiceTest {
         return access;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(
             User owner) {
         PatientRecord record = new PatientRecord();
@@ -267,6 +279,9 @@ class PatientCarerAccessServiceTest {
         return record;
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(String email, String firstName, String lastName) {
         User user = new User();
 

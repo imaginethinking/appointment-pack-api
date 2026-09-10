@@ -33,6 +33,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks admin analytics service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AdminAnalyticsServiceTest {
 
@@ -50,6 +53,9 @@ class AdminAnalyticsServiceTest {
 
     private AdminAnalyticsService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AdminAnalyticsService(operationalEventRepository, userRepository);

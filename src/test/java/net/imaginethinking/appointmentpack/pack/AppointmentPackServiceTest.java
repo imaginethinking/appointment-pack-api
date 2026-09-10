@@ -33,6 +33,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks appointment pack service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AppointmentPackServiceTest {
 
@@ -59,6 +62,9 @@ class AppointmentPackServiceTest {
 
     private AppointmentPackService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AppointmentPackService(
@@ -262,6 +268,9 @@ class AppointmentPackServiceTest {
         verify(patientRecordAccessService, never()).requireAccess(any(), any(PatientRecord.class), any());
     }
 
+    /**
+     * Returns the patient activity event captured during the test.
+     */
     private PatientActivityEvent capturedActivityEvent() {
         ArgumentCaptor<AppEvent> eventCaptor = ArgumentCaptor.forClass(AppEvent.class);
 
@@ -270,6 +279,9 @@ class AppointmentPackServiceTest {
         return (PatientActivityEvent) eventCaptor.getValue();
     }
 
+    /**
+     * Creates the request used by the current test.
+     */
     private AppointmentPackGenerationRequest request() {
         return new AppointmentPackGenerationRequest(
                 UUID.randomUUID(),
@@ -282,6 +294,9 @@ class AppointmentPackServiceTest {
                 List.of());
     }
 
+    /**
+     * Creates test data for generation data using the supplied values.
+     */
     private AppointmentPackGenerationData generationData(UUID patientRecordId, UUID appointmentId) {
         return new AppointmentPackGenerationData(
                 patientRecordId,
@@ -294,6 +309,9 @@ class AppointmentPackServiceTest {
                 List.of());
     }
 
+    /**
+     * Creates test data for render model using the supplied values.
+     */
     private AppointmentPackRenderModel renderModel() {
         return new AppointmentPackRenderModel(
                 "Pack",
@@ -324,6 +342,9 @@ class AppointmentPackServiceTest {
                 List.of());
     }
 
+    /**
+     * Creates the response returned to the current test.
+     */
     private AppointmentPackResponse response(UUID packId, UUID patientRecordId, UUID appointmentId) {
         return new AppointmentPackResponse(
                 packId,
@@ -339,6 +360,9 @@ class AppointmentPackServiceTest {
                 List.of());
     }
 
+    /**
+     * Creates a test pack with the supplied values.
+     */
     private AppointmentPack pack(
             boolean archived) {
         PatientRecord patientRecord = new PatientRecord();

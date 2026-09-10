@@ -19,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks emergency contact service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class EmergencyContactServiceTest {
 
@@ -33,6 +36,9 @@ class EmergencyContactServiceTest {
 
     private EmergencyContactService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new EmergencyContactService(
@@ -144,6 +150,9 @@ class EmergencyContactServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
+    /**
+     * Creates a test emergency contact with the supplied values.
+     */
     private EmergencyContact emergencyContact(
             UUID id) {
         EmergencyContact contact = new EmergencyContact();
@@ -160,6 +169,9 @@ class EmergencyContactServiceTest {
         return contact;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 

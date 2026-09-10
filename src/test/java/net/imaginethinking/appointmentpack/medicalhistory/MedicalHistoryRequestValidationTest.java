@@ -10,6 +10,9 @@ import java.util.stream.Stream;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for medical history request.
+ */
 class MedicalHistoryRequestValidationTest {
 
     @Test
@@ -68,6 +71,9 @@ class MedicalHistoryRequestValidationTest {
         assertBothInvalidField(withDate(null), "entryDate");
     }
 
+    /**
+     * Provides invalid required text values values used by the parameterised validation tests.
+     */
     private static Stream<Arguments> invalidRequiredTextValues() {
         return Stream.of(
                 Arguments.of("title", ""),
@@ -78,35 +84,56 @@ class MedicalHistoryRequestValidationTest {
                 Arguments.of("summary", null));
     }
 
+    /**
+     * Returns a test request with the title value replaced by the supplied value.
+     */
     private static MedicalHistoryRequests withTitle(String title) {
         return requests(title, "Example summary", LocalDate.now());
     }
 
+    /**
+     * Returns a test request with the summary value replaced by the supplied value.
+     */
     private static MedicalHistoryRequests withSummary(String summary) {
         return requests("Example title", summary, LocalDate.now());
     }
 
+    /**
+     * Returns a test request with the date value replaced by the supplied value.
+     */
     private static MedicalHistoryRequests withDate(LocalDate entryDate) {
         return requests("Example title", "Example summary", entryDate);
     }
 
+    /**
+     * Creates the create and update request variants using the supplied values.
+     */
     private static MedicalHistoryRequests requests(String title, String summary, LocalDate entryDate) {
         return new MedicalHistoryRequests(
                 new CreateMedicalHistoryEntryRequest(title, summary, entryDate),
                 new UpdateMedicalHistoryEntryRequest(title, summary, entryDate));
     }
 
+    /**
+     * Checks that both request variants pass validation.
+     */
     private static void assertBothValid(
             MedicalHistoryRequests requests) {
         assertValid(requests.createRequest());
         assertValid(requests.updateRequest());
     }
 
+    /**
+     * Checks that both request variants report a validation error for the given field.
+     */
     private static void assertBothInvalidField(MedicalHistoryRequests requests, String field) {
         assertInvalidField(requests.createRequest(), field);
         assertInvalidField(requests.updateRequest(), field);
     }
 
+    /**
+     * Checks the medical history requests behaviour covered by this test class.
+     */
     private record MedicalHistoryRequests(CreateMedicalHistoryEntryRequest createRequest,
                                           UpdateMedicalHistoryEntryRequest updateRequest) {
     }

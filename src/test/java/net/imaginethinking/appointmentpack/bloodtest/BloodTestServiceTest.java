@@ -22,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks blood test service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class BloodTestServiceTest {
 
@@ -36,6 +39,9 @@ class BloodTestServiceTest {
 
     private BloodTestService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new BloodTestService(bloodTestRepository, patientRecordAccessService, appEventPublisher);
@@ -189,6 +195,9 @@ class BloodTestServiceTest {
         verify(appEventPublisher, times(1)).publish(any());
     }
 
+    /**
+     * Creates a test blood with the supplied values.
+     */
     private BloodTest bloodTest(UUID id) {
         BloodTest bloodTest = new BloodTest();
 
@@ -201,6 +210,9 @@ class BloodTestServiceTest {
         return bloodTest;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 

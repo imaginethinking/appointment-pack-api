@@ -21,6 +21,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+/**
+ * Checks the operational event factory behaviour covered by this test class.
+ */
 class OperationalEventFactoryTest {
 
     private final OperationalEventFactory factory = new OperationalEventFactory();

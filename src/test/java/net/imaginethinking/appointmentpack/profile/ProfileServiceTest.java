@@ -22,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks profile service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class ProfileServiceTest {
 
@@ -36,6 +39,9 @@ class ProfileServiceTest {
 
     private ProfileService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new ProfileService(profileRepository, patientRecordRepository, appEventPublisher);
@@ -118,6 +124,9 @@ class ProfileServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
+    /**
+     * Creates a test profile with the supplied values.
+     */
     private Profile profile(UUID userId) {
         User user = new User();
 

@@ -35,6 +35,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks appointment document review service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AppointmentDocumentReviewServiceTest {
 
@@ -55,6 +58,9 @@ class AppointmentDocumentReviewServiceTest {
 
     private AppointmentDocumentReviewService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AppointmentDocumentReviewService(
@@ -206,6 +212,9 @@ class AppointmentDocumentReviewServiceTest {
         assertEquals(PatientActivityAction.APPOINTMENT_REJECTED, event.action());
     }
 
+    /**
+     * Returns a valid request that the tests can adjust as needed.
+     */
     private AppointmentConfirmationRequest validRequest() {
         return new AppointmentConfirmationRequest(
                 LocalDate.of(2026, 9, 10),
@@ -219,6 +228,9 @@ class AppointmentDocumentReviewServiceTest {
                 null);
     }
 
+    /**
+     * Returns the patient activity event captured during the test.
+     */
     private PatientActivityEvent capturedActivityEvent() {
         ArgumentCaptor<AppEvent> eventCaptor = ArgumentCaptor.forClass(AppEvent.class);
 
@@ -227,6 +239,9 @@ class AppointmentDocumentReviewServiceTest {
         return (PatientActivityEvent) eventCaptor.getValue();
     }
 
+    /**
+     * Creates a test appointment document with the supplied values.
+     */
     private Document appointmentDocument(
             DocumentStatus status) {
         Document document = new Document();
@@ -242,6 +257,9 @@ class AppointmentDocumentReviewServiceTest {
         return document;
     }
 
+    /**
+     * Creates a test processing result with the supplied values.
+     */
     private DocumentProcessingResult processingResult(
             Document document) {
         DocumentProcessingResult result = new DocumentProcessingResult();
@@ -253,6 +271,9 @@ class AppointmentDocumentReviewServiceTest {
         return result;
     }
 
+    /**
+     * Creates a test patient record with the standard values used by these tests.
+     */
     private PatientRecord patientRecord() {
         PatientRecord patientRecord = new PatientRecord();
 
@@ -261,6 +282,9 @@ class AppointmentDocumentReviewServiceTest {
         return patientRecord;
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID id) {
         User user = new User();
 

@@ -13,6 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
+/**
+ * Checks email service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
 
@@ -21,6 +24,9 @@ class EmailServiceTest {
 
     private EmailService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new EmailService(mailSender, " no-reply@appointment-pack.test ", " https://frontend.example/ ");

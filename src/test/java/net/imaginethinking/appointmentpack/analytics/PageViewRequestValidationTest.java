@@ -8,6 +8,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertInvalidField;
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertValid;
 
+/**
+ * Checks the validation rules used for page view request.
+ */
 class PageViewRequestValidationTest {
 
     @ParameterizedTest

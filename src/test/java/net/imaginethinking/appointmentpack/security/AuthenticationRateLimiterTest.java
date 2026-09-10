@@ -6,6 +6,9 @@ import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Checks the authentication rate limiter behaviour covered by this test class.
+ */
 class AuthenticationRateLimiterTest {
 
     private final AuthenticationRateLimiter rateLimiter = new AuthenticationRateLimiter();

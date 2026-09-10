@@ -22,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks medical history service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class MedicalHistoryServiceTest {
 
@@ -39,6 +42,9 @@ class MedicalHistoryServiceTest {
 
     private MedicalHistoryService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new MedicalHistoryService(
@@ -168,6 +174,9 @@ class MedicalHistoryServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
+    /**
+     * Creates a test entry with the supplied values.
+     */
     private MedicalHistoryEntry entry(UUID id, UUID userId) {
         MedicalHistoryEntry entry = new MedicalHistoryEntry();
 
@@ -187,6 +196,9 @@ class MedicalHistoryServiceTest {
         return entry;
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID id) {
         User user = new User();
 
@@ -195,6 +207,9 @@ class MedicalHistoryServiceTest {
         return user;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 

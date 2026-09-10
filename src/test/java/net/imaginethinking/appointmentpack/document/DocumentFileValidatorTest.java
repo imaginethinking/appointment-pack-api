@@ -13,6 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks the validation rules used for document file.
+ */
 class DocumentFileValidatorTest {
 
     private static final long MAXIMUM_FILE_SIZE = 8;
@@ -186,6 +189,9 @@ class DocumentFileValidatorTest {
         );
     }
 
+    /**
+     * Creates a PDF upload with the requested byte size.
+     */
     private MockMultipartFile pdfFileOfSize(int size) {
         if (size < 5) {
             throw new IllegalArgumentException(

@@ -21,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks JWT service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class JwtServiceTest {
 
@@ -29,6 +32,9 @@ class JwtServiceTest {
 
     private JwtService jwtService;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         jwtService = new JwtService(jwtEncoder);
@@ -75,6 +81,9 @@ class JwtServiceTest {
         assertEquals(List.of("USER", "ADMIN"), claims.get(JwtClaims.ROLES));
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID id, UserRole role) {
         User user = new User();
 

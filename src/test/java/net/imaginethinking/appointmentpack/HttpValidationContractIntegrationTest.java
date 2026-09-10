@@ -25,6 +25,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Checks the validation rules used for HTTP contract integration.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -214,6 +217,9 @@ class HttpValidationContractIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 
+    /**
+     * Checks that the response contains a validation problem for the expected field.
+     */
     private void assertValidationProblem(ResultActions result, String field) throws Exception {
         result.andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -223,6 +229,9 @@ class HttpValidationContractIntegrationTest {
                 .andExpect(jsonPath("$.fieldErrors['" + field + "']").exists());
     }
 
+    /**
+     * Checks that the response contains the expected parameter validation problem.
+     */
     private void assertParameterValidationProblem(ResultActions result, String expectedMessage) throws Exception {
         result.andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -233,16 +242,25 @@ class HttpValidationContractIntegrationTest {
                 .andExpect(content().string(containsString(expectedMessage)));
     }
 
+    /**
+     * Returns the user JWT used by the surrounding tests.
+     */
     private RequestPostProcessor userJwt() {
         return jwt().jwt(builder -> builder.subject(TEST_USER_ID.toString()))
                 .authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
+    /**
+     * Returns the admin JWT used by the surrounding tests.
+     */
     private RequestPostProcessor adminJwt() {
         return jwt().jwt(builder -> builder.subject(TEST_USER_ID.toString()))
                 .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
     }
 
+    /**
+     * Serialises a test value into JSON for an HTTP request.
+     */
     private String json(Object value) throws Exception {
         return objectMapper.writeValueAsString(value);
     }

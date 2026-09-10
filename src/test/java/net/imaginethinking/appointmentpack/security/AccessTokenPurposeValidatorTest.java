@@ -9,6 +9,9 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Checks the validation rules used for access token purpose.
+ */
 class AccessTokenPurposeValidatorTest {
 
     private final AccessTokenPurposeValidator validator = new AccessTokenPurposeValidator();
@@ -32,6 +35,9 @@ class AccessTokenPurposeValidatorTest {
         assertTrue(missing.hasErrors());
     }
 
+    /**
+     * Creates a JWT containing the supplied token purpose.
+     */
     private Jwt jwtWithPurpose(String purpose) {
         Jwt.Builder builder = Jwt.withTokenValue("token")
                 .header("alg", "HS256")

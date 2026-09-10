@@ -37,6 +37,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks document processing state service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class DocumentProcessingStateServiceTest {
 
@@ -66,6 +69,9 @@ class DocumentProcessingStateServiceTest {
 
     private DocumentProcessingStateService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new DocumentProcessingStateService(
@@ -432,6 +438,9 @@ class DocumentProcessingStateServiceTest {
         assertNull(document.getProcessingFailureReason());
     }
 
+    /**
+     * Creates a test processing result with the supplied values.
+     */
     private DocumentProcessingResult processingResult(
             Document document) {
         DocumentProcessingResult result = new DocumentProcessingResult();
@@ -444,6 +453,9 @@ class DocumentProcessingStateServiceTest {
         return result;
     }
 
+    /**
+     * Creates a test document with the supplied values.
+     */
     private Document document(DocumentType type, DocumentStatus status) {
         Document document = new Document();
 
@@ -460,6 +472,9 @@ class DocumentProcessingStateServiceTest {
         return document;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 
@@ -468,6 +483,9 @@ class DocumentProcessingStateServiceTest {
         return patientRecord;
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID id) {
         User user = new User();
 

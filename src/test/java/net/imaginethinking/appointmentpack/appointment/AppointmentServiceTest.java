@@ -22,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks appointment service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AppointmentServiceTest {
 
@@ -36,6 +39,9 @@ class AppointmentServiceTest {
 
     private AppointmentService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AppointmentService(appointmentRepository, patientRecordAccessService, appEventPublisher);
@@ -245,6 +251,9 @@ class AppointmentServiceTest {
         verify(patientRecordAccessService, never()).requireAccess(any(), any(PatientRecord.class), any());
     }
 
+    /**
+     * Creates a test appointment with the supplied values.
+     */
     private Appointment appointment(UUID id) {
         Appointment appointment = new Appointment();
 
@@ -257,6 +266,9 @@ class AppointmentServiceTest {
         return appointment;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 

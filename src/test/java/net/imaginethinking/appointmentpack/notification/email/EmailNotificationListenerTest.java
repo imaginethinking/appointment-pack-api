@@ -15,6 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+/**
+ * Checks the email notification listener behaviour covered by this test class.
+ */
 @ExtendWith(MockitoExtension.class)
 class EmailNotificationListenerTest {
 
@@ -23,6 +26,9 @@ class EmailNotificationListenerTest {
 
     private EmailNotificationListener listener;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         listener = new EmailNotificationListener(emailService);

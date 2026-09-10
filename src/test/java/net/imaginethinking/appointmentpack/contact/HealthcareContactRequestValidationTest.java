@@ -10,6 +10,9 @@ import java.util.stream.Stream;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for healthcare contact request.
+ */
 class HealthcareContactRequestValidationTest {
 
     @Test
@@ -88,10 +91,16 @@ class HealthcareContactRequestValidationTest {
         assertBothInvalidField(requests, "address.addressLine1");
     }
 
+    /**
+     * Provides invalid required names values used by the parameterised validation tests.
+     */
     private static Stream<String> invalidRequiredNames() {
         return Stream.of("", "   ", null);
     }
 
+    /**
+     * Provides boundary values for the optional text boundaries fields.
+     */
     private static Stream<Arguments> optionalTextBoundaries() {
         return Stream.of(
                 Arguments.of("role", 149, 150, 151),
@@ -100,14 +109,23 @@ class HealthcareContactRequestValidationTest {
                 Arguments.of("notes", 1999, 2000, 2001));
     }
 
+    /**
+     * Returns a test request with the name value replaced by the supplied value.
+     */
     private static HealthcareContactRequests withName(String name) {
         return requests(name, null, null, null, null, null, null);
     }
 
+    /**
+     * Returns a test request with the email value replaced by the supplied value.
+     */
     private static HealthcareContactRequests withEmail(String email) {
         return requests("Example Clinician", null, null, null, email, null, null);
     }
 
+    /**
+     * Returns the request variants with the selected text field value replaced for the validation test.
+     */
     private static HealthcareContactRequests withTextField(String field, String value) {
         return switch (field) {
             case "role" -> requests("Example Clinician", value, null, null, null, null, null);
@@ -118,6 +136,9 @@ class HealthcareContactRequestValidationTest {
         };
     }
 
+    /**
+     * Creates the create and update request variants using the supplied values.
+     */
     private static HealthcareContactRequests requests(
             String name,
             String role,
@@ -131,17 +152,26 @@ class HealthcareContactRequestValidationTest {
                 new UpdateHealthcareContactRequest(name, role, organisation, phoneNumber, email, address, notes));
     }
 
+    /**
+     * Checks that both request variants pass validation.
+     */
     private static void assertBothValid(
             HealthcareContactRequests requests) {
         assertValid(requests.createRequest());
         assertValid(requests.updateRequest());
     }
 
+    /**
+     * Checks that both request variants report a validation error for the given field.
+     */
     private static void assertBothInvalidField(HealthcareContactRequests requests, String field) {
         assertInvalidField(requests.createRequest(), field);
         assertInvalidField(requests.updateRequest(), field);
     }
 
+    /**
+     * Creates an email address with the requested length for boundary validation tests.
+     */
     private static String emailOfLength(int length) {
         String prefix = "a@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(63) + ".";
 
@@ -154,6 +184,9 @@ class HealthcareContactRequestValidationTest {
         return prefix + "e".repeat(remainingCharacters);
     }
 
+    /**
+     * Checks the healthcare contact requests behaviour covered by this test class.
+     */
     private record HealthcareContactRequests(CreateHealthcareContactRequest createRequest,
                                              UpdateHealthcareContactRequest updateRequest) {
     }

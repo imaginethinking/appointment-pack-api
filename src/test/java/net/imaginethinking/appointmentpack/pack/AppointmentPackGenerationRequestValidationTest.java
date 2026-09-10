@@ -13,6 +13,9 @@ import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupp
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Checks the validation rules used for appointment pack generation request.
+ */
 class AppointmentPackGenerationRequestValidationTest {
 
     @Test
@@ -136,6 +139,9 @@ class AppointmentPackGenerationRequestValidationTest {
         assertThrows(UnsupportedOperationException.class, () -> request.medicationIds().add(UUID.randomUUID()));
     }
 
+    /**
+     * Returns a test request with the title value replaced by the supplied value.
+     */
     private static AppointmentPackGenerationRequest withTitle(
             String title) {
         return new AppointmentPackGenerationRequest(
@@ -149,6 +155,9 @@ class AppointmentPackGenerationRequestValidationTest {
                 List.of());
     }
 
+    /**
+     * Returns a test request with the notes value replaced by the supplied value.
+     */
     private static AppointmentPackGenerationRequest withNotes(
             String notes) {
         return new AppointmentPackGenerationRequest(
@@ -162,6 +171,9 @@ class AppointmentPackGenerationRequestValidationTest {
                 List.of());
     }
 
+    /**
+     * Returns the request variants with the selected selection value replaced for the validation test.
+     */
     private static AppointmentPackGenerationRequest withSelection(String field, List<UUID> values) {
         return switch (field) {
             case "medicationIds" -> new AppointmentPackGenerationRequest(
@@ -218,6 +230,9 @@ class AppointmentPackGenerationRequestValidationTest {
         };
     }
 
+    /**
+     * Creates a list of IDs with the requested size for selection limit tests.
+     */
     private static List<UUID> idsOfSize(int size) {
         return IntStream.range(0, size).mapToObj(index -> UUID.randomUUID()).toList();
     }

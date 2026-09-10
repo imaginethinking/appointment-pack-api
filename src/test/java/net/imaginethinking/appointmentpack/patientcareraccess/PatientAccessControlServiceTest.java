@@ -20,6 +20,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks patient access control service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class PatientAccessControlServiceTest {
 
@@ -28,6 +31,9 @@ class PatientAccessControlServiceTest {
 
     private PatientAccessControlService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new PatientAccessControlService(repository);
@@ -104,6 +110,9 @@ class PatientAccessControlServiceTest {
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(
             UUID ownerUserId) {
         User owner = new User();

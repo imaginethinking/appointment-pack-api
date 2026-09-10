@@ -9,6 +9,9 @@ import java.util.stream.Stream;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for emergency contact request.
+ */
 class EmergencyContactRequestValidationTest {
 
     @Test
@@ -81,6 +84,9 @@ class EmergencyContactRequestValidationTest {
         assertBothValid(requests);
     }
 
+    /**
+     * Provides the required field boundaries values used by the parameterised validation tests.
+     */
     private static Stream<Arguments> requiredFieldBoundaries() {
         return Stream.of(
                 Arguments.of("name", 199, 200, 201),
@@ -88,6 +94,9 @@ class EmergencyContactRequestValidationTest {
                 Arguments.of("phoneNumber", 49, 50, 51));
     }
 
+    /**
+     * Provides invalid required field values values used by the parameterised validation tests.
+     */
     private static Stream<Arguments> invalidRequiredFieldValues() {
         return Stream.of(
                 Arguments.of("name", ""),
@@ -101,10 +110,16 @@ class EmergencyContactRequestValidationTest {
                 Arguments.of("phoneNumber", null));
     }
 
+    /**
+     * Provides boundary values for the optional text boundaries fields.
+     */
     private static Stream<Arguments> optionalTextBoundaries() {
         return Stream.of(Arguments.of("alternativePhoneNumber", 49, 50, 51), Arguments.of("notes", 1999, 2000, 2001));
     }
 
+    /**
+     * Returns the request variants with the selected required field value replaced for the validation test.
+     */
     private static EmergencyContactRequests withRequiredField(String field, String value) {
         return switch (field) {
             case "name" -> requests(value, "Relative", "07000 000000", null, null, null);
@@ -114,6 +129,9 @@ class EmergencyContactRequestValidationTest {
         };
     }
 
+    /**
+     * Returns the request variants with the selected optional field value replaced for the validation test.
+     */
     private static EmergencyContactRequests withOptionalField(String field, String value) {
         return switch (field) {
             case "alternativePhoneNumber" -> requests("Example Contact", "Relative", "07000 000000", value, null, null);
@@ -122,10 +140,16 @@ class EmergencyContactRequestValidationTest {
         };
     }
 
+    /**
+     * Returns a test request with the email value replaced by the supplied value.
+     */
     private static EmergencyContactRequests withEmail(String email) {
         return requests("Example Contact", "Relative", "07000 000000", null, email, null);
     }
 
+    /**
+     * Creates the create and update request variants using the supplied values.
+     */
     private static EmergencyContactRequests requests(
             String name,
             String relationship,
@@ -150,17 +174,26 @@ class EmergencyContactRequestValidationTest {
                         notes));
     }
 
+    /**
+     * Checks that both request variants pass validation.
+     */
     private static void assertBothValid(
             EmergencyContactRequests requests) {
         assertValid(requests.createRequest());
         assertValid(requests.updateRequest());
     }
 
+    /**
+     * Checks that both request variants report a validation error for the given field.
+     */
     private static void assertBothInvalidField(EmergencyContactRequests requests, String field) {
         assertInvalidField(requests.createRequest(), field);
         assertInvalidField(requests.updateRequest(), field);
     }
 
+    /**
+     * Creates an email address with the requested length for boundary validation tests.
+     */
     private static String emailOfLength(int length) {
         String prefix = "a@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(63) + ".";
 
@@ -173,6 +206,9 @@ class EmergencyContactRequestValidationTest {
         return prefix + "e".repeat(remainingCharacters);
     }
 
+    /**
+     * Checks the emergency contact requests behaviour covered by this test class.
+     */
     private record EmergencyContactRequests(CreateEmergencyContactRequest createRequest,
                                             UpdateEmergencyContactRequest updateRequest) {
     }

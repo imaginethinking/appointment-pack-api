@@ -11,6 +11,9 @@ import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupp
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertValid;
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.stringOfLength;
 
+/**
+ * Checks the validation rules used for partial address request.
+ */
 class PartialAddressRequestValidationTest {
 
     @Test
@@ -68,6 +71,9 @@ class PartialAddressRequestValidationTest {
         assertInvalidField(withField(field, stringOfLength(aboveMaximum)), field);
     }
 
+    /**
+     * Provides field length values used by the parameterised tests.
+     */
     private static Stream<Arguments> fieldLengthBoundaries() {
         return Stream.of(
                 Arguments.of("addressLine1", 149, 150, 151),
@@ -79,6 +85,9 @@ class PartialAddressRequestValidationTest {
         );
     }
 
+    /**
+     * Returns the request variants with the selected field value replaced for the validation test.
+     */
     private static PartialAddressRequest withField(String field, String value) {
         return switch (field) {
             case "addressLine1" -> new PartialAddressRequest(value, null, null, null, null, null);

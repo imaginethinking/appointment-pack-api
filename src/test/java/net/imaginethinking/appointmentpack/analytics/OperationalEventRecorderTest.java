@@ -12,6 +12,9 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks the operational event recorder behaviour covered by this test class.
+ */
 @ExtendWith(MockitoExtension.class)
 class OperationalEventRecorderTest {
 
@@ -22,6 +25,9 @@ class OperationalEventRecorderTest {
 
     private final OperationalEventFactory factory = new OperationalEventFactory();
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         recorder = new OperationalEventRecorder(operationalEventRepository);

@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks patient record service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class PatientRecordServiceTest {
 
@@ -37,6 +40,9 @@ class PatientRecordServiceTest {
 
     private PatientRecordService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new PatientRecordService(
@@ -269,6 +275,9 @@ class PatientRecordServiceTest {
         verify(patientRecordAccessService).requireAccess(userId, patientRecordId, PatientRecordPermission.VIEW);
     }
 
+    /**
+     * Sets up the mocked available profile behaviour used by the current test.
+     */
     private Profile availableProfile(UUID userId) {
         Profile profile = new Profile();
 
@@ -280,10 +289,16 @@ class PatientRecordServiceTest {
         return profile;
     }
 
+    /**
+     * Creates test data for empty create request using the supplied values.
+     */
     private CreatePatientRecordRequest emptyCreateRequest() {
         return new CreatePatientRecordRequest(null, null, null, null, null, null, null, null);
     }
 
+    /**
+     * Creates a test record with the supplied values.
+     */
     private PatientRecord record(UUID id) {
         Profile profile = new Profile();
 

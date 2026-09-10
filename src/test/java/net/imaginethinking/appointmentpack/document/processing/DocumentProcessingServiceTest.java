@@ -32,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks document processing service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class DocumentProcessingServiceTest {
 
@@ -55,6 +58,9 @@ class DocumentProcessingServiceTest {
 
     private DocumentProcessingService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new DocumentProcessingService(
@@ -260,6 +266,9 @@ class DocumentProcessingServiceTest {
         assertEquals(DocumentProcessingFailureReason.PROCESSING_ERROR, event.failureReason());
     }
 
+    /**
+     * Returns the document processing event captured during the test.
+     */
     private DocumentProcessingEvent capturedProcessingEvent() {
         ArgumentCaptor<AppEvent> eventCaptor = ArgumentCaptor.forClass(AppEvent.class);
 
@@ -268,6 +277,9 @@ class DocumentProcessingServiceTest {
         return (DocumentProcessingEvent) eventCaptor.getValue();
     }
 
+    /**
+     * Creates the response returned to the current test.
+     */
     private DocumentProcessingResultResponse response(
             UUID documentId,
             DocumentType documentType,

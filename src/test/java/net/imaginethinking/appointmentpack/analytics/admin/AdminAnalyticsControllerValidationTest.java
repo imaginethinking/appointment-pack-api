@@ -15,6 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+/**
+ * Checks request handling for admin analytics validation endpoints.
+ */
 class AdminAnalyticsControllerValidationTest {
 
     private static final Method GET_EVENTS = getEventsMethod();
@@ -55,6 +58,9 @@ class AdminAnalyticsControllerValidationTest {
         assertViolationMessages(validate(0, 101), Set.of("Page size must not exceed 100"));
     }
 
+    /**
+     * Checks that the supplied page and size values pass validation.
+     */
     private void assertValidPagination(int page, int size) {
         Set<ConstraintViolation<AdminAnalyticsController>> violations = validate(page, size);
 
@@ -63,6 +69,9 @@ class AdminAnalyticsControllerValidationTest {
                 () -> "Expected analytics pagination to be valid but found: " + violationMessages(violations));
     }
 
+    /**
+     * Returns a valid ate that the tests can adjust as needed.
+     */
     private Set<ConstraintViolation<AdminAnalyticsController>> validate(int page, int size) {
         return executableValidator.validateParameters(
                 controller,
@@ -70,17 +79,26 @@ class AdminAnalyticsControllerValidationTest {
                 new Object[]{null, null, null, page, size});
     }
 
+    /**
+     * Checks that the validation errors contain the expected messages.
+     */
     private void assertViolationMessages(
             Set<ConstraintViolation<AdminAnalyticsController>> violations,
             Set<String> expectedMessages) {
         assertEquals(expectedMessages, violationMessages(violations));
     }
 
+    /**
+     * Returns the validation messages from the supplied violations.
+     */
     private Set<String> violationMessages(
             Set<ConstraintViolation<AdminAnalyticsController>> violations) {
         return violations.stream().map(ConstraintViolation::getMessage).collect(Collectors.toSet());
     }
 
+    /**
+     * Returns the admin analytics method used by the parameter validation tests.
+     */
     private static Method getEventsMethod() {
         try {
             return AdminAnalyticsController.class.getMethod(

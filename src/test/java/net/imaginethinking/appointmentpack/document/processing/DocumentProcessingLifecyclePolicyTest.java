@@ -9,6 +9,9 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Checks the document processing lifecycle policy behaviour covered by this test class.
+ */
 class DocumentProcessingLifecyclePolicyTest {
 
     private static final Duration STALE_AFTER = Duration.ofMinutes(5);
@@ -71,6 +74,9 @@ class DocumentProcessingLifecyclePolicyTest {
                 () -> new DocumentProcessingLifecyclePolicy(Duration.ofSeconds(-1)));
     }
 
+    /**
+     * Creates a document with the supplied update time for lifecycle recovery tests.
+     */
     private Document documentUpdatedAt(Instant updatedAt) {
         Document document = new Document();
 

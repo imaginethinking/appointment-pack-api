@@ -16,6 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks patient record access service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class PatientRecordAccessServiceTest {
 
@@ -27,6 +30,9 @@ class PatientRecordAccessServiceTest {
 
     private PatientRecordAccessService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new PatientRecordAccessService(patientRecordRepository, patientAccessControlService);

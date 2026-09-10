@@ -14,6 +14,9 @@ import java.util.stream.Stream;
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertFieldValid;
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertInvalidField;
 
+/**
+ * Checks the validation rules used for strong password.
+ */
 class StrongPasswordValidationTest {
 
     @Test
@@ -101,6 +104,9 @@ class StrongPasswordValidationTest {
         assertInvalidField(invalidRequest, "newPassword");
     }
 
+    /**
+     * Returns the passwords missing required character classes used by the surrounding tests.
+     */
     private static Stream<Arguments> passwordsMissingRequiredCharacterClasses() {
         return Stream.of(
                 Arguments.of("a lowercase letter", "PASSWORD1!"),
@@ -111,6 +117,9 @@ class StrongPasswordValidationTest {
         );
     }
 
+    /**
+     * Returns the passwords containing line breaks used by the surrounding tests.
+     */
     private static Stream<Arguments> passwordsContainingLineBreaks() {
         return Stream.of(
                 Arguments.of("a carriage return", "Password1!\r"),
@@ -119,6 +128,9 @@ class StrongPasswordValidationTest {
         );
     }
 
+    /**
+     * Creates test data for registration with password using the supplied values.
+     */
     private static RegisterRequest registrationWithPassword(String password) {
         return new RegisterRequest(
                 "patient@example.com",

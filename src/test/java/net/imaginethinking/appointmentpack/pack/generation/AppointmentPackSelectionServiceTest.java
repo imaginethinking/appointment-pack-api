@@ -37,6 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks appointment pack selection service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AppointmentPackSelectionServiceTest {
 
@@ -63,6 +66,9 @@ class AppointmentPackSelectionServiceTest {
 
     private AppointmentPackSelectionService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AppointmentPackSelectionService(
@@ -271,6 +277,9 @@ class AppointmentPackSelectionServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
+    /**
+     * Creates the request used by the current test.
+     */
     private AppointmentPackGenerationRequest request(
             UUID appointmentId,
             List<UUID> medicationIds,
@@ -289,6 +298,9 @@ class AppointmentPackSelectionServiceTest {
                 bloodTestIds);
     }
 
+    /**
+     * Creates a test appointment with the supplied values.
+     */
     private Appointment appointment(
             PatientRecord patientRecord) {
         Appointment appointment = new Appointment();
@@ -302,6 +314,9 @@ class AppointmentPackSelectionServiceTest {
         return appointment;
     }
 
+    /**
+     * Creates a test medication with the supplied values.
+     */
     private Medication medication(
             PatientRecord patientRecord) {
         Medication medication = new Medication();
@@ -314,6 +329,9 @@ class AppointmentPackSelectionServiceTest {
         return medication;
     }
 
+    /**
+     * Creates a test blood with the supplied values.
+     */
     private BloodTest bloodTest(
             PatientRecord patientRecord) {
         BloodTest bloodTest = new BloodTest();
@@ -326,6 +344,9 @@ class AppointmentPackSelectionServiceTest {
         return bloodTest;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 

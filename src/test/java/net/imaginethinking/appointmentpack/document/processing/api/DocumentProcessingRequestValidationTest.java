@@ -9,6 +9,9 @@ import java.time.LocalDate;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for document processing request.
+ */
 class DocumentProcessingRequestValidationTest {
 
     @Test
@@ -92,16 +95,25 @@ class DocumentProcessingRequestValidationTest {
         assertInvalidField(summaryAcceptanceWithHistoryDate(null), "historyDate");
     }
 
+    /**
+     * Creates test data for summary acceptance with reviewed summary using the supplied values.
+     */
     private static DocumentSummaryAcceptanceRequest summaryAcceptanceWithReviewedSummary(
             String reviewedSummary) {
         return new DocumentSummaryAcceptanceRequest(reviewedSummary, "Consultation outcome", LocalDate.now());
     }
 
+    /**
+     * Creates test data for summary acceptance with history title using the supplied values.
+     */
     private static DocumentSummaryAcceptanceRequest summaryAcceptanceWithHistoryTitle(
             String historyTitle) {
         return new DocumentSummaryAcceptanceRequest("Reviewed consultation summary", historyTitle, LocalDate.now());
     }
 
+    /**
+     * Creates test data for summary acceptance with history date using the supplied values.
+     */
     private static DocumentSummaryAcceptanceRequest summaryAcceptanceWithHistoryDate(
             LocalDate historyDate) {
         return new DocumentSummaryAcceptanceRequest(

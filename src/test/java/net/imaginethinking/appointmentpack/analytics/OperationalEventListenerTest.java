@@ -16,6 +16,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks the operational event listener behaviour covered by this test class.
+ */
 @ExtendWith(MockitoExtension.class)
 class OperationalEventListenerTest {
 
@@ -27,6 +30,9 @@ class OperationalEventListenerTest {
 
     private OperationalEventListener listener;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         listener = new OperationalEventListener(operationalEventFactory, operationalEventRecorder);

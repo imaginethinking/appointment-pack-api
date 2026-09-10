@@ -15,6 +15,9 @@ import java.util.stream.Stream;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for authentication request.
+ */
 class AuthenticationRequestValidationTest {
 
     @Test
@@ -248,10 +251,16 @@ class AuthenticationRequestValidationTest {
         assertInvalidField(new MfaLoginRequest(null, "123456"), "mfaChallengeId");
     }
 
+    /**
+     * Provides registration name values used by the parameterised tests.
+     */
     private static Stream<Arguments> registrationNameBoundaries() {
         return Stream.of(Arguments.of("firstName", 99, 100, 101), Arguments.of("lastName", 99, 100, 101));
     }
 
+    /**
+     * Provides the required registration name values values used by the parameterised validation tests.
+     */
     private static Stream<Arguments> requiredRegistrationNameValues() {
         return Stream.of(
                 Arguments.of("firstName", ""),
@@ -262,6 +271,9 @@ class AuthenticationRequestValidationTest {
                 Arguments.of("lastName", null));
     }
 
+    /**
+     * Returns a valid registration request that the tests can adjust as needed.
+     */
     private static RegisterRequest validRegistrationRequest() {
         return new RegisterRequest(
                 "patient@example.com",
@@ -272,6 +284,9 @@ class AuthenticationRequestValidationTest {
                 LocalDate.of(1990, 1, 1));
     }
 
+    /**
+     * Creates test data for registration with email using the supplied values.
+     */
     private static RegisterRequest registrationWithEmail(String email) {
         return new RegisterRequest(
                 email,
@@ -282,6 +297,9 @@ class AuthenticationRequestValidationTest {
                 LocalDate.of(1990, 1, 1));
     }
 
+    /**
+     * Creates a registration request with the supplied first or last name.
+     */
     private static RegisterRequest registrationWithName(String field, String value) {
         return switch (field) {
             case "firstName" -> new RegisterRequest(
@@ -302,6 +320,9 @@ class AuthenticationRequestValidationTest {
         };
     }
 
+    /**
+     * Creates test data for registration with date of birth using the supplied values.
+     */
     private static RegisterRequest registrationWithDateOfBirth(LocalDate dateOfBirth) {
         return new RegisterRequest(
                 "patient@example.com",
@@ -312,6 +333,9 @@ class AuthenticationRequestValidationTest {
                 dateOfBirth);
     }
 
+    /**
+     * Creates test data for registration with confirmation using the supplied values.
+     */
     private static RegisterRequest registrationWithConfirmation(String confirmation) {
         return new RegisterRequest(
                 "patient@example.com",
@@ -322,25 +346,40 @@ class AuthenticationRequestValidationTest {
                 LocalDate.of(1990, 1, 1));
     }
 
+    /**
+     * Creates test data for password reset with token using the supplied values.
+     */
     private static PasswordResetConfirmRequest passwordResetWithToken(String token) {
         return new PasswordResetConfirmRequest(token, "Appointment1!", "Appointment1!");
     }
 
+    /**
+     * Creates test data for password reset with confirmation using the supplied values.
+     */
     private static PasswordResetConfirmRequest passwordResetWithConfirmation(
             String confirmation) {
         return new PasswordResetConfirmRequest("reset-token", "Appointment1!", confirmation);
     }
 
+    /**
+     * Creates test data for password change with current password using the supplied values.
+     */
     private static PasswordChangeRequest passwordChangeWithCurrentPassword(
             String currentPassword) {
         return new PasswordChangeRequest(currentPassword, "Appointment1!", "Appointment1!");
     }
 
+    /**
+     * Creates test data for password change with confirmation using the supplied values.
+     */
     private static PasswordChangeRequest passwordChangeWithConfirmation(
             String confirmation) {
         return new PasswordChangeRequest("Current1!", "Appointment1!", confirmation);
     }
 
+    /**
+     * Creates an email address with the requested length for boundary validation tests.
+     */
     private static String emailOfLength(int length) {
         String prefix = "a@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(63) + ".";
 

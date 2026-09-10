@@ -19,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks account token service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AccountTokenServiceTest {
 
@@ -27,6 +30,9 @@ class AccountTokenServiceTest {
 
     private AccountTokenService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new AccountTokenService(accountTokenRepository);
@@ -117,6 +123,9 @@ class AccountTokenServiceTest {
                 () -> service.issue(user(), AccountTokenPurpose.PASSWORD_RESET, Duration.ZERO));
     }
 
+    /**
+     * Creates a test user with the standard values used by these tests.
+     */
     private User user() {
         User user = new User();
 

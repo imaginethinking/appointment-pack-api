@@ -10,6 +10,9 @@ import java.util.stream.Stream;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for patient record request.
+ */
 class PatientRecordRequestValidationTest {
 
     @Test
@@ -106,6 +109,9 @@ class PatientRecordRequestValidationTest {
         assertBothValid(heightUnitWithoutValue);
     }
 
+    /**
+     * Provides identifier values used by the parameterised tests.
+     */
     private static Stream<Arguments> identifierBoundaries() {
         return Stream.of(
                 Arguments.of("nhsNumber", 9, 10, 11),
@@ -113,6 +119,9 @@ class PatientRecordRequestValidationTest {
                 Arguments.of("hcNumber", 9, 10, 11));
     }
 
+    /**
+     * Returns the request variants with the selected identifier value replaced for the validation test.
+     */
     private static RequestPair withIdentifier(String field, String value) {
         return switch (field) {
             case "nhsNumber" -> requests(value, null, null, null, null, null, null, null);
@@ -122,14 +131,23 @@ class PatientRecordRequestValidationTest {
         };
     }
 
+    /**
+     * Returns a test request with the height value replaced by the supplied value.
+     */
     private static RequestPair withHeight(BigDecimal height) {
         return requests(null, null, null, height, HeightUnit.METERS, null, null, null);
     }
 
+    /**
+     * Returns a test request with the weight value replaced by the supplied value.
+     */
     private static RequestPair withWeight(BigDecimal weight) {
         return requests(null, null, null, null, null, weight, WeightUnit.KILOGRAMS, null);
     }
 
+    /**
+     * Creates the create and update request variants using the supplied values.
+     */
     private static RequestPair requests(
             String nhsNumber,
             String chiNumber,
@@ -160,16 +178,25 @@ class PatientRecordRequestValidationTest {
                         bloodType));
     }
 
+    /**
+     * Checks that both request variants pass validation.
+     */
     private static void assertBothValid(RequestPair requests) {
         assertValid(requests.createRequest());
         assertValid(requests.updateRequest());
     }
 
+    /**
+     * Checks that both request variants report a validation error for the given field.
+     */
     private static void assertBothInvalidField(RequestPair requests, String field) {
         assertInvalidField(requests.createRequest(), field);
         assertInvalidField(requests.updateRequest(), field);
     }
 
+    /**
+     * Checks the request pair behaviour covered by this test class.
+     */
     private record RequestPair(CreatePatientRecordRequest createRequest, UpdatePatientRecordRequest updateRequest) {
     }
 }

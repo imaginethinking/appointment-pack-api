@@ -23,6 +23,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Checks patient carer access behaviour through the Spring test setup.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -108,6 +111,9 @@ class PatientCarerAccessIntegrationTest {
                 bearer(carerToken))).andExpect(status().isForbidden());
     }
 
+    /**
+     * Registers a test account and returns the id created for it.
+     */
     private UUID register(String email, String firstName, String lastName, String dateOfBirth) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of(
@@ -124,6 +130,9 @@ class PatientCarerAccessIntegrationTest {
         return readUuid(result, "id", "userId");
     }
 
+    /**
+     * Marks the registered test account as email verified.
+     */
     private void verifyEmail(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Registered integration-test user was not found"));
@@ -132,6 +141,9 @@ class PatientCarerAccessIntegrationTest {
         userRepository.saveAndFlush(user);
     }
 
+    /**
+     * Logs the test account in and returns its access token.
+     */
     private String login(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of("email", email, "password", TEST_PASSWORD))))
@@ -150,6 +162,9 @@ class PatientCarerAccessIntegrationTest {
         return token.asText();
     }
 
+    /**
+     * Creates a patient record through the test API and returns its id.
+     */
     private UUID createPatientRecord(String patientToken) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/patient-records").header("Authorization", bearer(patientToken))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -160,6 +175,9 @@ class PatientCarerAccessIntegrationTest {
         return readUuid(result, "id", "patientRecordId");
     }
 
+    /**
+     * Creates a carer invitation through the test API and returns the relationship id.
+     */
     private UUID inviteCarer(String patientToken, String carerEmail, Set<String> permissions) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/patient-carer-access").header(
                                 "Authorization",
@@ -173,6 +191,9 @@ class PatientCarerAccessIntegrationTest {
         return readUuid(result, "id", "accessId");
     }
 
+    /**
+     * Reads the first available UUID field from a JSON response.
+     */
     private UUID readUuid(MvcResult result, String... possibleFields) throws Exception {
         JsonNode response = readResponse(result);
 
@@ -187,14 +208,23 @@ class PatientCarerAccessIntegrationTest {
         throw new IllegalStateException("Response did not contain an expected UUID field: " + response);
     }
 
+    /**
+     * Parses the response body into JSON for the test assertions.
+     */
     private JsonNode readResponse(MvcResult result) throws Exception {
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
+    /**
+     * Serialises a test value into JSON for an HTTP request.
+     */
     private String json(Object value) throws Exception {
         return objectMapper.writeValueAsString(value);
     }
 
+    /**
+     * Formats an access token for the Authorization header.
+     */
     private String bearer(String token) {
         return "Bearer " + token;
     }

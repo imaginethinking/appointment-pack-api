@@ -24,6 +24,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks email verification service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class EmailVerificationServiceTest {
 
@@ -38,6 +41,9 @@ class EmailVerificationServiceTest {
 
     private EmailVerificationService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new EmailVerificationService(userRepository, accountTokenService, appEventPublisher);
@@ -96,6 +102,9 @@ class EmailVerificationServiceTest {
         verify(appEventPublisher).publish(any());
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(boolean verified) {
         User user = new User();
 

@@ -15,6 +15,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks document processing recovery service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class DocumentProcessingRecoveryServiceTest {
 
@@ -26,6 +29,9 @@ class DocumentProcessingRecoveryServiceTest {
 
     private DocumentProcessingRecoveryService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new DocumentProcessingRecoveryService(documentRepository, lifecyclePolicy);

@@ -27,6 +27,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks password reset service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class PasswordResetServiceTest {
 
@@ -47,6 +50,9 @@ class PasswordResetServiceTest {
 
     private PasswordResetService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new PasswordResetService(
@@ -137,6 +143,9 @@ class PasswordResetServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
+    /**
+     * Returns the verified user used by the surrounding tests.
+     */
     private User verifiedUser() {
         User user = new User();
 

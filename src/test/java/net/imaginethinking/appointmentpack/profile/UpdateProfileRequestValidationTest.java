@@ -13,6 +13,9 @@ import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupp
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertValid;
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.stringOfLength;
 
+/**
+ * Checks the validation rules used for update profile request.
+ */
 class UpdateProfileRequestValidationTest {
 
     @Test
@@ -116,6 +119,9 @@ class UpdateProfileRequestValidationTest {
         assertInvalidField(request, "address.addressLine1");
     }
 
+    /**
+     * Provides name values used by the parameterised tests.
+     */
     private static Stream<Arguments> nameBoundaries() {
         return Stream.of(
                 Arguments.of("firstName", 99, 100, 101),
@@ -123,6 +129,9 @@ class UpdateProfileRequestValidationTest {
         );
     }
 
+    /**
+     * Provides the required name values values used by the parameterised validation tests.
+     */
     private static Stream<Arguments> requiredNameValues() {
         return Stream.of(
                 Arguments.of("firstName", ""),
@@ -134,6 +143,9 @@ class UpdateProfileRequestValidationTest {
         );
     }
 
+    /**
+     * Returns the request variants with the selected name value replaced for the validation test.
+     */
     private static UpdateProfileRequest withName(String field, String value) {
         return switch (field) {
             case "firstName" -> new UpdateProfileRequest(
@@ -156,6 +168,9 @@ class UpdateProfileRequestValidationTest {
         };
     }
 
+    /**
+     * Returns a test request with the date of birth value replaced by the supplied value.
+     */
     private static UpdateProfileRequest withDateOfBirth(LocalDate dateOfBirth) {
         return new UpdateProfileRequest(
                 "Patient",
@@ -166,6 +181,9 @@ class UpdateProfileRequestValidationTest {
         );
     }
 
+    /**
+     * Returns a test request with the gender value replaced by the supplied value.
+     */
     private static UpdateProfileRequest withGender(String gender) {
         return new UpdateProfileRequest(
                 "Patient",
@@ -176,6 +194,9 @@ class UpdateProfileRequestValidationTest {
         );
     }
 
+    /**
+     * Returns a valid address that the tests can adjust as needed.
+     */
     private static AddressRequest validAddress() {
         return new AddressRequest(
                 "1 Example Street",

@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks medication service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class MedicationServiceTest {
 
@@ -34,6 +37,9 @@ class MedicationServiceTest {
 
     private MedicationService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new MedicationService(medicationRepository, patientRecordAccessService, appEventPublisher);
@@ -189,6 +195,9 @@ class MedicationServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
+    /**
+     * Creates a test medication with the supplied values.
+     */
     private Medication medication(UUID id) {
         Medication medication = new Medication();
 
@@ -200,6 +209,9 @@ class MedicationServiceTest {
         return medication;
     }
 
+    /**
+     * Creates a test patient record with the supplied values.
+     */
     private PatientRecord patientRecord(UUID id) {
         PatientRecord patientRecord = new PatientRecord();
 

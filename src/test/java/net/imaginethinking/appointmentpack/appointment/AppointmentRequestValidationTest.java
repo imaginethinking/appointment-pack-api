@@ -12,6 +12,9 @@ import java.util.stream.Stream;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for appointment request.
+ */
 class AppointmentRequestValidationTest {
 
     @Test
@@ -102,6 +105,9 @@ class AppointmentRequestValidationTest {
         assertAllInvalidField(requests, "address.addressLine1");
     }
 
+    /**
+     * Provides text field values used by the parameterised tests.
+     */
     private static Stream<Arguments> textFieldBoundaries() {
         return Stream.of(
                 Arguments.of("service", 249, 250, 251),
@@ -111,6 +117,9 @@ class AppointmentRequestValidationTest {
                 Arguments.of("notes", 1999, 2000, 2001));
     }
 
+    /**
+     * Returns the request variants with the selected text field value replaced for the validation test.
+     */
     private static AppointmentRequests withTextField(String field, String value) {
         return switch (field) {
             case "service" ->
@@ -127,6 +136,9 @@ class AppointmentRequestValidationTest {
         };
     }
 
+    /**
+     * Creates the create and update request variants using the supplied values.
+     */
     private static AppointmentRequests requests(
             LocalDate date,
             LocalTime startTime,
@@ -170,18 +182,27 @@ class AppointmentRequestValidationTest {
                         notes));
     }
 
+    /**
+     * Checks that all request variants pass validation.
+     */
     private static void assertAllValid(AppointmentRequests requests) {
         assertValid(requests.createRequest());
         assertValid(requests.updateRequest());
         assertValid(requests.confirmationRequest());
     }
 
+    /**
+     * Checks that all request variants report a validation error for the given field.
+     */
     private static void assertAllInvalidField(AppointmentRequests requests, String field) {
         assertInvalidField(requests.createRequest(), field);
         assertInvalidField(requests.updateRequest(), field);
         assertInvalidField(requests.confirmationRequest(), field);
     }
 
+    /**
+     * Checks the appointment requests behaviour covered by this test class.
+     */
     private record AppointmentRequests(
             CreateAppointmentRequest createRequest,
             UpdateAppointmentRequest updateRequest,

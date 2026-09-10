@@ -25,6 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Checks patient audit service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class PatientAuditServiceTest {
 
@@ -39,6 +42,9 @@ class PatientAuditServiceTest {
 
     private PatientAuditService service;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         service = new PatientAuditService(patientAuditEventRepository, patientRecordAccessService, userRepository);
@@ -126,6 +132,9 @@ class PatientAuditServiceTest {
         verify(patientRecordAccessService).requireAccess(authenticatedUserId, patientRecordId, AuditPermission.VIEW);
     }
 
+    /**
+     * Creates test data for audit event using the supplied values.
+     */
     private PatientAuditEvent auditEvent(
             UUID patientRecordId,
             UUID actorUserId,
@@ -141,6 +150,9 @@ class PatientAuditServiceTest {
                 Instant.parse("2026-08-14T04:00:00Z"));
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(UUID userId, String firstName, String lastName) {
         User user = new User();
 

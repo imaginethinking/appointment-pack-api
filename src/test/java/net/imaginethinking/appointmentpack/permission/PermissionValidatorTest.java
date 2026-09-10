@@ -9,11 +9,17 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Checks the validation rules used for permission.
+ */
 class PermissionValidatorTest {
 
     private PermissionRegistry permissionRegistry;
     private PermissionValidator validator;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         permissionRegistry = new PermissionRegistry();

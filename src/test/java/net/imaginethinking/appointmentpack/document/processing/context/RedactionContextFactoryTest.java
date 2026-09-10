@@ -11,6 +11,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Checks the redaction context factory behaviour covered by this test class.
+ */
 class RedactionContextFactoryTest {
 
     private final RedactionContextFactory factory = new RedactionContextFactory();
@@ -95,6 +98,9 @@ class RedactionContextFactoryTest {
         assertEquals(List.of("Jane", "Patient", "Jane Patient", "Patient, Jane"), context.knownValues());
     }
 
+    /**
+     * Creates a document linked to patient details used when building redaction context.
+     */
     private Document documentWithPatientDetails() {
         Address address = new Address();
         address.setAddressLine1(" 1 Test Street ");

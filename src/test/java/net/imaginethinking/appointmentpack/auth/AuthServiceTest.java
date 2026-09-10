@@ -25,6 +25,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Checks auth service behaviour across normal and failure cases.
+ */
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
@@ -51,6 +54,9 @@ class AuthServiceTest {
 
     private AuthService authService;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         authService = new AuthService(
@@ -239,6 +245,9 @@ class AuthServiceTest {
         verify(mfaTotpService).isValidCode(eq("secret"), eq("123456"));
     }
 
+    /**
+     * Creates test data for register request using the supplied values.
+     */
     private RegisterRequest registerRequest() {
         return new RegisterRequest(
                 " Patient@Example.com ",
@@ -249,6 +258,9 @@ class AuthServiceTest {
                 LocalDate.of(1990, 1, 1));
     }
 
+    /**
+     * Creates a test user with the supplied values.
+     */
     private User user(boolean verified, boolean mfaEnabled) {
         User user = new User();
         ReflectionTestUtils.setField(user, "id", UUID.randomUUID());

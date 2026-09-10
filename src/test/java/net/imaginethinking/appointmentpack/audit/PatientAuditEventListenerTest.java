@@ -16,6 +16,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
+/**
+ * Checks the patient audit event listener behaviour covered by this test class.
+ */
 @ExtendWith(MockitoExtension.class)
 class PatientAuditEventListenerTest {
 
@@ -24,6 +27,9 @@ class PatientAuditEventListenerTest {
 
     private PatientAuditEventListener listener;
 
+    /**
+     * Creates the common fixtures and mocks used by each test.
+     */
     @BeforeEach
     void setUp() {
         listener = new PatientAuditEventListener(patientAuditEventRepository);

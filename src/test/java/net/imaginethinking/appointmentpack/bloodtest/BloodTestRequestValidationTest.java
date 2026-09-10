@@ -12,6 +12,9 @@ import java.util.stream.Stream;
 
 import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
+/**
+ * Checks the validation rules used for blood test request.
+ */
 class BloodTestRequestValidationTest {
 
     @Test
@@ -124,6 +127,9 @@ class BloodTestRequestValidationTest {
         assertValid(result);
     }
 
+    /**
+     * Provides parent text values used by the parameterised tests.
+     */
     private static Stream<Arguments> parentTextBoundaries() {
         return Stream.of(
                 Arguments.of("title", 199, 200, 201),
@@ -131,6 +137,9 @@ class BloodTestRequestValidationTest {
                 Arguments.of("notes", 1999, 2000, 2001));
     }
 
+    /**
+     * Provides result text values used by the parameterised tests.
+     */
     private static Stream<Arguments> resultTextBoundaries() {
         return Stream.of(
                 Arguments.of("analyteName", 199, 200, 201),
@@ -139,6 +148,9 @@ class BloodTestRequestValidationTest {
                 Arguments.of("referenceRange", 149, 150, 151));
     }
 
+    /**
+     * Provides invalid required result values values used by the parameterised validation tests.
+     */
     private static Stream<Arguments> invalidRequiredResultValues() {
         return Stream.of(
                 Arguments.of("analyteName", ""),
@@ -149,15 +161,24 @@ class BloodTestRequestValidationTest {
                 Arguments.of("resultValue", null));
     }
 
+    /**
+     * Returns a test request with the date value replaced by the supplied value.
+     */
     private static BloodTestRequests withDate(LocalDate date) {
         return requests(null, date, null, null, List.of(validResult()));
     }
 
+    /**
+     * Returns a test request with the results value replaced by the supplied value.
+     */
     private static BloodTestRequests withResults(
             List<BloodTestResultRequest> results) {
         return requests(null, LocalDate.now(), null, null, results);
     }
 
+    /**
+     * Returns the request variants with the selected parent text field value replaced for the validation test.
+     */
     private static BloodTestRequests withParentTextField(String field, String value) {
         return switch (field) {
             case "title" -> requests(value, LocalDate.now(), null, null, List.of(validResult()));
@@ -167,6 +188,9 @@ class BloodTestRequestValidationTest {
         };
     }
 
+    /**
+     * Returns the request variants with the selected result text field value replaced for the validation test.
+     */
     private static BloodTestResultRequest withResultTextField(String field, String value) {
         return switch (field) {
             case "analyteName" -> new BloodTestResultRequest(value, "1", null, null, null);
@@ -177,6 +201,9 @@ class BloodTestRequestValidationTest {
         };
     }
 
+    /**
+     * Creates a list of blood test results with the requested size for validation tests.
+     */
     private static List<BloodTestResultRequest> resultsOfSize(
             int size) {
         return IntStream.range(0, size)
@@ -189,10 +216,16 @@ class BloodTestRequestValidationTest {
                 .toList();
     }
 
+    /**
+     * Returns a valid result that the tests can adjust as needed.
+     */
     private static BloodTestResultRequest validResult() {
         return new BloodTestResultRequest("Example Analyte", "10.5", "unit", "5-15", BloodTestResultFlag.NORMAL);
     }
 
+    /**
+     * Creates the create and update request variants using the supplied values.
+     */
     private static BloodTestRequests requests(
             String title,
             LocalDate testDate,
@@ -204,17 +237,26 @@ class BloodTestRequestValidationTest {
                 new UpdateBloodTestRequest(title, testDate, provider, notes, results));
     }
 
+    /**
+     * Checks that both request variants pass validation.
+     */
     private static void assertBothValid(
             BloodTestRequests requests) {
         assertValid(requests.createRequest());
         assertValid(requests.updateRequest());
     }
 
+    /**
+     * Checks that both request variants report a validation error for the given field.
+     */
     private static void assertBothInvalidField(BloodTestRequests requests, String field) {
         assertInvalidField(requests.createRequest(), field);
         assertInvalidField(requests.updateRequest(), field);
     }
 
+    /**
+     * Checks the blood test requests behaviour covered by this test class.
+     */
     private record BloodTestRequests(CreateBloodTestRequest createRequest, UpdateBloodTestRequest updateRequest) {
     }
 }
