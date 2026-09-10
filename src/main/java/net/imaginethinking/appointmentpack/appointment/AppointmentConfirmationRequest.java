@@ -8,6 +8,9 @@ import net.imaginethinking.appointmentpack.address.PartialAddressRequest;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+/**
+ * Carries the reviewed appointment details used to confirm an appointment letter.
+ */
 public record AppointmentConfirmationRequest(
 
         @NotNull(message = "Appointment date is required")

@@ -2,11 +2,20 @@ package net.imaginethinking.appointmentpack.address;
 
 import net.imaginethinking.appointmentpack.common.TextNormalizer;
 
+/**
+ * Converts address between the saved and response forms used by the application.
+ */
 public final class AddressMapper {
 
+    /**
+     * Prevents the utility class from being instantiated.
+     */
     private AddressMapper() {
     }
 
+    /**
+     * Builds the stored address from the submitted address fields and returns null when no address was provided.
+     */
     public static Address toAddress(AddressRequest request) {
         if (request == null) {
             return null;
@@ -24,6 +33,9 @@ public final class AddressMapper {
         return address;
     }
 
+    /**
+     * Builds the stored address from the submitted address fields and returns null when no address was provided.
+     */
     public static Address toAddress(PartialAddressRequest request) {
         if (request == null) {
             return null;

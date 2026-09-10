@@ -20,6 +20,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Builds the admin analytics summary and filtered event pages from the recorded operational events.
+ */
 @Service
 @RequiredArgsConstructor
 public class AdminAnalyticsService {
@@ -29,6 +32,10 @@ public class AdminAnalyticsService {
     private final OperationalEventRepository operationalEventRepository;
     private final UserRepository userRepository;
 
+    /**
+     * Resolves the date range and combines user, authentication, processing, patient activity and page view counts
+     * into one summary.
+     */
     @Transactional(readOnly = true)
     public AdminAnalyticsSummaryResponse getSummary(Instant from, Instant to) {
         AnalyticsRange range = resolveRange(from, to);
@@ -44,6 +51,9 @@ public class AdminAnalyticsService {
                 buildPageViewMetrics(range));
     }
 
+    /**
+     * Resolves the requested date range and returns a filtered page of recorded operational events.
+     */
     @Transactional(readOnly = true)
     public OperationalEventPageResponse getEvents(
             Instant from,
@@ -71,6 +81,9 @@ public class AdminAnalyticsService {
                 eventPage.getTotalPages());
     }
 
+    /**
+     * Builds the user counts for the selected analytics range.
+     */
     private AdminAnalyticsSummaryResponse.UserMetrics buildUserMetrics(AnalyticsRange range) {
         return new AdminAnalyticsSummaryResponse.UserMetrics(
                 userRepository.count(),
@@ -86,6 +99,9 @@ public class AdminAnalyticsService {
                         range.to()));
     }
 
+    /**
+     * Builds login, registration, verification, password and MFA counts for the selected range.
+     */
     private AdminAnalyticsSummaryResponse.AuthenticationMetrics buildAuthenticationMetrics(AnalyticsRange range) {
         long passwordLoginSucceeded = countAuthentication(
                 AuthenticationAction.LOGIN,
@@ -120,6 +136,9 @@ public class AdminAnalyticsService {
                 countAuthentication(AuthenticationAction.PASSWORD_RESET, AuthenticationOutcome.FAILED, range));
     }
 
+    /**
+     * Builds extraction and summarisation counts, failures and average processing times for the selected range.
+     */
     private AdminAnalyticsSummaryResponse.DocumentProcessingMetrics buildDocumentProcessingMetrics(AnalyticsRange range) {
         return new AdminAnalyticsSummaryResponse.DocumentProcessingMetrics(
                 countProcessing(DocumentProcessingOperation.EXTRACTION, ProcessingOutcome.SUCCEEDED, range),
@@ -137,6 +156,9 @@ public class AdminAnalyticsService {
                 countProcessingFailure(DocumentProcessingFailureReason.UNKNOWN, range));
     }
 
+    /**
+     * Groups recorded patient activity by resource type and action for the selected range.
+     */
     private AdminAnalyticsSummaryResponse.PatientActivityMetrics buildPatientActivityMetrics(AnalyticsRange range) {
         List<PatientActivityCountProjection> counts = operationalEventRepository.countPatientActivityInRange(OperationalEventCategory.PATIENT_ACTIVITY,
                 range.from(),
@@ -154,6 +176,9 @@ public class AdminAnalyticsService {
         return new AdminAnalyticsSummaryResponse.PatientActivityMetrics(total, breakdown);
     }
 
+    /**
+     * Groups recorded page views by application page for the selected range.
+     */
     private AdminAnalyticsSummaryResponse.PageViewMetrics buildPageViewMetrics(AnalyticsRange range) {
         List<PageViewCountProjection> counts = operationalEventRepository.countPageViewsInRange(
                 OperationalEventCategory.PAGE_VIEW,
@@ -169,10 +194,16 @@ public class AdminAnalyticsService {
         return new AdminAnalyticsSummaryResponse.PageViewMetrics(total, breakdown);
     }
 
+    /**
+     * Counts authentication events matching the action and outcome in the selected range.
+     */
     private long countAuthentication(AuthenticationAction action, AuthenticationOutcome outcome, AnalyticsRange range) {
         return operationalEventRepository.countAuthenticationInRange(action, outcome, range.from(), range.to());
     }
 
+    /**
+     * Counts document processing events matching the operation and outcome in the selected range.
+     */
     private long countProcessing(
             DocumentProcessingOperation operation,
             ProcessingOutcome outcome,
@@ -180,10 +211,16 @@ public class AdminAnalyticsService {
         return operationalEventRepository.countProcessingInRange(operation, outcome, range.from(), range.to());
     }
 
+    /**
+     * Counts document processing failures with the selected reason in the current range.
+     */
     private long countProcessingFailure(DocumentProcessingFailureReason reason, AnalyticsRange range) {
         return operationalEventRepository.countProcessingFailureReasonInRange(reason, range.from(), range.to());
     }
 
+    /**
+     * Returns the average recorded duration for the selected processing operation and outcome.
+     */
     private Long averageProcessingDuration(
             DocumentProcessingOperation operation,
             ProcessingOutcome outcome,
@@ -197,6 +234,9 @@ public class AdminAnalyticsService {
         return average == null ? null : Math.round(average);
     }
 
+    /**
+     * Uses the supplied dates or default range and rejects an end time that is not after the start.
+     */
     private AnalyticsRange resolveRange(Instant from, Instant to) {
         Instant resolvedTo = to == null ? Instant.now() : to;
 
@@ -209,6 +249,9 @@ public class AdminAnalyticsService {
         return new AnalyticsRange(resolvedFrom, resolvedTo);
     }
 
+    /**
+     * Keeps the start and end times used when querying admin analytics.
+     */
     private record AnalyticsRange(Instant from, Instant to) {
     }
 }

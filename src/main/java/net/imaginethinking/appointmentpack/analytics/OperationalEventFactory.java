@@ -6,9 +6,16 @@ import net.imaginethinking.appointmentpack.event.patient.PatientActivityEvent;
 import net.imaginethinking.appointmentpack.event.processing.DocumentProcessingEvent;
 import org.springframework.stereotype.Component;
 
+/**
+ * Builds operational analytics records from authentication, processing, patient activity and page view events.
+ */
 @Component
 public class OperationalEventFactory {
 
+    /**
+     * Builds an operational event from the supplied application event while keeping only the fields needed for
+     * analytics.
+     */
     public OperationalEvent from(PatientActivityEvent event) {
         return new OperationalEvent(
                 event.eventId(),
@@ -32,6 +39,10 @@ public class OperationalEventFactory {
         );
     }
 
+    /**
+     * Builds an operational event from the supplied application event while keeping only the fields needed for
+     * analytics.
+     */
     public OperationalEvent from(AuthenticationEvent event) {
         return new OperationalEvent(
                 event.eventId(),
@@ -55,6 +66,10 @@ public class OperationalEventFactory {
         );
     }
 
+    /**
+     * Builds an operational event from the supplied application event while keeping only the fields needed for
+     * analytics.
+     */
     public OperationalEvent from(DocumentProcessingEvent event) {
         return new OperationalEvent(
                 event.eventId(),
@@ -78,6 +93,10 @@ public class OperationalEventFactory {
         );
     }
 
+    /**
+     * Builds an operational event from the supplied application event while keeping only the fields needed for
+     * analytics.
+     */
     public OperationalEvent from(PageViewedEvent event) {
         return new OperationalEvent(
                 event.eventId(),

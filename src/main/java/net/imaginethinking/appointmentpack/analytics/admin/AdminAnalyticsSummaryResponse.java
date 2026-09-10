@@ -7,6 +7,9 @@ import net.imaginethinking.appointmentpack.event.patient.PatientResourceType;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Represents admin analytics summary information returned by the API.
+ */
 public record AdminAnalyticsSummaryResponse(
         Instant from,
         Instant to,
@@ -18,6 +21,9 @@ public record AdminAnalyticsSummaryResponse(
         PageViewMetrics pageViews
 ) {
 
+    /**
+     * Groups the user counts shown in the admin analytics summary.
+     */
     public record UserMetrics(
             long totalUsers,
             long registeredInPeriod,
@@ -25,6 +31,9 @@ public record AdminAnalyticsSummaryResponse(
     ) {
     }
 
+    /**
+     * Groups authentication and account security counts shown in the admin analytics summary.
+     */
     public record AuthenticationMetrics(
             long loginAttempts,
             long authenticatedSessions,
@@ -46,6 +55,9 @@ public record AdminAnalyticsSummaryResponse(
     ) {
     }
 
+    /**
+     * Groups extraction and summarisation counts, failures and timings for admin analytics.
+     */
     public record DocumentProcessingMetrics(
             long extractionSucceeded,
             long extractionFailed,
@@ -60,15 +72,24 @@ public record AdminAnalyticsSummaryResponse(
     ) {
     }
 
+    /**
+     * Groups patient activity counts by resource and action.
+     */
     public record PatientActivityMetrics(
             long total,
             List<PatientActivityCount> breakdown
     ) {
+        /**
+         * Copies the patient activity counts before storing them in the analytics summary.
+         */
         public PatientActivityMetrics {
             breakdown = List.copyOf(breakdown);
         }
     }
 
+    /**
+     * Keeps one resource, action and count returned in the patient activity summary.
+     */
     public record PatientActivityCount(
             PatientResourceType resourceType,
             PatientActivityAction action,
@@ -76,15 +97,24 @@ public record AdminAnalyticsSummaryResponse(
     ) {
     }
 
+    /**
+     * Groups page view counts for the admin analytics summary.
+     */
     public record PageViewMetrics(
             long total,
             List<PageViewCount> breakdown
     ) {
+        /**
+         * Copies the page view counts before storing them in the analytics summary.
+         */
         public PageViewMetrics {
             breakdown = List.copyOf(breakdown);
         }
     }
 
+    /**
+     * Keeps one application page and its recorded view count.
+     */
     public record PageViewCount(
             ApplicationPage page,
             long count

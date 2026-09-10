@@ -15,6 +15,9 @@ import net.imaginethinking.appointmentpack.event.processing.ProcessingOutcome;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents operational event information returned by the API.
+ */
 public record OperationalEventResponse(
         UUID id,
         OperationalEventCategory category,
@@ -36,6 +39,9 @@ public record OperationalEventResponse(
         ApplicationPage page
 ) {
 
+    /**
+     * Builds the operational event response from the supplied operational event.
+     */
     public static OperationalEventResponse from(OperationalEvent event) {
         return new OperationalEventResponse(
                 event.getId(),

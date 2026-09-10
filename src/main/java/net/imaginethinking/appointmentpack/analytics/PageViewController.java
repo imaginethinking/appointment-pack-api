@@ -18,6 +18,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
+/**
+ * Records the coarse application page reported by the client.
+ */
 @RestController
 @RequestMapping("/api/v1/analytics/page-views")
 @RequiredArgsConstructor
@@ -26,6 +29,9 @@ public class PageViewController {
     private final AppEventPublisher appEventPublisher;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
+    /**
+     * Records the submitted page view for the current user.
+     */
     @PostMapping
     public ResponseEntity<Void> recordPageView(
             @AuthenticationPrincipal Jwt jwt,

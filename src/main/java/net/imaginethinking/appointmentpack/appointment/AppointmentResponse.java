@@ -7,6 +7,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
+/**
+ * Represents appointment information returned by the API.
+ */
 public record AppointmentResponse(
         UUID id,
         UUID patientRecordId,
@@ -23,6 +26,9 @@ public record AppointmentResponse(
         Instant archivedAt
 ) {
 
+    /**
+     * Builds the appointment response from the supplied appointment.
+     */
     public static AppointmentResponse from(Appointment appointment) {
         return new AppointmentResponse(
                 appointment.getId(),

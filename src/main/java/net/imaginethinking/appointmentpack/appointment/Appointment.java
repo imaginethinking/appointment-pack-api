@@ -11,6 +11,9 @@ import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+/**
+ * Stores an appointment together with optional source document information.
+ */
 @Getter
 @Setter
 @Entity

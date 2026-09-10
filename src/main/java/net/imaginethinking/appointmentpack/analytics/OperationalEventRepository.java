@@ -16,10 +16,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Defines the database queries used for operational events.
+ */
 public interface OperationalEventRepository extends JpaRepository<OperationalEvent, UUID> {
 
+    /**
+     * Checks whether a matching operational event already exists.
+     */
     boolean existsBySourceEventId(UUID sourceEventId);
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select count(event)
@@ -33,6 +42,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select count(distinct event.userId)
@@ -57,6 +69,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select count(event)
@@ -72,6 +87,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select count(event)
@@ -89,6 +107,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select count(event)
@@ -106,6 +127,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Calculates the average value for matching operational events in the requested range.
+     */
     @Query(
             """
                     select avg(event.durationMs)
@@ -124,6 +148,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select count(event)
@@ -139,6 +166,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select event.patientResourceType as resourceType,
@@ -158,6 +188,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Counts matching operational events for the supplied filters.
+     */
     @Query(
             """
                     select event.page as page,
@@ -177,6 +210,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             @Param("to") Instant to
     );
 
+    /**
+     * Loads a page of operational events recorded inside the supplied date range.
+     */
     @Query(
             value = """
                     select event
@@ -198,6 +234,9 @@ public interface OperationalEventRepository extends JpaRepository<OperationalEve
             Pageable pageable
     );
 
+    /**
+     * Loads a page of operational events matching the category and supplied date range.
+     */
     @Query(
             value = """
                     select event

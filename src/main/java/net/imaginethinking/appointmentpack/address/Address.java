@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Stores an address embedded within another saved record.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

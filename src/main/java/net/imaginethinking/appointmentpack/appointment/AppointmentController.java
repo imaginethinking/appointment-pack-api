@@ -12,6 +12,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Handles requests for creating and managing appointments.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
@@ -20,6 +23,9 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
+    /**
+     * Creates a new appointment using the submitted details.
+     */
     @PostMapping("/patient-records/{patientRecordId}/appointments")
     public ResponseEntity<AppointmentResponse> createAppointment(
             @AuthenticationPrincipal Jwt jwt,
@@ -35,6 +41,9 @@ public class AppointmentController {
         return ResponseEntity.created(URI.create("/api/v1/appointments/" + response.id())).body(response);
     }
 
+    /**
+     * Returns the requested appointments for the signed in user.
+     */
     @GetMapping("/patient-records/{patientRecordId}/appointments")
     public ResponseEntity<List<AppointmentResponse>> getAppointments(
             @AuthenticationPrincipal Jwt jwt,
@@ -44,6 +53,9 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAppointments(authenticatedUserId, patientRecordId));
     }
 
+    /**
+     * Returns the requested appointment for the signed in user.
+     */
     @GetMapping("/appointments/{appointmentId}")
     public ResponseEntity<AppointmentResponse> getAppointment(
             @AuthenticationPrincipal Jwt jwt,
@@ -53,6 +65,9 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAppointment(authenticatedUserId, appointmentId));
     }
 
+    /**
+     * Saves the submitted changes to the requested appointment.
+     */
     @PutMapping("/appointments/{appointmentId}")
     public ResponseEntity<AppointmentResponse> updateAppointment(
             @AuthenticationPrincipal Jwt jwt,
@@ -63,6 +78,9 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.updateAppointment(authenticatedUserId, appointmentId, request));
     }
 
+    /**
+     * Archives the requested appointment.
+     */
     @PatchMapping("/appointments/{appointmentId}/archive")
     public ResponseEntity<AppointmentResponse> archiveAppointment(
             @AuthenticationPrincipal Jwt jwt,

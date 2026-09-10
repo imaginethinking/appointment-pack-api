@@ -17,6 +17,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Stores the small set of technical and usage details used by admin analytics.
+ */
 @Getter
 @Entity
 @Immutable
@@ -186,9 +189,15 @@ public class OperationalEvent {
     )
     private ApplicationPage page;
 
+    /**
+     * Creates the operational event persistence object with either empty or supplied event details.
+     */
     protected OperationalEvent() {
     }
 
+    /**
+     * Creates the operational event persistence object with either empty or supplied event details.
+     */
     OperationalEvent(
             UUID sourceEventId,
             OperationalEventCategory category,

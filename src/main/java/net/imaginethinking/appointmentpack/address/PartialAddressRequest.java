@@ -2,6 +2,9 @@ package net.imaginethinking.appointmentpack.address;
 
 import jakarta.validation.constraints.Size;
 
+/**
+ * Carries the optional address fields accepted for an appointment.
+ */
 public record PartialAddressRequest(
 
         @Size(

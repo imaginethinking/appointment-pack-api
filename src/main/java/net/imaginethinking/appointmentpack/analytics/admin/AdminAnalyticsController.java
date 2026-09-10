@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 
+/**
+ * Handles administrator requests for analytics summaries and operational events.
+ */
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin/analytics")
@@ -22,6 +25,9 @@ public class AdminAnalyticsController {
 
     private final AdminAnalyticsService adminAnalyticsService;
 
+    /**
+     * Returns the requested summary for the signed in user.
+     */
     @GetMapping("/summary")
     public ResponseEntity<AdminAnalyticsSummaryResponse> getSummary(
             @RequestParam(required = false)
@@ -34,6 +40,9 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(adminAnalyticsService.getSummary(from, to));
     }
 
+    /**
+     * Returns the requested events for the signed in user.
+     */
     @GetMapping("/events")
     public ResponseEntity<OperationalEventPageResponse> getEvents(
             @RequestParam(required = false)
@@ -53,11 +62,11 @@ public class AdminAnalyticsController {
             int size
     ) {
         return ResponseEntity.ok(adminAnalyticsService.getEvents(
-                from,
-                to,
-                category,
-                page,
-                size
+                        from,
+                        to,
+                        category,
+                        page,
+                        size
                 )
         );
     }

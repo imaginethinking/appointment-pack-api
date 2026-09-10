@@ -3,6 +3,9 @@ package net.imaginethinking.appointmentpack.address;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Carries the address fields submitted for a profile or healthcare contact.
+ */
 public record AddressRequest(
 
         @NotBlank(message = "Address line 1 is required")

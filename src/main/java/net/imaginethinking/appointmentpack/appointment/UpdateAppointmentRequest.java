@@ -8,6 +8,9 @@ import net.imaginethinking.appointmentpack.address.PartialAddressRequest;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+/**
+ * Carries the changes submitted when updating appointment.
+ */
 public record UpdateAppointmentRequest(
 
         @NotNull(message = "Appointment date is required")

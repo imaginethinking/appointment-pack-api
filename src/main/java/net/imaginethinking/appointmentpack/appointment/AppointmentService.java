@@ -20,6 +20,9 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Creates and updates appointments while checking patient access and validating appointment times.
+ */
 @Service
 @RequiredArgsConstructor
 public class AppointmentService {
@@ -28,6 +31,9 @@ public class AppointmentService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Checks edit access and validates the submitted values before saving the new appointment.
+     */
     @Transactional
     public AppointmentResponse createAppointment(
             UUID authenticatedUserId,
@@ -65,6 +71,9 @@ public class AppointmentService {
         return AppointmentResponse.from(savedAppointment);
     }
 
+    /**
+     * Checks view access before returning the active appointments with the earliest appointment first.
+     */
     @Transactional(readOnly = true)
     public List<AppointmentResponse> getAppointments(UUID authenticatedUserId, UUID patientRecordId) {
         patientRecordAccessService.requireAccess(authenticatedUserId, patientRecordId, AppointmentPermission.VIEW);
@@ -73,6 +82,9 @@ public class AppointmentService {
                 patientRecordId).stream().map(AppointmentResponse::from).toList();
     }
 
+    /**
+     * Loads the requested appointment and checks that the current user can view its patient record.
+     */
     @Transactional(readOnly = true)
     public AppointmentResponse getAppointment(UUID authenticatedUserId, UUID appointmentId) {
         Appointment appointment = findAvailableAppointment(appointmentId);
@@ -85,6 +97,9 @@ public class AppointmentService {
         return AppointmentResponse.from(appointment);
     }
 
+    /**
+     * Loads the current appointment, checks edit access and applies the submitted changes.
+     */
     @Transactional
     public AppointmentResponse updateAppointment(
             UUID authenticatedUserId,
@@ -119,6 +134,9 @@ public class AppointmentService {
         return AppointmentResponse.from(appointment);
     }
 
+    /**
+     * Checks access and archives the appointment only when it is still active.
+     */
     @Transactional
     public AppointmentResponse archiveAppointment(UUID authenticatedUserId, UUID appointmentId) {
         Appointment appointment = findAppointment(appointmentId);
@@ -140,11 +158,17 @@ public class AppointmentService {
         return AppointmentResponse.from(appointment);
     }
 
+    /**
+     * Loads the appointment or returns not found when it does not exist.
+     */
     private Appointment findAppointment(UUID appointmentId) {
         return appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
     }
 
+    /**
+     * Loads the appointment and treats an archived record as not found.
+     */
     private Appointment findAvailableAppointment(UUID appointmentId) {
         Appointment appointment = findAppointment(appointmentId);
 
@@ -155,6 +179,9 @@ public class AppointmentService {
         return appointment;
     }
 
+    /**
+     * Publishes the activity event for the completed change.
+     */
     private void publishActivity(
             UUID authenticatedUserId,
             Appointment appointment,
@@ -167,6 +194,9 @@ public class AppointmentService {
                 action));
     }
 
+    /**
+     * Checks that an optional appointment end time is later than the start time.
+     */
     private void validateTimes(LocalTime startTime, LocalTime endTime) {
         if (endTime != null && !endTime.isAfter(startTime)) {
             throw new ResponseStatusException(
@@ -175,6 +205,9 @@ public class AppointmentService {
         }
     }
 
+    /**
+     * Copies the reviewed appointment details and optional address onto the current appointment.
+     */
     private void applyValues(
             Appointment appointment,
             LocalDate date,
