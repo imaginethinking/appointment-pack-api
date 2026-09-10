@@ -1,7 +1,5 @@
 package net.imaginethinking.appointmentpack.patientcareraccess;
 
-import net.imaginethinking.appointmentpack.profile.Profile;
-
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;

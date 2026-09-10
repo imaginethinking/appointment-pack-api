@@ -7,9 +7,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertInvalidField;
-import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.assertValid;
-import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.stringOfLength;
+import static net.imaginethinking.appointmentpack.testsupport.ValidationTestSupport.*;
 
 /**
  * Checks the validation rules used for address request.

@@ -10,8 +10,8 @@ import net.imaginethinking.appointmentpack.contact.EmergencyContact;
 import net.imaginethinking.appointmentpack.contact.HealthcareContact;
 import net.imaginethinking.appointmentpack.medicalhistory.MedicalHistoryEntry;
 import net.imaginethinking.appointmentpack.medication.Medication;
-import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.patientrecord.BloodType;
+import net.imaginethinking.appointmentpack.patientrecord.PatientRecord;
 import net.imaginethinking.appointmentpack.profile.Profile;
 import org.springframework.stereotype.Component;
 
