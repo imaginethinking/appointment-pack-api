@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Pattern;
 
 import java.util.UUID;
 
+/**
+ * Carries the MFA challenge ID and authenticator code used to finish login.
+ */
 public record MfaLoginRequest(
 
         @NotNull

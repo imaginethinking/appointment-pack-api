@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+/**
+ * Handles requests for the activity recorded against a patient.
+ */
 @Validated
 @RestController
 @RequestMapping("/api/v1/patient-records/{patientRecordId}/audit-events")
@@ -25,6 +28,9 @@ public class PatientAuditController {
     private final PatientAuditService patientAuditService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
+    /**
+     * Returns the requested audit events for the signed in user.
+     */
     @GetMapping
     public ResponseEntity<PatientAuditPageResponse> getAuditEvents(
             @AuthenticationPrincipal Jwt jwt,

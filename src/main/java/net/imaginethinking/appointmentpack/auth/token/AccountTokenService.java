@@ -15,6 +15,9 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
 
+/**
+ * Creates and consumes short lived account tokens used by email verification and password reset.
+ */
 @Service
 @RequiredArgsConstructor
 public class AccountTokenService {
@@ -24,6 +27,9 @@ public class AccountTokenService {
     private final AccountTokenRepository accountTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    /**
+     * Invalidates earlier unused tokens for the same purpose, creates a new random token and stores only its hash.
+     */
     @Transactional
     public IssuedAccountToken issue(User user, AccountTokenPurpose purpose, Duration lifetime) {
         if (lifetime == null || lifetime.isZero() || lifetime.isNegative()) {
@@ -45,6 +51,14 @@ public class AccountTokenService {
         return new IssuedAccountToken(rawToken, expiresAt);
     }
 
+    /**
+     * Hashes the supplied token, locks the matching record and returns its user only when the token is valid and
+     * unused.
+     *
+     * @param rawToken token supplied by the user
+     * @param purpose expected use of the token
+     * @return the linked user when the token can be consumed
+     */
     @Transactional
     public Optional<User> consume(String rawToken, AccountTokenPurpose purpose) {
         if (rawToken == null || rawToken.isBlank()) {
@@ -71,16 +85,25 @@ public class AccountTokenService {
         return Optional.of(token.getUser());
     }
 
+    /**
+     * Invalidates unused tokens for the same account and purpose so only the newest recovery link remains active.
+     */
     @Transactional
     public void invalidateActiveTokens(User user, AccountTokenPurpose purpose) {
         invalidateActiveTokens(user, purpose, Instant.now());
     }
 
+    /**
+     * Invalidates unused tokens for the same account and purpose so only the newest recovery link remains active.
+     */
     private void invalidateActiveTokens(User user, AccountTokenPurpose purpose, Instant invalidatedAt) {
         accountTokenRepository.findAllByUser_IdAndPurposeAndUsedAtIsNullAndInvalidatedAtIsNull(user.getId(), purpose)
                 .forEach(token -> token.invalidate(invalidatedAt));
     }
 
+    /**
+     * Generates a cryptographically random URL safe token to send to the user.
+     */
     private String generateToken() {
         byte[] tokenBytes = new byte[TOKEN_BYTES];
         secureRandom.nextBytes(tokenBytes);
@@ -88,6 +111,9 @@ public class AccountTokenService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
     }
 
+    /**
+     * Hashes a raw account token with SHA 256 before it is compared with the stored value.
+     */
     private String hashToken(String rawToken) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

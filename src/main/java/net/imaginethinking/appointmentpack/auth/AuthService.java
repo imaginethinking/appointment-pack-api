@@ -23,6 +23,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Handles account registration, login and MFA while recording the main authentication outcomes.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -39,6 +42,10 @@ public class AuthService {
     private final EmailVerificationService emailVerificationService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Normalises the email, checks the submitted passwords, creates the account and profile, then starts email
+     * verification.
+     */
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
         String email = EmailAddressNormalizer.normalise(request.email());
@@ -86,12 +93,21 @@ public class AuthService {
                 true);
     }
 
+    /**
+     * Checks the email and password, handles verification and MFA requirements, then returns an access token when
+     * login can complete.
+     *
+     * @param request email and password entered for the login attempt
+     * @return the next login state or an authenticated access token
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse login(LoginRequest request) {
         String email = EmailAddressNormalizer.normalise(request.email());
 
         User user = userRepository.findByEmail(email).orElse(null);
 
+        // Use the same login error for unknown users and incorrect passwords so the response does not reveal
+        // whether an account exists.
         if (user == null) {
             publishAuthenticationEvent(null, AuthenticationAction.LOGIN, AuthenticationOutcome.FAILED);
 
@@ -136,6 +152,9 @@ public class AuthService {
         return LoginResponse.pendingMfa(savedChallenge.getId());
     }
 
+    /**
+     * Loads the user and returns whether MFA is currently enabled for the account.
+     */
     @Transactional(readOnly = true)
     public AccountSecurityResponse getAccountSecurity(UUID userId) {
         User user = findUser(userId);
@@ -143,6 +162,9 @@ public class AuthService {
         return new AccountSecurityResponse(user.isMfaEnabled());
     }
 
+    /**
+     * Creates a new MFA secret and provisioning URI, then stores the secret until the user confirms a valid code.
+     */
     @Transactional
     public MfaSetupResponse setupMfa(UUID userId) {
         User user = findUser(userId);
@@ -166,6 +188,9 @@ public class AuthService {
         return new MfaSetupResponse(provisioningUri);
     }
 
+    /**
+     * Checks a code against the pending MFA secret and enables MFA when the code is valid.
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public void confirmMfa(UUID userId, MfaConfirmRequest request) {
         User user = findUser(userId);
@@ -191,6 +216,9 @@ public class AuthService {
         publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_SETUP, AuthenticationOutcome.ENABLED);
     }
 
+    /**
+     * Checks the current MFA code, removes the stored secret and invalidates any unused MFA login challenges.
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public void disableMfa(UUID userId, MfaConfirmRequest request) {
         User user = findUser(userId);
@@ -215,8 +243,14 @@ public class AuthService {
         publishAuthenticationEvent(user.getId(), AuthenticationAction.MFA_DISABLE, AuthenticationOutcome.DISABLED);
     }
 
+    /**
+     * Locks and validates the pending MFA challenge, checks the code and returns an access token when the
+     * challenge succeeds.
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse completeMfaLogin(MfaLoginRequest request) {
+        // Lock the challenge while it is checked so two requests cannot complete the same MFA challenge
+        // at the same time.
         MfaChallenge challenge = mfaChallengeRepository.findByIdForUpdate(request.mfaChallengeId()).orElse(null);
 
         if (challenge == null) {
@@ -270,6 +304,9 @@ public class AuthService {
         return LoginResponse.authenticated(accessToken);
     }
 
+    /**
+     * Loads a user by ID or returns not found when the account does not exist.
+     */
     private User findUser(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -278,10 +315,16 @@ public class AuthService {
                 );
     }
 
+    /**
+     * Publishes the authentication action and outcome used by audit and analytics listeners.
+     */
     private void publishAuthenticationEvent(UUID userId, AuthenticationAction action, AuthenticationOutcome outcome) {
         appEventPublisher.publish(AuthenticationEvent.create(userId, action, outcome));
     }
 
+    /**
+     * Creates the common unauthorized response used for an invalid email or password.
+     */
     private ResponseStatusException invalidCredentials() {
         return new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,
@@ -289,6 +332,9 @@ public class AuthService {
         );
     }
 
+    /**
+     * Creates the common unauthorized response used for an invalid or expired MFA challenge.
+     */
     private ResponseStatusException invalidMfaChallenge() {
         return new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,

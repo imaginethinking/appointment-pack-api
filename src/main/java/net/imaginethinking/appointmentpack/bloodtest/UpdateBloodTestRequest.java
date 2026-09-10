@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Carries the changes submitted when updating blood test.
+ */
 public record UpdateBloodTestRequest(
 
         @Size(

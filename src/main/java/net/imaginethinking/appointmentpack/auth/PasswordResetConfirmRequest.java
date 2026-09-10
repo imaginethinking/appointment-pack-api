@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import net.imaginethinking.appointmentpack.auth.validation.StrongPassword;
 
+/**
+ * Carries the reset token and replacement password used to finish a password reset.
+ */
 public record PasswordResetConfirmRequest(
         @NotBlank(message = "Password reset token is required")
         @Size(max = 256)

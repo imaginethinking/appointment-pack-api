@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Carries the values submitted when creating blood test.
+ */
 public record CreateBloodTestRequest(
 
         @Size(

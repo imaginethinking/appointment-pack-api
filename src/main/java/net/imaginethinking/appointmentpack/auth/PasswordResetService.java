@@ -23,6 +23,9 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Handles password reset requests and password changes while invalidating tokens that should no longer be used.
+ */
 @Service
 @RequiredArgsConstructor
 public class PasswordResetService {
@@ -35,6 +38,9 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Records the reset request and only issues a token when the email belongs to an enabled verified account.
+     */
     @Transactional
     public void requestReset(PasswordResetRequest request) {
         String email = EmailAddressNormalizer.normalise(request.email());
@@ -62,6 +68,10 @@ public class PasswordResetService {
                 issuedToken.expiresAt()));
     }
 
+    /**
+     * Checks the current password and new password confirmation, saves the replacement password and invalidates
+     * older recovery state.
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public void changePassword(UUID userId, PasswordChangeRequest request) {
         User user = userRepository.findById(userId)
@@ -102,6 +112,10 @@ public class PasswordResetService {
         publishPasswordChangeEvent(user, AuthenticationOutcome.SUCCEEDED);
     }
 
+    /**
+     * Consumes a valid reset token, saves the new password and clears other reset or MFA challenges for the
+     * account.
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public void confirmReset(PasswordResetConfirmRequest request) {
         if (!Objects.equals(request.newPassword(), request.confirmPassword())) {
@@ -142,6 +156,9 @@ public class PasswordResetService {
                 AuthenticationOutcome.SUCCEEDED));
     }
 
+    /**
+     * Records whether an authenticated password change succeeded or failed.
+     */
     private void publishPasswordChangeEvent(User user, AuthenticationOutcome outcome) {
         appEventPublisher.publish(AuthenticationEvent.create(
                 user.getId(),

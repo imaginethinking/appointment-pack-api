@@ -7,6 +7,9 @@ import net.imaginethinking.appointmentpack.user.User;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents patient activity information returned by the API.
+ */
 public record PatientAuditResponse(
         UUID id,
         UUID actorUserId,
@@ -17,6 +20,9 @@ public record PatientAuditResponse(
         Instant occurredAt
 ) {
 
+    /**
+     * Builds an activity response from the saved audit event and the user who performed it.
+     */
     public static PatientAuditResponse from(
             PatientAuditEvent auditEvent,
             User actor
@@ -32,6 +38,9 @@ public record PatientAuditResponse(
         );
     }
 
+    /**
+     * Builds the actor name from the stored profile and falls back to the account email when needed.
+     */
     private static String actorDisplayName(User actor) {
         if (actor == null || actor.getProfile() == null) {
             return null;

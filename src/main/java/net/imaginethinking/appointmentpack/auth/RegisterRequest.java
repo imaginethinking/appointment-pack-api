@@ -9,6 +9,9 @@ import net.imaginethinking.appointmentpack.auth.validation.StrongPassword;
 
 import java.time.LocalDate;
 
+/**
+ * Carries the account and profile details submitted during registration.
+ */
 public record RegisterRequest(
         @Email
         @NotBlank

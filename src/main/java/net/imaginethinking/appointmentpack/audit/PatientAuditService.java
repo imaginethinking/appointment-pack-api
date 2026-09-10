@@ -15,6 +15,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Loads patient activity after checking that the current user can view the selected patient record.
+ */
 @Service
 @RequiredArgsConstructor
 public class PatientAuditService {
@@ -23,6 +26,9 @@ public class PatientAuditService {
     private final PatientRecordAccessService patientRecordAccessService;
     private final UserRepository userRepository;
 
+    /**
+     * Checks view access before returning the active audit events.
+     */
     @Transactional(readOnly = true)
     public PatientAuditPageResponse getAuditEvents(UUID authenticatedUserId, UUID patientRecordId, int page, int size) {
         patientRecordAccessService.requireAccess(

@@ -3,6 +3,9 @@ package net.imaginethinking.appointmentpack.bloodtest;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Carries one entered blood result row within a blood test request.
+ */
 public record BloodTestResultRequest(
 
         @NotBlank(message = "Analyte name is required") @Size(

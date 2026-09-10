@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+/**
+ * Handles registration, login, account recovery and MFA requests.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -28,6 +31,9 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final AuthenticatedUserIdResolver authenticatedUserIdResolver;
 
+    /**
+     * Creates a new account from the submitted registration details.
+     */
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@RequestBody @Valid RegisterRequest request) {
         RegisterResponse response = authService.register(request);
@@ -35,6 +41,9 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Checks the submitted login details and returns the next authentication state for the account.
+     */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
         LoginResponse response = authService.login(request);
@@ -42,6 +51,9 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Completes a pending MFA login using the supplied challenge and authenticator code.
+     */
     @PostMapping("/login/mfa")
     public ResponseEntity<LoginResponse> completeMfaLogin(@RequestBody @Valid MfaLoginRequest request) {
         LoginResponse response = authService.completeMfaLogin(request);
@@ -49,6 +61,9 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Requests another verification email for the submitted account address.
+     */
     @PostMapping("/email-verification/resend")
     public ResponseEntity<Void> resendEmailVerification(@RequestBody @Valid EmailVerificationResendRequest request) {
         emailVerificationService.resend(request);
@@ -56,6 +71,9 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Confirms an email address using the supplied verification token.
+     */
     @PostMapping("/email-verification/confirm")
     public ResponseEntity<Void> confirmEmailVerification(@RequestBody @Valid EmailVerificationConfirmRequest request) {
         emailVerificationService.confirm(request);
@@ -63,6 +81,9 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Requests a password reset email for the submitted account address.
+     */
     @PostMapping("/password-reset/request")
     public ResponseEntity<Void> requestPasswordReset(@RequestBody @Valid PasswordResetRequest request) {
         passwordResetService.requestReset(request);
@@ -70,6 +91,9 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Confirms a password reset using the supplied token and new password.
+     */
     @PostMapping("/password-reset/confirm")
     public ResponseEntity<Void> confirmPasswordReset(@RequestBody @Valid PasswordResetConfirmRequest request) {
         passwordResetService.confirmReset(request);
@@ -77,6 +101,9 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Returns the current MFA status for the signed in account.
+     */
     @GetMapping("/security")
     public ResponseEntity<AccountSecurityResponse> getAccountSecurity(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
@@ -84,6 +111,9 @@ public class AuthController {
         return ResponseEntity.ok(authService.getAccountSecurity(userId));
     }
 
+    /**
+     * Changes the password for the signed in account after checking the current password.
+     */
     @PostMapping("/password/change")
     public ResponseEntity<Void> changePassword(
             @AuthenticationPrincipal Jwt jwt,
@@ -95,6 +125,9 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Starts MFA setup for the signed in account and returns the provisioning details.
+     */
     @PostMapping("/mfa/setup")
     public ResponseEntity<MfaSetupResponse> setupMfa(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = authenticatedUserIdResolver.resolve(jwt);
@@ -103,6 +136,9 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Confirms the pending MFA setup using the authenticator code entered by the user.
+     */
     @PostMapping("/mfa/confirm")
     public ResponseEntity<Void> confirmMfa(
             @AuthenticationPrincipal Jwt jwt,
@@ -114,6 +150,9 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Disables MFA after checking the authenticator code for the signed in account.
+     */
     @PostMapping("/mfa/disable")
     public ResponseEntity<Void> disableMfa(
             @AuthenticationPrincipal Jwt jwt,

@@ -10,6 +10,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Stores a patient activity entry created from a significant application event.
+ */
 @Getter
 @Entity
 @Immutable
@@ -90,9 +93,15 @@ public class PatientAuditEvent {
     )
     private Instant occurredAt;
 
+    /**
+     * Creates the persistence object used by JPA.
+     */
     protected PatientAuditEvent() {
     }
 
+    /**
+     * Creates the persistence object used by JPA.
+     */
     public PatientAuditEvent(
             UUID sourceEventId,
             UUID patientRecordId,

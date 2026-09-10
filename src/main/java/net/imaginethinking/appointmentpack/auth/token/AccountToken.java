@@ -8,6 +8,9 @@ import net.imaginethinking.appointmentpack.user.User;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Stores the hashed one time token used for email verification or password reset.
+ */
 @Getter
 @Entity
 @Table(
@@ -63,9 +66,15 @@ public class AccountToken extends BaseEntity {
     @Column(name = "invalidated_at")
     private Instant invalidatedAt;
 
+    /**
+     * Creates the account token persistence object.
+     */
     protected AccountToken() {
     }
 
+    /**
+     * Creates the account token persistence object.
+     */
     public AccountToken(User user, AccountTokenPurpose purpose, String tokenHash, Instant expiresAt) {
         this.user = Objects.requireNonNull(user, "User must not be null");
         this.purpose = Objects.requireNonNull(purpose, "Token purpose must not be null");
@@ -73,16 +82,25 @@ public class AccountToken extends BaseEntity {
         this.expiresAt = Objects.requireNonNull(expiresAt, "Token expiry must not be null");
     }
 
+    /**
+     * Checks that the token is unused, has not been invalidated and has not expired.
+     */
     public boolean isUsable(Instant now) {
         return usedAt == null && invalidatedAt == null && expiresAt.isAfter(now);
     }
 
+    /**
+     * Records when the token was successfully consumed.
+     */
     public void markUsed(Instant usedAt) {
         if (this.usedAt == null) {
             this.usedAt = Objects.requireNonNull(usedAt, "Used timestamp must not be null");
         }
     }
 
+    /**
+     * Records when the token was invalidated so it cannot be used later.
+     */
     public void invalidate(Instant invalidatedAt) {
         if (usedAt == null && this.invalidatedAt == null) {
             this.invalidatedAt = Objects.requireNonNull(invalidatedAt, "Invalidation timestamp must not be null");

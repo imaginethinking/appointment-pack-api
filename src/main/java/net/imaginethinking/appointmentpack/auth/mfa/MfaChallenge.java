@@ -8,6 +8,9 @@ import net.imaginethinking.appointmentpack.user.User;
 
 import java.time.Instant;
 
+/**
+ * Stores an MFA login challenge and its failed attempt count.
+ */
 @Getter
 @Setter
 @Entity

@@ -16,6 +16,9 @@ import net.imaginethinking.appointmentpack.common.BaseEntity;
 
 import java.math.BigDecimal;
 
+/**
+ * Stores one result row belonging to a blood test.
+ */
 @Getter
 @Setter
 @Entity

@@ -7,12 +7,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Saves patient activity events after the surrounding transaction has completed successfully.
+ */
 @Component
 @RequiredArgsConstructor
 public class PatientAuditEventListener {
 
     private final PatientAuditEventRepository patientAuditEventRepository;
 
+    /**
+     * Stores the patient activity event after the original transaction has committed.
+     */
     @EventListener
     @Transactional(propagation = Propagation.MANDATORY)
     public void handle(PatientActivityEvent event) {

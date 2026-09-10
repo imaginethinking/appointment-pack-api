@@ -20,6 +20,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.time.Instant;
 
+/**
+ * Issues and confirms email verification tokens and publishes the email request when a new token is created.
+ */
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
@@ -30,11 +33,17 @@ public class EmailVerificationService {
     private final AccountTokenService accountTokenService;
     private final AppEventPublisher appEventPublisher;
 
+    /**
+     * Issues the first email verification token for a newly registered account.
+     */
     @Transactional
     public void issueInitialVerification(User user) {
         issueVerification(user, AuthenticationOutcome.REQUESTED);
     }
 
+    /**
+     * Issues another verification email only when the account exists, is enabled and is still unverified.
+     */
     @Transactional
     public void resend(EmailVerificationResendRequest request) {
         String email = EmailAddressNormalizer.normalise(request.email());
@@ -45,6 +54,9 @@ public class EmailVerificationService {
                 .ifPresent(user -> issueVerification(user, AuthenticationOutcome.RESENT));
     }
 
+    /**
+     * Consumes the verification token and marks the account email as verified when the token is valid.
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public void confirm(EmailVerificationConfirmRequest request) {
         User user = accountTokenService.consume(request.token(), AccountTokenPurpose.EMAIL_VERIFICATION).orElse(null);
@@ -77,6 +89,9 @@ public class EmailVerificationService {
                 AuthenticationOutcome.SUCCEEDED));
     }
 
+    /**
+     * Creates a verification token and publishes the event used to send it to the user.
+     */
     private void issueVerification(User user, AuthenticationOutcome outcome) {
         IssuedAccountToken issuedToken = accountTokenService.issue(
                 user,

@@ -10,6 +10,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Stores a blood test and its ordered result rows for a patient.
+ */
 @Getter
 @Setter
 @Entity

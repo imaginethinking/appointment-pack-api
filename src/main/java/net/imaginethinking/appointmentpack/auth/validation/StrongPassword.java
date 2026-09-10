@@ -13,6 +13,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+// [AI-ASSISTED: ChatGPT, 2026-08-14]
+// AI was used to help generate the regular expression for the strong password constraint.
+/**
+ * Marks a password field that must meet the application password rules.
+ */
 @Documented
 @Constraint(validatedBy = {})
 @Target({
@@ -30,10 +35,19 @@ import java.lang.annotation.Target;
 @ReportAsSingleViolation
 public @interface StrongPassword {
 
+    /**
+     * Returns the validation message used when a password does not meet the required rules.
+     */
     String message() default
             "Password must be 8 to 128 characters and include an uppercase letter, lowercase letter, number, and symbol";
 
+    /**
+     * Returns the validation groups that can be assigned to the password constraint.
+     */
     Class<?>[] groups() default {};
 
+    /**
+     * Returns the validation payload types that can be assigned to the password constraint.
+     */
     Class<? extends Payload>[] payload() default {};
 }

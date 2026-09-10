@@ -7,6 +7,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Represents blood test information returned by the API.
+ */
 public record BloodTestResponse(
         UUID id,
         UUID patientRecordId,
@@ -20,6 +23,9 @@ public record BloodTestResponse(
         Instant updatedAt
 ) {
 
+    /**
+     * Builds the blood test response from the supplied blood test.
+     */
     public static BloodTestResponse from(BloodTest bloodTest) {
         List<ResultResponse> results = bloodTest
                 .getResults()
@@ -44,6 +50,9 @@ public record BloodTestResponse(
         );
     }
 
+    /**
+     * Represents result information returned by the API.
+     */
     public record ResultResponse(
             String analyteName,
             String analyteKey,
@@ -54,6 +63,9 @@ public record BloodTestResponse(
             BloodTestResultFlag flag
     ) {
 
+        /**
+         * Builds the result response from the supplied blood test result.
+         */
         public static ResultResponse from(BloodTestResult result) {
             return new ResultResponse(
                     result.getAnalyteName(),
