@@ -11,7 +11,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Converts application events into operational analytics after the related transaction completes.
+ * Converts application events into operational analytics once their surrounding transaction has completed.
  */
 @Slf4j
 @Component
@@ -22,7 +22,7 @@ public class OperationalEventListener {
     private final OperationalEventRecorder operationalEventRecorder;
 
     /**
-     * Converts the application event into operational analytics after the original transaction has committed.
+     * Records the patient activity as operational analytics after its transaction commits.
      */
     @TransactionalEventListener(
             phase = TransactionPhase.AFTER_COMMIT,
@@ -33,7 +33,7 @@ public class OperationalEventListener {
     }
 
     /**
-     * Converts the application event into operational analytics after the original transaction has committed.
+     * Records the authentication event as operational analytics after its transaction commits.
      */
     @TransactionalEventListener(
             phase = TransactionPhase.AFTER_COMMIT,
@@ -44,7 +44,7 @@ public class OperationalEventListener {
     }
 
     /**
-     * Converts the application event into operational analytics after the original transaction has committed.
+     * Records the document processing event as operational analytics after its transaction commits.
      */
     @TransactionalEventListener(
             phase = TransactionPhase.AFTER_COMMIT,
@@ -55,7 +55,7 @@ public class OperationalEventListener {
     }
 
     /**
-     * Converts the application event into operational analytics after the original transaction has committed.
+     * Records the page view as operational analytics after its transaction commits.
      */
     @TransactionalEventListener(
             phase = TransactionPhase.AFTER_COMMIT,
@@ -66,8 +66,7 @@ public class OperationalEventListener {
     }
 
     /**
-     * Attempts to save the operational event and keeps analytics failures from affecting the completed user
-     * action.
+     * Attempts to save an operational event and logs the failure if analytics cannot be recorded.
      */
     private void recordSafely(OperationalEvent event) {
         try {

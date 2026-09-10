@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Saves operational analytics events without allowing an analytics failure to break the original user action.
+ * Stores operational analytics events in their own transaction.
  */
 @Service
 @RequiredArgsConstructor
@@ -15,7 +15,7 @@ public class OperationalEventRecorder {
     private final OperationalEventRepository operationalEventRepository;
 
     /**
-     * Saves the operational event when it has not already been recorded and ignores analytics failures.
+     * Skips source events that have already been recorded and saves new events in a separate transaction.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(OperationalEvent event) {

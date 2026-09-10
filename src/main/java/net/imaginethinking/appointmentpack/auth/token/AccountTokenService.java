@@ -86,7 +86,7 @@ public class AccountTokenService {
     }
 
     /**
-     * Invalidates unused tokens for the same account and purpose so only the newest recovery link remains active.
+     * Invalidates every unused token for the same account and purpose.
      */
     @Transactional
     public void invalidateActiveTokens(User user, AccountTokenPurpose purpose) {
@@ -94,7 +94,7 @@ public class AccountTokenService {
     }
 
     /**
-     * Invalidates unused tokens for the same account and purpose so only the newest recovery link remains active.
+     * Marks every unused token for the same account and purpose as invalid at the supplied time.
      */
     private void invalidateActiveTokens(User user, AccountTokenPurpose purpose, Instant invalidatedAt) {
         accountTokenRepository.findAllByUser_IdAndPurposeAndUsedAtIsNullAndInvalidatedAtIsNull(user.getId(), purpose)

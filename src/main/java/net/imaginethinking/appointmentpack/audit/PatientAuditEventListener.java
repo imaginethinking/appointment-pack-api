@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Saves patient activity events after the surrounding transaction has completed successfully.
+ * Saves patient activity events as part of the transaction that published them.
  */
 @Component
 @RequiredArgsConstructor
@@ -17,7 +17,7 @@ public class PatientAuditEventListener {
     private final PatientAuditEventRepository patientAuditEventRepository;
 
     /**
-     * Stores the patient activity event after the original transaction has committed.
+     * Creates and saves an audit record for the patient activity event using the current transaction.
      */
     @EventListener
     @Transactional(propagation = Propagation.MANDATORY)

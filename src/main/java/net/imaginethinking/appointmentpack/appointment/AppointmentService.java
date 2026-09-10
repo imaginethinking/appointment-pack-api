@@ -206,7 +206,7 @@ public class AppointmentService {
     }
 
     /**
-     * Copies the reviewed appointment details and optional address onto the current appointment.
+     * Copies the submitted appointment details and optional address onto the current appointment.
      */
     private void applyValues(
             Appointment appointment,

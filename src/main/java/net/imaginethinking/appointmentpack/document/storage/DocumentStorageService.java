@@ -55,7 +55,7 @@ public class DocumentStorageService {
     }
 
     /**
-     * Removes a stored document when cleanup or archive handling requires it.
+     * Deletes the stored document at the supplied relative path.
      */
     public void delete(String storagePath) {
         fileSystemStorage.delete(storagePath);

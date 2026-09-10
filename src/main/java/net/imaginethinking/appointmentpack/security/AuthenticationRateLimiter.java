@@ -74,7 +74,7 @@ public class AuthenticationRateLimiter {
     }
 
     /**
-     * Stores the start, expiry and request count for one rate limit window.
+     * Stores the request count and expiry time for one rate limit window.
      */
     private record Window(int count, Instant expiresAt) {
     }

@@ -38,7 +38,7 @@ public class DocumentProcessingClient {
     private final ObjectMapper objectMapper;
 
     /**
-     * Creates the document processing client client and applies the configured connection and response timeouts.
+     * Creates the document processing client with the configured connection and response timeouts.
      */
     public DocumentProcessingClient(
             RestClient.Builder restClientBuilder,
@@ -97,7 +97,7 @@ public class DocumentProcessingClient {
     }
 
     /**
-     * Sends the approved deidentified text for summarisation and checks the returned summary before using it.
+     * Sends the approved deidentified text for summarisation and checks that the response matches the document.
      */
     public DocumentSummaryResponse summarise(DocumentSummarisationContext context) {
         DocumentSummaryClientRequest request = new DocumentSummaryClientRequest(
@@ -267,7 +267,7 @@ public class DocumentProcessingClient {
     }
 
     /**
-     * Checks that the summary response belongs to the requested document and contains summary text.
+     * Checks that a summary response was returned for the document that was requested.
      */
     private void validateSummaryResponse(DocumentSummarisationContext context, DocumentSummaryResponse response) {
         if (response == null) {

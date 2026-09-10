@@ -18,7 +18,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 
 /**
- * Saves a generated Appointment Pack and records the items that were included in the PDF.
+ * Saves a generated Appointment Pack together with the selected patient resources recorded for it.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,7 +29,7 @@ public class AppointmentPackPersistenceService {
     private final AppEventPublisher appEventPublisher;
 
     /**
-     * Saves the generated pack and records the type and ID of every item included in the PDF.
+     * Saves the pack metadata and records each selected resource while keeping the appointment as its own link.
      */
     @Transactional
     public AppointmentPackResponse persist(
